@@ -1,0 +1,426 @@
+[
+  {
+    "specification": "1.6T*3'*6'",
+    "unit_weight": 21.0
+  },
+  {
+    "specification": "2.0T*3'*6'",
+    "unit_weight": 26.3
+  },
+  {
+    "specification": "2.3T*3'*6'",
+    "unit_weight": 30.2
+  },
+  {
+    "specification": "2.5T*3'*6'",
+    "unit_weight": 32.8
+  },
+  {
+    "specification": "2.6T*3'*6'",
+    "unit_weight": 34.1
+  },
+  {
+    "specification": "2.7T*3'*6'",
+    "unit_weight": 35.4
+  },
+  {
+    "specification": "3T*3'*6'",
+    "unit_weight": 39.4
+  },
+  {
+    "specification": "3.2T*3'*6'",
+    "unit_weight": 42.0
+  },
+  {
+    "specification": "3.5T*3'*6'",
+    "unit_weight": 45.9
+  },
+  {
+    "specification": "4T*3'*6'",
+    "unit_weight": 52.5
+  },
+  {
+    "specification": "4.5T*3'*6'",
+    "unit_weight": 59.1
+  },
+  {
+    "specification": "5T*3'*6'",
+    "unit_weight": 65.6
+  },
+  {
+    "specification": "6T*3'*6'",
+    "unit_weight": 78.8
+  },
+  {
+    "specification": "7T*3'*6'",
+    "unit_weight": 91.9
+  },
+  {
+    "specification": "8T*3'*6'",
+    "unit_weight": 105.0
+  },
+  {
+    "specification": "9T*3'*6'",
+    "unit_weight": 118.0
+  },
+  {
+    "specification": "10T*3'*6'",
+    "unit_weight": 131.0
+  },
+  {
+    "specification": "11T*3'*6'",
+    "unit_weight": 144.0
+  },
+  {
+    "specification": "12T*3'*6'",
+    "unit_weight": 158.0
+  },
+  {
+    "specification": "13T*3'*6'",
+    "unit_weight": 171.0
+  },
+  {
+    "specification": "14T*3'*6'",
+    "unit_weight": 184.0
+  },
+  {
+    "specification": "15T*3'*6'",
+    "unit_weight": 197.0
+  },
+  {
+    "specification": "16T*3'*6'",
+    "unit_weight": 210.0
+  },
+  {
+    "specification": "17T*3'*6'",
+    "unit_weight": 223.0
+  },
+  {
+    "specification": "18T*3'*6'",
+    "unit_weight": 236.0
+  },
+  {
+    "specification": "19T*3'*6'",
+    "unit_weight": 249.0
+  },
+  {
+    "specification": "20T*3'*6'",
+    "unit_weight": 263.0
+  },
+  {
+    "specification": "21T*3'*6'",
+    "unit_weight": 276.0
+  },
+  {
+    "specification": "22T*3'*6'",
+    "unit_weight": 289.0
+  },
+  {
+    "specification": "23T*3'*6'",
+    "unit_weight": 302.0
+  },
+  {
+    "specification": "24T*3'*6'",
+    "unit_weight": 315.0
+  },
+  {
+    "specification": "25T*3'*6'",
+    "unit_weight": 328.0
+  },
+  {
+    "specification": "26T*3'*6'",
+    "unit_weight": 341.0
+  },
+  {
+    "specification": "27T*3'*6'",
+    "unit_weight": 354.0
+  },
+  {
+    "specification": "28T*3'*6'",
+    "unit_weight": 368.0
+  },
+  {
+    "specification": "29T*3'*6'",
+    "unit_weight": 381.0
+  },
+  {
+    "specification": "30T*3'*6'",
+    "unit_weight": 394.0
+  },
+  {
+    "specification": "31T*3'*6'",
+    "unit_weight": 407.0
+  },
+  {
+    "specification": "32T*3'*6'",
+    "unit_weight": 420.0
+  },
+  {
+    "specification": "33T*3'*6'",
+    "unit_weight": 433.0
+  },
+  {
+    "specification": "35T*3'*6'",
+    "unit_weight": 459.0
+  },
+  {
+    "specification": "36T*3'*6'",
+    "unit_weight": 473.0
+  },
+  {
+    "specification": "37T*3'*6'",
+    "unit_weight": 486.0
+  },
+  {
+    "specification": "38T*3'*6'",
+    "unit_weight": 499.0
+  },
+  {
+    "specification": "39T*3'*6'",
+    "unit_weight": 512.0
+  },
+  {
+    "specification": "40T*3'*6'",
+    "unit_weight": 525.0
+  },
+  {
+    "specification": "41T*3'*6'",
+    "unit_weight": 538.0
+  },
+  {
+    "specification": "42T*3'*6'",
+    "unit_weight": 551.0
+  },
+  {
+    "specification": "43T*3'*6'",
+    "unit_weight": 564.0
+  },
+  {
+    "specification": "44T*3'*6'",
+    "unit_weight": 578.0
+  },
+  {
+    "specification": "45T*3'*6'",
+    "unit_weight": 591.0
+  },
+  {
+    "specification": "46T*3'*6'",
+    "unit_weight": 604.0
+  },
+  {
+    "specification": "47T*3'*6'",
+    "unit_weight": 617.0
+  },
+  {
+    "specification": "48T*3'*6'",
+    "unit_weight": 630.0
+  },
+  {
+    "specification": "49T*3'*6'",
+    "unit_weight": 643.0
+  },
+  {
+    "specification": "50T*3'*6'",
+    "unit_weight": 656.0
+  },
+  {
+    "specification": "51T*3'*6'",
+    "unit_weight": 669.0
+  },
+  {
+    "specification": "52T*3'*6'",
+    "unit_weight": 683.0
+  },
+  {
+    "specification": "53T*3'*6'",
+    "unit_weight": 696.0
+  },
+  {
+    "specification": "54T*3'*6'",
+    "unit_weight": 709.0
+  },
+  {
+    "specification": "55T*3'*6'",
+    "unit_weight": 722.0
+  },
+  {
+    "specification": "56T*3'*6'",
+    "unit_weight": 735.0
+  },
+  {
+    "specification": "57T*3'*6'",
+    "unit_weight": 748.0
+  },
+  {
+    "specification": "58T*3'*6'",
+    "unit_weight": 761.0
+  },
+  {
+    "specification": "59T*3'*6'",
+    "unit_weight": 774.0
+  },
+  {
+    "specification": "60T*3'*6'",
+    "unit_weight": 788.0
+  },
+  {
+    "specification": "61T*3'*6'",
+    "unit_weight": 801.0
+  },
+  {
+    "specification": "62T*3'*6'",
+    "unit_weight": 814.0
+  },
+  {
+    "specification": "63T*3'*6'",
+    "unit_weight": 827.0
+  },
+  {
+    "specification": "64T*3'*6'",
+    "unit_weight": 840.0
+  },
+  {
+    "specification": "65T*3'*6'",
+    "unit_weight": 853.0
+  },
+  {
+    "specification": "66T*3'*6'",
+    "unit_weight": 866.0
+  },
+  {
+    "specification": "67T*3'*6'",
+    "unit_weight": 879.0
+  },
+  {
+    "specification": "68T*3'*6'",
+    "unit_weight": 893.0
+  },
+  {
+    "specification": "69T*3'*6'",
+    "unit_weight": 906.0
+  },
+  {
+    "specification": "70T*3'*6'",
+    "unit_weight": 919.0
+  },
+  {
+    "specification": "71T*3'*6'",
+    "unit_weight": 932.0
+  },
+  {
+    "specification": "72T*3'*6'",
+    "unit_weight": 945.0
+  },
+  {
+    "specification": "73T*3'*6'",
+    "unit_weight": 958.0
+  },
+  {
+    "specification": "74T*3'*6'",
+    "unit_weight": 971.0
+  },
+  {
+    "specification": "75T*3'*6'",
+    "unit_weight": 985.0
+  },
+  {
+    "specification": "76T*3'*6'",
+    "unit_weight": 998.0
+  },
+  {
+    "specification": "77T*3'*6'",
+    "unit_weight": 1011.0
+  },
+  {
+    "specification": "78T*3'*6'",
+    "unit_weight": 1024.0
+  },
+  {
+    "specification": "79T*3'*6'",
+    "unit_weight": 1037.0
+  },
+  {
+    "specification": "80T*3'*6'",
+    "unit_weight": 1050.0
+  },
+  {
+    "specification": "81T*3'*6'",
+    "unit_weight": 1063.0
+  },
+  {
+    "specification": "82T*3'*6'",
+    "unit_weight": 1076.0
+  },
+  {
+    "specification": "83T*3'*6'",
+    "unit_weight": 1089.0
+  },
+  {
+    "specification": "84T*3'*6'",
+    "unit_weight": 1103.0
+  },
+  {
+    "specification": "85T*3'*6'",
+    "unit_weight": 1116.0
+  },
+  {
+    "specification": "86T*3'*6'",
+    "unit_weight": 1129.0
+  },
+  {
+    "specification": "87T*3'*6'",
+    "unit_weight": 1142.0
+  },
+  {
+    "specification": "88T*3'*6'",
+    "unit_weight": 1155.0
+  },
+  {
+    "specification": "89T*3'*6'",
+    "unit_weight": 1168.0
+  },
+  {
+    "specification": "90T*3'*6'",
+    "unit_weight": 1181.0
+  },
+  {
+    "specification": "91T*3'*6'",
+    "unit_weight": 1194.0
+  },
+  {
+    "specification": "92T*3'*6'",
+    "unit_weight": 1208.0
+  },
+  {
+    "specification": "93T*3'*6'",
+    "unit_weight": 1221.0
+  },
+  {
+    "specification": "94T*3'*6'",
+    "unit_weight": 1234.0
+  },
+  {
+    "specification": "95T*3'*6'",
+    "unit_weight": 1247.0
+  },
+  {
+    "specification": "96T*3'*6'",
+    "unit_weight": 1260.0
+  },
+  {
+    "specification": "97T*3'*6'",
+    "unit_weight": 1273.0
+  },
+  {
+    "specification": "98T*3'*6'",
+    "unit_weight": 1286.0
+  },
+  {
+    "specification": "99T*3'*6'",
+    "unit_weight": 1299.0
+  },
+  {
+    "specification": "100T*3'*6'",
+    "unit_weight": 1313.0
+  }
+]

@@ -1,0 +1,162 @@
+[
+  {
+    "specification": "500*9T",
+    "unit_weight": 109.0
+  },
+  {
+    "specification": "500*12T",
+    "unit_weight": 144.0
+  },
+  {
+    "specification": "500*14T",
+    "unit_weight": 168.0
+  },
+  {
+    "specification": "600*9T",
+    "unit_weight": 131.0
+  },
+  {
+    "specification": "600*12T",
+    "unit_weight": 174.0
+  },
+  {
+    "specification": "600*14T",
+    "unit_weight": 202.0
+  },
+  {
+    "specification": "600*16T",
+    "unit_weight": 230.0
+  },
+  {
+    "specification": "700*9T",
+    "unit_weight": 153.0
+  },
+  {
+    "specification": "700*12T",
+    "unit_weight": 204.0
+  },
+  {
+    "specification": "700*14T",
+    "unit_weight": 237.0
+  },
+  {
+    "specification": "700*16T",
+    "unit_weight": 270.0
+  },
+  {
+    "specification": "406.4*9T",
+    "unit_weight": 88.2
+  },
+  {
+    "specification": "406.4*10T",
+    "unit_weight": 97.8
+  },
+  {
+    "specification": "406.4*12T",
+    "unit_weight": 117.0
+  },
+  {
+    "specification": "508*9T",
+    "unit_weight": 111.0
+  },
+  {
+    "specification": "508*12T",
+    "unit_weight": 147.0
+  },
+  {
+    "specification": "508*14T",
+    "unit_weight": 171.0
+  },
+  {
+    "specification": "609.6*9T",
+    "unit_weight": 133.0
+  },
+  {
+    "specification": "609.6*12T",
+    "unit_weight": 177.0
+  },
+  {
+    "specification": "609.6*14T",
+    "unit_weight": 206.0
+  },
+  {
+    "specification": "609.6*16T",
+    "unit_weight": 234.0
+  },
+  {
+    "specification": "711.2*9T",
+    "unit_weight": 156.0
+  },
+  {
+    "specification": "711.2*12T",
+    "unit_weight": 207.0
+  },
+  {
+    "specification": "711.2*14T",
+    "unit_weight": 241.0
+  },
+  {
+    "specification": "711.2*16T",
+    "unit_weight": 274.0
+  },
+  {
+    "specification": "800*12T",
+    "unit_weight": 233.2
+  },
+  {
+    "specification": "812.8*9T",
+    "unit_weight": 178.0
+  },
+  {
+    "specification": "812.8*12T",
+    "unit_weight": 237.0
+  },
+  {
+    "specification": "812.8*14T",
+    "unit_weight": 276.0
+  },
+  {
+    "specification": "812.8*16T",
+    "unit_weight": 314.0
+  },
+  {
+    "specification": "914.4*9T",
+    "unit_weight": 201.0
+  },
+  {
+    "specification": "914.4*12T",
+    "unit_weight": 267.0
+  },
+  {
+    "specification": "914.4*14T",
+    "unit_weight": 311.0
+  },
+  {
+    "specification": "914.4*16T",
+    "unit_weight": 354.0
+  },
+  {
+    "specification": "914.4*19T",
+    "unit_weight": 420.0
+  },
+  {
+    "specification": "1,016*9T",
+    "unit_weight": 224.0
+  },
+  {
+    "specification": "1,016*12T",
+    "unit_weight": 297.0
+  },
+  {
+    "specification": "1,016*14T",
+    "unit_weight": 346.0
+  },
+  {
+    "specification": "1,016*16T",
+    "unit_weight": 395.0
+  },
+  {
+    "specification": "1,016*19T",
+    "unit_weight": 467.0
+  }
+]

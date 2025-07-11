@@ -1,0 +1,57 @@
+[
+  {
+    "specification": "15A",
+    "unit_weight": 0.82,
+    "material": "흑관"
+  },
+  {
+    "specification": "20A",
+    "unit_weight": 1.05,
+    "material": "백관"
+  },
+  {
+    "specification": "25A",
+    "unit_weight": 1.4,
+    "material": "HGI"
+  },
+  {
+    "specification": "32A",
+    "unit_weight": 1.8
+  },
+  {
+    "specification": "40A",
+    "unit_weight": 2.05
+  },
+  {
+    "specification": "50A",
+    "unit_weight": 2.58
+  },
+  {
+    "specification": "65A",
+    "unit_weight": 3.48
+  },
+  {
+    "specification": "80A",
+    "unit_weight": 4.5
+  },
+  {
+    "specification": "90A",
+    "unit_weight": 5.15
+  },
+  {
+    "specification": "100A",
+    "unit_weight": 5.82
+  },
+  {
+    "specification": "125A",
+    "unit_weight": 9.47
+  },
+  {
+    "specification": "150A",
+    "unit_weight": 11.6
+  },
+  {
+    "specification": "200A",
+    "unit_weight": 21.98
+  }
+]

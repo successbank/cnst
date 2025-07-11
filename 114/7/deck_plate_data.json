@@ -1,0 +1,82 @@
+[
+  {
+    "specification": "614*50*1.2T",
+    "unit_weight": 8.24
+  },
+  {
+    "specification": "614*50*1.2T(GI)",
+    "unit_weight": 8.58
+  },
+  {
+    "specification": "614*50*1.6T",
+    "unit_weight": 10.99
+  },
+  {
+    "specification": "614*50*1.6(GI)",
+    "unit_weight": 11.32
+  },
+  {
+    "specification": "660*50*1.2T",
+    "unit_weight": 8.61
+  },
+  {
+    "specification": "660*50*1.2T(GI)",
+    "unit_weight": 8.96
+  },
+  {
+    "specification": "660*50*1.6T",
+    "unit_weight": 11.48
+  },
+  {
+    "specification": "660*50*1.6T(GI)",
+    "unit_weight": 11.83
+  },
+  {
+    "specification": "600*75*1.2T",
+    "unit_weight": 9.38
+  },
+  {
+    "specification": "600*75*1.2(GI)",
+    "unit_weight": 9.76
+  },
+  {
+    "specification": "600*75*1.6T",
+    "unit_weight": 12.4
+  },
+  {
+    "specification": "600*75*1.6T(GI)",
+    "unit_weight": 12.8
+  },
+  {
+    "specification": "600*75*2.3T",
+    "unit_weight": 17.7
+  },
+  {
+    "specification": "600*75*2.3T(GI)",
+    "unit_weight": 18.1
+  },
+  {
+    "specification": "690*75*1.2T",
+    "unit_weight": 10.21
+  },
+  {
+    "specification": "690*75*1.2T(GI)",
+    "unit_weight": 10.62
+  },
+  {
+    "specification": "690*75*1.6T",
+    "unit_weight": 13.6
+  },
+  {
+    "specification": "690*75*1.6T(GI)",
+    "unit_weight": 14.0
+  },
+  {
+    "specification": "690*75*2.3T",
+    "unit_weight": 19.3
+  },
+  {
+    "specification": "690*75*2.3T(GI)",
+    "unit_weight": 19.7
+  }
+]

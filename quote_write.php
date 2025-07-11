@@ -9,6 +9,13 @@ checkLogin();
 $user_id = $_SESSION['user_id'] ?? '';
 $member_id = $_SESSION['member_id'] ?? '';
 
+// URL 파라미터로 제품 정보 받기
+$product_name = $_GET['product'] ?? '';
+$product_id = isset($_GET['product_id']) ? (int)$_GET['product_id'] : 0;
+$calculated_weight = $_GET['weight'] ?? '';
+$calculated_length = $_GET['length'] ?? '';
+$calculated_quantity = $_GET['quantity'] ?? '';
+
 // 회원 정보 가져오기
 $member_info = [];
 if ($member_id) {
@@ -123,7 +130,7 @@ myPageSidebar('inquiries');
                 <div class="form-group">
                     <label for="product">제품명 <span class="required">*</span></label>
                     <input type="text" id="product" name="product" 
-                           value="<?php echo htmlspecialchars($_POST['product'] ?? ''); ?>"
+                           value="<?php echo htmlspecialchars($_POST['product'] ?? $product_name); ?>"
                            placeholder="예: H형강, 철근, 강판 등" required>
                 </div>
                 
@@ -131,7 +138,7 @@ myPageSidebar('inquiries');
                     <div class="form-group">
                         <label for="quantity">수량</label>
                         <input type="text" id="quantity" name="quantity" 
-                               value="<?php echo htmlspecialchars($_POST['quantity'] ?? ''); ?>"
+                               value="<?php echo htmlspecialchars($_POST['quantity'] ?? ($calculated_quantity ? $calculated_quantity . '본' : '')); ?>"
                                placeholder="예: 10톤, 100개 등">
                     </div>
                     <div class="form-group">
@@ -147,7 +154,7 @@ myPageSidebar('inquiries');
                 <div class="form-group">
                     <label for="specifications">규격 및 사양</label>
                     <textarea id="specifications" name="specifications" rows="4" 
-                              placeholder="예: H-300x300x10x15, KS D 3503, 길이 12m 등 상세 규격을 입력해주세요"><?php echo htmlspecialchars($_POST['specifications'] ?? ''); ?></textarea>
+                              placeholder="예: H-300x300x10x15, KS D 3503, 길이 12m 등 상세 규격을 입력해주세요"><?php echo htmlspecialchars($_POST['specifications'] ?? ($calculated_length ? "길이: {$calculated_length}m\n" : '') . ($calculated_weight ? "예상 총중량: {$calculated_weight}kg" : '')); ?></textarea>
                 </div>
             </div>
             

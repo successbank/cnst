@@ -1,0 +1,422 @@
+[
+  {
+    "specification": "13*3T",
+    "unit_weight": 0.306
+  },
+  {
+    "specification": "13*4T",
+    "unit_weight": 0.408
+  },
+  {
+    "specification": "13*5T",
+    "unit_weight": 0.51
+  },
+  {
+    "specification": "16*3T",
+    "unit_weight": 0.377
+  },
+  {
+    "specification": "16*4.5T",
+    "unit_weight": 0.565
+  },
+  {
+    "specification": "19*3T",
+    "unit_weight": 0.447
+  },
+  {
+    "specification": "19*4.5T",
+    "unit_weight": 0.671
+  },
+  {
+    "specification": "19*6T",
+    "unit_weight": 0.895
+  },
+  {
+    "specification": "25*3T",
+    "unit_weight": 0.589
+  },
+  {
+    "specification": "25*4.5T",
+    "unit_weight": 0.883
+  },
+  {
+    "specification": "25*6T",
+    "unit_weight": 1.18
+  },
+  {
+    "specification": "25*9T",
+    "unit_weight": 1.77
+  },
+  {
+    "specification": "25*12T",
+    "unit_weight": 2.36
+  },
+  {
+    "specification": "32*3T",
+    "unit_weight": 0.754
+  },
+  {
+    "specification": "32*4.5T",
+    "unit_weight": 1.13
+  },
+  {
+    "specification": "32*6T",
+    "unit_weight": 1.51
+  },
+  {
+    "specification": "32*9T",
+    "unit_weight": 2.26
+  },
+  {
+    "specification": "32*12T",
+    "unit_weight": 3.01
+  },
+  {
+    "specification": "32*16T",
+    "unit_weight": 4.02
+  },
+  {
+    "specification": "38*3T",
+    "unit_weight": 0.895
+  },
+  {
+    "specification": "38*4.5",
+    "unit_weight": 1.34
+  },
+  {
+    "specification": "38*6T",
+    "unit_weight": 1.79
+  },
+  {
+    "specification": "38*9T",
+    "unit_weight": 2.68
+  },
+  {
+    "specification": "38*12T",
+    "unit_weight": 3.58
+  },
+  {
+    "specification": "38*16T",
+    "unit_weight": 4.77
+  },
+  {
+    "specification": "38*19T",
+    "unit_weight": 5.67
+  },
+  {
+    "specification": "50*3T",
+    "unit_weight": 1.18
+  },
+  {
+    "specification": "50*4.5T",
+    "unit_weight": 1.77
+  },
+  {
+    "specification": "50*6T",
+    "unit_weight": 2.36
+  },
+  {
+    "specification": "50*9T",
+    "unit_weight": 3.53
+  },
+  {
+    "specification": "50*12T",
+    "unit_weight": 4.71
+  },
+  {
+    "specification": "50*16T",
+    "unit_weight": 6.28
+  },
+  {
+    "specification": "50*19T",
+    "unit_weight": 7.46
+  },
+  {
+    "specification": "50*22T",
+    "unit_weight": 8.64
+  },
+  {
+    "specification": "50*25T",
+    "unit_weight": 9.81
+  },
+  {
+    "specification": "65*6T",
+    "unit_weight": 3.06
+  },
+  {
+    "specification": "65*9T",
+    "unit_weight": 4.59
+  },
+  {
+    "specification": "65*12T",
+    "unit_weight": 6.12
+  },
+  {
+    "specification": "65*16T",
+    "unit_weight": 8.16
+  },
+  {
+    "specification": "65*19T",
+    "unit_weight": 9.69
+  },
+  {
+    "specification": "65*22T",
+    "unit_weight": 11.2
+  },
+  {
+    "specification": "65*25T",
+    "unit_weight": 12.8
+  },
+  {
+    "specification": "75*6T",
+    "unit_weight": 3.53
+  },
+  {
+    "specification": "75*9T",
+    "unit_weight": 5.3
+  },
+  {
+    "specification": "75*12T",
+    "unit_weight": 7.07
+  },
+  {
+    "specification": "75*16T",
+    "unit_weight": 9.42
+  },
+  {
+    "specification": "75*19T",
+    "unit_weight": 11.2
+  },
+  {
+    "specification": "75*22T",
+    "unit_weight": 13.0
+  },
+  {
+    "specification": "75*25T",
+    "unit_weight": 14.7
+  },
+  {
+    "specification": "90*6T",
+    "unit_weight": 4.24
+  },
+  {
+    "specification": "90*9T",
+    "unit_weight": 6.36
+  },
+  {
+    "specification": "90*12T",
+    "unit_weight": 8.48
+  },
+  {
+    "specification": "90*16T",
+    "unit_weight": 11.3
+  },
+  {
+    "specification": "90*19T",
+    "unit_weight": 13.4
+  },
+  {
+    "specification": "90*22T",
+    "unit_weight": 15.5
+  },
+  {
+    "specification": "90*25T",
+    "unit_weight": 17.7
+  },
+  {
+    "specification": "100*6T",
+    "unit_weight": 4.71
+  },
+  {
+    "specification": "100*8T",
+    "unit_weight": 6.28
+  },
+  {
+    "specification": "100*9T",
+    "unit_weight": 7.07
+  },
+  {
+    "specification": "100*12T",
+    "unit_weight": 9.42
+  },
+  {
+    "specification": "100*16T",
+    "unit_weight": 12.6
+  },
+  {
+    "specification": "100*19T",
+    "unit_weight": 14.9
+  },
+  {
+    "specification": "100*22T",
+    "unit_weight": 17.3
+  },
+  {
+    "specification": "100*25T",
+    "unit_weight": 19.6
+  },
+  {
+    "specification": "125*8T",
+    "unit_weight": 7.85
+  },
+  {
+    "specification": "125*9T",
+    "unit_weight": 8.83
+  },
+  {
+    "specification": "125*12T",
+    "unit_weight": 11.8
+  },
+  {
+    "specification": "125*16T",
+    "unit_weight": 15.7
+  },
+  {
+    "specification": "125*19T",
+    "unit_weight": 18.6
+  },
+  {
+    "specification": "125*22T",
+    "unit_weight": 21.6
+  },
+  {
+    "specification": "125*25T",
+    "unit_weight": 24.5
+  },
+  {
+    "specification": "150*9T",
+    "unit_weight": 10.6
+  },
+  {
+    "specification": "150*12T",
+    "unit_weight": 14.1
+  },
+  {
+    "specification": "150*16T",
+    "unit_weight": 18.8
+  },
+  {
+    "specification": "150*19T",
+    "unit_weight": 22.4
+  },
+  {
+    "specification": "150*22T",
+    "unit_weight": 25.9
+  },
+  {
+    "specification": "150*25T",
+    "unit_weight": 29.4
+  },
+  {
+    "specification": "180*9T",
+    "unit_weight": 12.7
+  },
+  {
+    "specification": "180*12T",
+    "unit_weight": 17.0
+  },
+  {
+    "specification": "180*16T",
+    "unit_weight": 22.6
+  },
+  {
+    "specification": "180*19T",
+    "unit_weight": 26.8
+  },
+  {
+    "specification": "180*22T",
+    "unit_weight": 31.1
+  },
+  {
+    "specification": "180*25T",
+    "unit_weight": 35.3
+  },
+  {
+    "specification": "200*9T",
+    "unit_weight": 14.1
+  },
+  {
+    "specification": "200*12T",
+    "unit_weight": 18.8
+  },
+  {
+    "specification": "200*16T",
+    "unit_weight": 25.1
+  },
+  {
+    "specification": "200*19",
+    "unit_weight": 29.8
+  },
+  {
+    "specification": "200*22T",
+    "unit_weight": 34.5
+  },
+  {
+    "specification": "200*25T",
+    "unit_weight": 39.2
+  },
+  {
+    "specification": "230*9T",
+    "unit_weight": 16.2
+  },
+  {
+    "specification": "230*12T",
+    "unit_weight": 21.7
+  },
+  {
+    "specification": "230*16T",
+    "unit_weight": 28.9
+  },
+  {
+    "specification": "230*19T",
+    "unit_weight": 34.3
+  },
+  {
+    "specification": "230*22T",
+    "unit_weight": 39.7
+  },
+  {
+    "specification": "230*25T",
+    "unit_weight": 45.1
+  },
+  {
+    "specification": "250*9T",
+    "unit_weight": 17.7
+  },
+  {
+    "specification": "250*12T",
+    "unit_weight": 23.6
+  },
+  {
+    "specification": "250*16T",
+    "unit_weight": 1.4
+  },
+  {
+    "specification": "250*19T",
+    "unit_weight": 37.3
+  },
+  {
+    "specification": "250*22T",
+    "unit_weight": 43.2
+  },
+  {
+    "specification": "250*25T",
+    "unit_weight": 19.1
+  },
+  {
+    "specification": "280*12T",
+    "unit_weight": 26.4
+  },
+  {
+    "specification": "280*16T",
+    "unit_weight": 5.2
+  },
+  {
+    "specification": "280*19T",
+    "unit_weight": 41.8
+  },
+  {
+    "specification": "280*25T",
+    "unit_weight": 55.0
+  }
+]

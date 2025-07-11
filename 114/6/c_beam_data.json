@@ -1,0 +1,186 @@
+[
+  {
+    "specification": "60*30*10*1.6",
+    "unit_weight": 1.63
+  },
+  {
+    "specification": "60*30*10*1.8",
+    "unit_weight": 1.81
+  },
+  {
+    "specification": "60*30*10*2.0",
+    "unit_weight": 1.99
+  },
+  {
+    "specification": "60*30*10*2.1",
+    "unit_weight": 2.08
+  },
+  {
+    "specification": "60*30*10*2.3",
+    "unit_weight": 2.25
+  },
+  {
+    "specification": "75*45*15*1.6",
+    "unit_weight": 2.32
+  },
+  {
+    "specification": "75*45*15*1.8",
+    "unit_weight": 2.59
+  },
+  {
+    "specification": "75*45*15*2.0",
+    "unit_weight": 2.86
+  },
+  {
+    "specification": "75*45*15*2.1",
+    "unit_weight": 2.99
+  },
+  {
+    "specification": "75*45*15*2.3",
+    "unit_weight": 3.25
+  },
+  {
+    "specification": "90*45*20*2.1",
+    "unit_weight": 3.25
+  },
+  {
+    "specification": "90*45*20*2.3",
+    "unit_weight": 3.7
+  },
+  {
+    "specification": "90*45*20*3.2",
+    "unit_weight": 5.0
+  },
+  {
+    "specification": "90*50*20*3.2",
+    "unit_weight": 5.25
+  },
+  {
+    "specification": "100*50*20*1.6",
+    "unit_weight": 2.88
+  },
+  {
+    "specification": "100*50*20*1.8",
+    "unit_weight": 3.22
+  },
+  {
+    "specification": "100*50*20*2.0",
+    "unit_weight": 3.56
+  },
+  {
+    "specification": "100*50*20*2.1",
+    "unit_weight": 3.73
+  },
+  {
+    "specification": "100*50*20*2.3",
+    "unit_weight": 4.06
+  },
+  {
+    "specification": "100*50*20*2.6",
+    "unit_weight": 4.55
+  },
+  {
+    "specification": "100*50*20*3.0",
+    "unit_weight": 5.19
+  },
+  {
+    "specification": "100*50*20*3.2",
+    "unit_weight": 5.5
+  },
+  {
+    "specification": "125*50*20*2.0",
+    "unit_weight": 3.95
+  },
+  {
+    "specification": "125*50*20*2.1",
+    "unit_weight": 4.14
+  },
+  {
+    "specification": "125*50*20*2.3",
+    "unit_weight": 4.51
+  },
+  {
+    "specification": "125*50*20*3.0",
+    "unit_weight": 6.13
+  },
+  {
+    "specification": "125*50*20*3.2",
+    "unit_weight": 6.13
+  },
+  {
+    "specification": "150*50*20*2.1",
+    "unit_weight": 4.55
+  },
+  {
+    "specification": "150*50*20*2.3",
+    "unit_weight": 4.96
+  },
+  {
+    "specification": "150*50*20*3.0",
+    "unit_weight": 6.37
+  },
+  {
+    "specification": "150*50*20*3.2",
+    "unit_weight": 6.76
+  },
+  {
+    "specification": "150*65*20*3.0",
+    "unit_weight": 7.07
+  },
+  {
+    "specification": "150*65*20*3.2",
+    "unit_weight": 7.51
+  },
+  {
+    "specification": "150*65*20*4.0",
+    "unit_weight": 9.22
+  },
+  {
+    "specification": "150*65*20*4.5",
+    "unit_weight": 10.3
+  },
+  {
+    "specification": "150*75*20*3.0",
+    "unit_weight": 7.78
+  },
+  {
+    "specification": "150*75*25*3.2",
+    "unit_weight": 8.27
+  },
+  {
+    "specification": "200*75*20*3.0",
+    "unit_weight": 7.78
+  },
+  {
+    "specification": "200*75*20*3.2",
+    "unit_weight": 9.27
+  },
+  {
+    "specification": "200*75*20*4.5",
+    "unit_weight": 12.7
+  },
+  {
+    "specification": "200*75*20*5.0",
+    "unit_weight": 14.0
+  },
+  {
+    "specification": "200*75*25*3.2",
+    "unit_weight": 9.52
+  },
+  {
+    "specification": "200*75*25*4.0",
+    "unit_weight": 11.7
+  },
+  {
+    "specification": "200*75*25*4.5",
+    "unit_weight": 13.1
+  },
+  {
+    "specification": "200*80*20*4.0",
+    "unit_weight": 13.3
+  },
+  {
+    "specification": "250*80*20*4.5",
+    "unit_weight": 14.9
+  }
+]

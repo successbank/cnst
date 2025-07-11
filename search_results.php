@@ -7,28 +7,48 @@ include 'head.php';
 
 $results = [
     'notice' => [],
-    'news' => []
+    'news' => [],
+    'products' => []
 ];
 $total_found = 0;
 
 if (!empty($query)) {
     try {
         // 공지사항 검색
-        $stmt_notice = $db->prepare("SELECT id, title, content, created_at FROM board_notice WHERE title LIKE :query OR content LIKE :query ORDER BY created_at DESC");
+        $stmt_notice = $pdo->prepare("SELECT id, title, content, created_at FROM board_notice WHERE title LIKE :query OR content LIKE :query ORDER BY created_at DESC");
         $stmt_notice->bindValue(':query', '%' . $query . '%');
         $stmt_notice->execute();
         $results['notice'] = $stmt_notice->fetchAll();
         $total_found += count($results['notice']);
 
         // 철강뉴스 검색
-        $stmt_news = $db->prepare("SELECT id, title, content, created_at FROM board_news WHERE title LIKE :query OR content LIKE :query ORDER BY created_at DESC");
+        $stmt_news = $pdo->prepare("SELECT id, title, content, created_at FROM board_news WHERE title LIKE :query OR content LIKE :query ORDER BY created_at DESC");
         $stmt_news->bindValue(':query', '%' . $query . '%');
         $stmt_news->execute();
         $results['news'] = $stmt_news->fetchAll();
         $total_found += count($results['news']);
 
+        // 제품 검색
+        $stmt_products = $pdo->prepare("
+            SELECT p.*, pc.category_name 
+            FROM products p
+            JOIN product_categories pc ON p.category_code = pc.category_code
+            WHERE p.is_active = 1 
+            AND (p.product_name LIKE :query 
+                OR p.specifications LIKE :query 
+                OR p.description LIKE :query
+                OR p.manufacturer LIKE :query
+                OR p.origin LIKE :query)
+            ORDER BY p.product_name ASC
+            LIMIT 20
+        ");
+        $stmt_products->bindValue(':query', '%' . $query . '%');
+        $stmt_products->execute();
+        $results['products'] = $stmt_products->fetchAll();
+        $total_found += count($results['products']);
+
     } catch (PDOException $e) {
-        $error = "데이터��이스 오류: " . $e->getMessage();
+        $error = "데이터베이스 오류: " . $e->getMessage();
     }
 }
 
@@ -52,6 +72,8 @@ function highlight_text($text, $query) {
 .result-item .meta { font-size: 0.85rem; color: #888; margin-top: 10px; }
 .no-results { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
 mark { background-color: #FFF3CD; padding: 2px; border-radius: 3px; }
+.result-item .snippet br { margin-bottom: 5px; }
+.product-specs { font-size: 0.9rem; color: #555; }
 </style>
 
 <div class="search-results-page">
@@ -87,6 +109,29 @@ mark { background-color: #FFF3CD; padding: 2px; border-radius: 3px; }
                     <h4><a href="board_view.php?type=news&id=<?php echo $item['id']; ?>"><?php echo highlight_text(escape($item['title']), $query); ?></a></h4>
                     <p class="snippet"><?php echo highlight_text(escape(mb_substr(strip_tags($item['content']), 0, 150) . '...'), $query); ?></p>
                     <p class="meta"><?php echo formatDate($item['created_at']); ?></p>
+                </div>
+                <?php endforeach; ?>
+            </section>
+            <?php endif; ?>
+
+            <?php if (!empty($results['products'])): ?>
+            <section class="results-section">
+                <h3>제품 (<?php echo count($results['products']); ?>)</h3>
+                <?php foreach ($results['products'] as $item): ?>
+                <div class="result-item">
+                    <h4><a href="product_detail.php?id=<?php echo $item['id']; ?>"><?php echo highlight_text(escape($item['product_name']), $query); ?></a></h4>
+                    <p class="snippet">
+                        <?php if ($item['specifications']): ?>
+                        규격: <?php echo highlight_text(escape($item['specifications']), $query); ?><br>
+                        <?php endif; ?>
+                        <?php if ($item['manufacturer']): ?>
+                        제조사: <?php echo highlight_text(escape($item['manufacturer']), $query); ?><br>
+                        <?php endif; ?>
+                        <?php if ($item['origin']): ?>
+                        원산지: <?php echo highlight_text(escape($item['origin']), $query); ?>
+                        <?php endif; ?>
+                    </p>
+                    <p class="meta">카테고리: <?php echo escape($item['category_name']); ?></p>
                 </div>
                 <?php endforeach; ?>
             </section>

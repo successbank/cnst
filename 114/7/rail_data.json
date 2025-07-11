@@ -1,0 +1,42 @@
+[
+  {
+    "specification": "9kg",
+    "unit_weight": 8.94
+  },
+  {
+    "specification": "15kg",
+    "unit_weight": 15.2
+  },
+  {
+    "specification": "22kg",
+    "unit_weight": 22.3
+  },
+  {
+    "specification": "30kg",
+    "unit_weight": 30.1
+  },
+  {
+    "specification": "37kg",
+    "unit_weight": 37.2
+  },
+  {
+    "specification": "50kg",
+    "unit_weight": 50.4
+  },
+  {
+    "specification": "50kg/N",
+    "unit_weight": 50.4
+  },
+  {
+    "specification": "60kg",
+    "unit_weight": 60.8
+  },
+  {
+    "specification": "70kg",
+    "unit_weight": 69.5
+  },
+  {
+    "specification": "73kg",
+    "unit_weight": 73.3
+  }
+]
