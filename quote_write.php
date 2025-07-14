@@ -10,11 +10,14 @@ $user_id = $_SESSION['user_id'] ?? '';
 $member_id = $_SESSION['member_id'] ?? '';
 
 // URL 파라미터로 제품 정보 받기
-$product_name = $_GET['product'] ?? '';
+$product_name = $_GET['product'] ?? $_GET['product_name'] ?? '';
 $product_id = isset($_GET['product_id']) ? (int)$_GET['product_id'] : 0;
 $calculated_weight = $_GET['weight'] ?? '';
 $calculated_length = $_GET['length'] ?? '';
 $calculated_quantity = $_GET['quantity'] ?? '';
+$specifications = $_GET['specifications'] ?? '';
+$from_cart = isset($_GET['from_cart']) && $_GET['from_cart'] === 'true';
+$selected_items = isset($_GET['selected_items']) ? json_decode($_GET['selected_items'], true) : [];
 
 // 회원 정보 가져오기
 $member_info = [];
@@ -154,7 +157,7 @@ myPageSidebar('inquiries');
                 <div class="form-group">
                     <label for="specifications">규격 및 사양</label>
                     <textarea id="specifications" name="specifications" rows="4" 
-                              placeholder="예: H-300x300x10x15, KS D 3503, 길이 12m 등 상세 규격을 입력해주세요"><?php echo htmlspecialchars($_POST['specifications'] ?? ($calculated_length ? "길이: {$calculated_length}m\n" : '') . ($calculated_weight ? "예상 총중량: {$calculated_weight}kg" : '')); ?></textarea>
+                              placeholder="예: H-300x300x10x15, KS D 3503, 길이 12m 등 상세 규격을 입력해주세요"><?php echo htmlspecialchars($_POST['specifications'] ?? $specifications ?: ($calculated_length ? "길이: {$calculated_length}m\n" : '') . ($calculated_weight ? "예상 총중량: {$calculated_weight}kg" : '')); ?></textarea>
                 </div>
             </div>
             
@@ -357,6 +360,90 @@ myPageSidebar('inquiries');
     }
 }
 </style>
+
+<?php if($from_cart): ?>
+<div id="cartItemsSection" style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+    <h3 style="margin-bottom: 16px;">견적 요청 제품 목록</h3>
+    <div id="cartItemsList"></div>
+    <button type="button" onclick="clearCart()" style="margin-top: 16px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">카트 비우기</button>
+</div>
+
+<script>
+// 카트에서 온 경우 카트 아이템 표시
+if (<?php echo $from_cart ? 'true' : 'false'; ?>) {
+    const cartSection = document.getElementById('cartItemsSection');
+    const cartItemsList = document.getElementById('cartItemsList');
+    const productTextarea = document.getElementById('product');
+    
+    // 선택된 아이템이 있으면 그것을 사용, 없으면 전체 카트 아이템 사용
+    const selectedItems = <?php echo !empty($selected_items) ? json_encode($selected_items) : 'null'; ?>;
+    const quoteCart = selectedItems || JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
+    
+    if (quoteCart.length > 0) {
+        let productDetails = '';
+        let itemsHtml = '<table style="width: 100%; border-collapse: collapse;">';
+        itemsHtml += '<thead><tr style="background: #e9ecef;"><th style="padding: 8px; text-align: left;">제품명</th><th style="padding: 8px;">규격</th><th style="padding: 8px;">수량</th><th style="padding: 8px;">작업</th></tr></thead><tbody>';
+        
+        quoteCart.forEach((item, index) => {
+            itemsHtml += `<tr style="border-bottom: 1px solid #dee2e6;">
+                <td style="padding: 8px;">${item.name}</td>
+                <td style="padding: 8px; text-align: center;">${item.specifications || '-'}</td>
+                <td style="padding: 8px; text-align: center;">
+                    <input type="number" value="${item.quantity}" min="1" onchange="updateQuantity(${index}, this.value)" style="width: 60px; padding: 4px;">
+                </td>
+                <td style="padding: 8px; text-align: center;">
+                    <button type="button" onclick="removeItem(${index})" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">삭제</button>
+                </td>
+            </tr>`;
+            
+            productDetails += `${item.name} (${item.specifications || '규격 미정'}) - 수량: ${item.quantity}\n`;
+        });
+        
+        itemsHtml += '</tbody></table>';
+        cartItemsList.innerHTML = itemsHtml;
+        
+        // 제품 정보를 textarea에 자동 입력
+        if (productTextarea) {
+            productTextarea.value = productDetails.trim();
+        }
+        
+        // 카트 섹션을 제품 정보 섹션 앞에 이동
+        const formSection = document.querySelector('.form-section');
+        if (formSection) {
+            formSection.parentNode.insertBefore(cartSection, formSection);
+        }
+    } else {
+        cartSection.style.display = 'none';
+    }
+}
+
+// 수량 업데이트
+function updateQuantity(index, newQuantity) {
+    const quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
+    quoteCart[index].quantity = parseInt(newQuantity) || 1;
+    sessionStorage.setItem('quoteCart', JSON.stringify(quoteCart));
+    location.reload();
+}
+
+// 아이템 삭제
+function removeItem(index) {
+    if (confirm('이 제품을 견적 목록에서 제거하시겠습니까?')) {
+        const quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
+        quoteCart.splice(index, 1);
+        sessionStorage.setItem('quoteCart', JSON.stringify(quoteCart));
+        location.reload();
+    }
+}
+
+// 카트 비우기
+function clearCart() {
+    if (confirm('모든 제품을 견적 목록에서 제거하시겠습니까?')) {
+        sessionStorage.removeItem('quoteCart');
+        location.reload();
+    }
+}
+</script>
+<?php endif; ?>
 
 <?php 
 endSubPage();

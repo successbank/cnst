@@ -355,6 +355,28 @@ footer {
     color: var(--text-secondary);
 }
 
+.footer-legal-links {
+    margin-bottom: 15px;
+}
+
+.footer-legal-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13px;
+    margin: 0 10px;
+    transition: color 0.3s ease;
+}
+
+.footer-legal-links a:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+.footer-legal-links .separator {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
 /* Hero Section */
 .hero-section {
     background: linear-gradient(135deg, #F5F5F7 0%, #E8E8ED 100%);

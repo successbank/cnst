@@ -1,4 +1,37 @@
 <?php
+session_start();
+require_once '../db.php';
+require_once 'admin_check.php';
+
+// 액션 처리 (헤더 출력 전에 처리)
+$action = $_GET['action'] ?? 'list';
+
+// 견적문의 삭제 처리
+if($action === 'delete' && isset($_GET['id'])) {
+    $id = (int)$_GET['id'];
+    try {
+        $stmt = $pdo->prepare("DELETE FROM board_quote WHERE id = ?");
+        $stmt->execute([$id]);
+        header('Location: admin_quotes.php?msg=deleted');
+        exit;
+    } catch(PDOException $e) {
+        $error = "삭제 중 오류가 발생했습니다.";
+    }
+}
+
+// 답변완료 처리
+if($action === 'toggle_answer' && isset($_GET['id'])) {
+    $id = (int)$_GET['id'];
+    try {
+        $stmt = $pdo->prepare("UPDATE board_quote SET is_answered = IF(is_answered = 1, 0, 1) WHERE id = ?");
+        $stmt->execute([$id]);
+        header('Location: admin_quotes.php');
+        exit;
+    } catch(PDOException $e) {
+        $error = "상태 변경 중 오류가 발생했습니다.";
+    }
+}
+
 $pageTitle = '견적문의 관리';
 
 // 추가 스타일 정의
@@ -37,35 +70,6 @@ $additionalStyles = '
 ';
 
 require_once 'admin_head.php';
-
-// 액션 처리
-$action = $_GET['action'] ?? 'list';
-
-// 견적문의 삭제 처리
-if($action === 'delete' && isset($_GET['id'])) {
-    $id = (int)$_GET['id'];
-    try {
-        $stmt = $pdo->prepare("DELETE FROM board_quote WHERE id = ?");
-        $stmt->execute([$id]);
-        header('Location: admin_quotes.php?msg=deleted');
-        exit;
-    } catch(PDOException $e) {
-        $error = "삭제 중 오류가 발생했습니다.";
-    }
-}
-
-// 답변완료 처리
-if($action === 'toggle_answer' && isset($_GET['id'])) {
-    $id = (int)$_GET['id'];
-    try {
-        $stmt = $pdo->prepare("UPDATE board_quote SET is_answered = IF(is_answered = 1, 0, 1) WHERE id = ?");
-        $stmt->execute([$id]);
-        header('Location: admin_quotes.php');
-        exit;
-    } catch(PDOException $e) {
-        $error = "상태 변경 중 오류가 발생했습니다.";
-    }
-}
 
 // 견적문의 목록 가져오기 (기본 액션)
 $quotes = [];

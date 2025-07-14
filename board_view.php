@@ -1,6 +1,7 @@
 <?php
 require_once 'db.php';
 require_once 'board/board_template.php';
+require_once 'member_check.php';
 
 // 게시판 타입과 ID 확인
 $boardType = isset($_GET['type']) ? $_GET['type'] : '';
@@ -14,23 +15,89 @@ if (!in_array($boardType, ['quote', 'notice', 'news', 'consignment']) || !$id) {
 // 게시판 객체 생성
 $board = new BoardTemplate($pdo, $boardType);
 
-// 비밀번호 확인 (견적문의 게시판)
-if ($boardType === 'quote' && isset($_POST['password'])) {
-    if (!$board->checkPassword($id, $_POST['password'])) {
-        $passwordError = true;
-    }
-}
+// 게시글 조회 (조회수 증가 전에 먼저 데이터 확인)
+$checkSql = "SELECT * FROM board_{$boardType} WHERE id = :id";
+$checkStmt = $pdo->prepare($checkSql);
+$checkStmt->bindParam(':id', $id);
+$checkStmt->execute();
+$post = $checkStmt->fetch();
 
-// 게시글 조회
-$post = $board->getPost($id);
 if (!$post) {
     header('Location: ' . $boardType . '.php');
     exit;
 }
 
-// 견적문의는 비밀번호 확인 필요
-if ($boardType === 'quote' && !isset($_POST['password'])) {
-    $needPassword = true;
+$needPassword = false;
+$passwordError = false;
+$canView = false;
+
+// 중계판매 게시판의 경우 - 본인과 관리자만 볼 수 있음
+if ($boardType === 'consignment') {
+    // 관리자인 경우
+    if (isAdmin()) {
+        $canView = true;
+    }
+    // 로그인한 사용자이고 본인 글인 경우
+    elseif (isLoggedIn() && isset($post['member_id']) && $post['member_id'] == $_SESSION['member_id']) {
+        $canView = true;
+    }
+    // 비로그인 작성 글인 경우 - 비밀번호 확인
+    elseif (empty($post['member_id']) && !empty($post['password'])) {
+        if (isset($_POST['password'])) {
+            // 기존 password 필드와 비교
+            if ($post['password'] === $_POST['password']) {
+                $canView = true;
+            } else {
+                $passwordError = true;
+                $needPassword = true;
+            }
+        } else {
+            $needPassword = true;
+        }
+    }
+    // 그 외의 경우 접근 불가 - 비밀번호 입력 폼 대신 접근 권한 없음 표시
+    else {
+        $needPassword = true;
+    }
+}
+
+// 견적문의 게시판의 경우
+elseif ($boardType === 'quote') {
+    // 관리자인 경우
+    if (isAdmin()) {
+        $canView = true;
+    }
+    // 로그인한 사용자이고 본인 글인 경우
+    elseif (isLoggedIn() && isset($post['member_id']) && $post['member_id'] == $_SESSION['member_id']) {
+        $canView = true;
+    }
+    // 비로그인 작성 글인 경우 - 비밀번호 확인
+    elseif (empty($post['member_id']) && !empty($post['password'])) {
+        if (isset($_POST['password'])) {
+            if (!$board->checkPassword($id, $_POST['password'])) {
+                $passwordError = true;
+                $needPassword = true;
+            } else {
+                $canView = true;
+            }
+        } else {
+            $needPassword = true;
+        }
+    }
+    else {
+        // 다른 사람의 글인 경우 접근 불가
+        header('Location: my_inquiries.php');
+        exit;
+    }
+}
+// 다른 게시판은 모두 볼 수 있음
+else {
+    $canView = true;
+}
+
+// 볼 수 있는 권한이 있고 비밀번호 확인이 필요없는 경우에만 조회수 증가
+if ($canView && !$needPassword) {
+    $post = $board->getPost($id);
 }
 
 $currentPage = $boardType;
@@ -51,7 +118,7 @@ include 'head.php';
                 <div class="password-form-container">
                     <h3>비밀번호 확인</h3>
                     <p>이 글은 비밀글입니다. 작성시 입력한 비밀번호를 입력해주세요.</p>
-                    <?php if (isset($passwordError)): ?>
+                    <?php if ($boardType !== 'consignment' && isset($passwordError) && $passwordError): ?>
                         <div class="alert error">비밀번호가 일치하지 않습니다.</div>
                     <?php endif; ?>
                     <form method="post" class="password-form">

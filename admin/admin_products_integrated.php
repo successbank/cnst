@@ -15,18 +15,35 @@ $offset = ($page - 1) * $perPage;
 $stmt = $pdo->query("SELECT * FROM product_categories ORDER BY display_order");
 $categories = $stmt->fetchAll();
 
-include 'admin_head.php';
-?>
+$pageTitle = '제품 통합 관리';
 
-<style>
-.page-header {
-    margin-bottom: 30px;
+// 추가 스타일 정의
+$additionalStyles = '
+/* 모바일 메뉴 버튼 숨기기 */
+.mobile-menu-toggle {
+    display: none !important;
 }
 
-.page-header h2 {
-    font-size: 28px;
-    font-weight: 700;
-    color: #333;
+.data-table table {
+    table-layout: fixed;
+}
+
+.data-table th {
+    text-align: center;
+}
+
+.data-table td {
+    text-align: center;
+    word-break: break-word;
+}
+
+.data-table td:nth-child(2) {
+    text-align: left;
+}
+
+.filter-form input[type="text"] {
+    flex: 1;
+    min-width: 200px;
 }
 
 .tab-navigation {
@@ -75,38 +92,13 @@ include 'admin_head.php';
     margin-bottom: 20px;
 }
 
-.btn {
-    padding: 10px 20px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
+/* 모든 링크와 버튼 항상 표시 */
+.btn, .btn-sm, .tab-actions a, table a {
     display: inline-block !important;
     visibility: visible !important;
     opacity: 1 !important;
+    transition: none !important;
 }
-
-.btn-primary {
-    background: #007bff;
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #0056b3;
-}
-
-.btn-success {
-    background: #28a745;
-    color: white;
-}
-
-.btn-success:hover {
-    background: #218838;
-}
-
-
 
 /* 모바일 반응형 스타일 */
 @media (max-width: 768px) {
@@ -134,13 +126,6 @@ include 'admin_head.php';
         margin-bottom: 10px;
     }
     
-    .btn {
-        /* Keep buttons visible on mobile */
-        display: inline-block !important;
-        visibility: visible !important;
-    }
-    
-    
     /* 테이블 반응형 */
     table {
         font-size: 13px;
@@ -159,17 +144,18 @@ include 'admin_head.php';
         width: 100% !important;
     }
 }
-</style>
+';
+
+require_once 'admin_head.php';
+?>
 
 <div class="page-header">
-    <h2>제품 통합 관리</h2>
+    <h1>제품 통합 관리</h1>
+    <p>제품 및 카테고리를 통합 관리할 수 있습니다.</p>
 </div>
 
 <!-- 탭 네비게이션 -->
 <div class="tab-navigation">
-    <a href="?tab=products" class="tab-item <?php echo $current_tab === 'products' ? 'active' : ''; ?>">
-        제품 목록
-    </a>
 </div>
 
 <div class="tab-content">
@@ -213,4 +199,4 @@ include 'admin_head.php';
     <?php endif; ?>
 </div>
 
-<?php include 'admin_tail.php'; ?>
+<?php require_once 'admin_tail.php'; ?>

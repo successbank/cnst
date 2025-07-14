@@ -2,82 +2,22 @@
 $currentPage = 'sales';
 $pageTitle = '판매제품';
 include 'head.php';
+include 'db.php';
 
-// 카테고리 정의
-$categories = [
-    'rebar' => '철근(특판)',
-    'h-beam' => 'H형강(H빔)',
-    'steel-plate' => '철강(강판)',
-    'metal-lath' => '메탈라스(망철판)',
-    'light-h-beam' => '경량H형강',
-    'i-beam' => 'I형강(빔)',
-    'angle' => 'ㄱ형강(앵글)',
-    'channel' => 'ㄷ형강(찬넬)',
-    'round-bar' => '환봉(원형강)',
-    'flat-bar' => '평철',
-    'c-beam' => 'C형강',
-    'deck-plate' => '테크플레이트',
-    'square-pipe' => '사각파이프(각관)',
-    'round-pipe' => '원형파이프(강관)',
-    'rail' => '레일',
-    'sheet-pile' => '강널말뚝(쉬트파일)',
-    'stainless' => '스테인레스(STS)'
-];
-
-// 제품 데이터 (실제로는 DB에서 가져와야 함)
-$products = [
-    'rebar' => [
-        ['name' => '이형철근 D10', 'spec' => 'D10 × 8M', 'unit' => 'TON', 'description' => '콘크리트 보강용'],
-        ['name' => '이형철근 D13', 'spec' => 'D13 × 8M', 'unit' => 'TON', 'description' => '콘크리트 보강용'],
-        ['name' => '이형철근 D16', 'spec' => 'D16 × 8M', 'unit' => 'TON', 'description' => '콘크리트 보강용'],
-        ['name' => '이형철근 D19', 'spec' => 'D19 × 8M', 'unit' => 'TON', 'description' => '콘크리트 보강용'],
-        ['name' => '이형철근 D22', 'spec' => 'D22 × 8M', 'unit' => 'TON', 'description' => '콘크리트 보강용'],
-        ['name' => '이형철근 D25', 'spec' => 'D25 × 8M', 'unit' => 'TON', 'description' => '콘크리트 보강용'],
-    ],
-    'h-beam' => [
-        ['name' => 'H형강 100×100', 'spec' => '100×100×6×8', 'unit' => 'TON', 'description' => '경량 구조용'],
-        ['name' => 'H형강 150×150', 'spec' => '150×150×7×10', 'unit' => 'TON', 'description' => '중량 구조용'],
-        ['name' => 'H형강 200×200', 'spec' => '200×200×8×12', 'unit' => 'TON', 'description' => '중량 구조용'],
-        ['name' => 'H형강 250×250', 'spec' => '250×250×9×14', 'unit' => 'TON', 'description' => '중량 구조용'],
-        ['name' => 'H형강 300×300', 'spec' => '300×300×10×15', 'unit' => 'TON', 'description' => '중량 구조용'],
-    ],
-    'steel-plate' => [
-        ['name' => '열연강판 3.2t', 'spec' => '3.2t × 4\' × 8\'', 'unit' => '매', 'description' => '일반 구조용'],
-        ['name' => '열연강판 4.5t', 'spec' => '4.5t × 4\' × 8\'', 'unit' => '매', 'description' => '일반 구조용'],
-        ['name' => '열연강판 6.0t', 'spec' => '6.0t × 4\' × 8\'', 'unit' => '매', 'description' => '일반 구조용'],
-        ['name' => '열연강판 9.0t', 'spec' => '9.0t × 4\' × 8\'', 'unit' => '매', 'description' => '일반 구조용'],
-        ['name' => '열연강판 12t', 'spec' => '12t × 4\' × 8\'', 'unit' => '매', 'description' => '일반 구조용'],
-    ],
-    'angle' => [
-        ['name' => '앵글 40×40×3', 'spec' => '40×40×3t', 'unit' => 'M', 'description' => '경량 프레임용'],
-        ['name' => '앵글 50×50×5', 'spec' => '50×50×5t', 'unit' => 'M', 'description' => '일반 프레임용'],
-        ['name' => '앵글 65×65×6', 'spec' => '65×65×6t', 'unit' => 'M', 'description' => '일반 프레임용'],
-        ['name' => '앵글 75×75×6', 'spec' => '75×75×6t', 'unit' => 'M', 'description' => '중량 프레임용'],
-        ['name' => '앵글 100×100×10', 'spec' => '100×100×10t', 'unit' => 'M', 'description' => '중량 프레임용'],
-    ],
-    'channel' => [
-        ['name' => '찬넬 75×40×5', 'spec' => '75×40×5t', 'unit' => 'M', 'description' => '경량 구조용'],
-        ['name' => '찬넬 100×50×5', 'spec' => '100×50×5t', 'unit' => 'M', 'description' => '일반 구조용'],
-        ['name' => '찬넬 125×65×6', 'spec' => '125×65×6t', 'unit' => 'M', 'description' => '일반 구조용'],
-        ['name' => '찬넬 150×75×6.5', 'spec' => '150×75×6.5t', 'unit' => 'M', 'description' => '중량 구조용'],
-        ['name' => '찬넬 200×80×7.5', 'spec' => '200×80×7.5t', 'unit' => 'M', 'description' => '중량 구조용'],
-    ],
-    'square-pipe' => [
-        ['name' => '각관 50×50×2.3', 'spec' => '50×50×2.3t', 'unit' => 'M', 'description' => '일반 구조용'],
-        ['name' => '각관 100×100×3.2', 'spec' => '100×100×3.2t', 'unit' => 'M', 'description' => '일반 구조용'],
-        ['name' => '각관 150×150×4.5', 'spec' => '150×150×4.5t', 'unit' => 'M', 'description' => '중량 구조용'],
-        ['name' => '각관 200×200×6.0', 'spec' => '200×200×6.0t', 'unit' => 'M', 'description' => '중량 구조용'],
-    ],
-    'round-pipe' => [
-        ['name' => '원형파이프 Φ48.6', 'spec' => 'Φ48.6×2.8t', 'unit' => 'M', 'description' => '일반 배관용'],
-        ['name' => '원형파이프 Φ60.5', 'spec' => 'Φ60.5×3.2t', 'unit' => 'M', 'description' => '일반 배관용'],
-        ['name' => '원형파이프 Φ89.1', 'spec' => 'Φ89.1×3.2t', 'unit' => 'M', 'description' => '일반 배관용'],
-        ['name' => '원형파이프 Φ114.3', 'spec' => 'Φ114.3×3.6t', 'unit' => 'M', 'description' => '구조용 배관'],
-    ]
-];
+// 카테고리 목록 가져오기
+$stmt = $pdo->query("SELECT * FROM product_categories WHERE is_active = 1 ORDER BY display_order");
+$categories = $stmt->fetchAll();
 
 // 선택된 카테고리
 $selectedCategory = $_GET['category'] ?? '';
+
+// 선택된 카테고리의 제품 가져오기
+$products = [];
+if ($selectedCategory) {
+    $stmt = $pdo->prepare("SELECT * FROM products WHERE category_code = ? AND is_active = 1 ORDER BY id");
+    $stmt->execute([$selectedCategory]);
+    $products = $stmt->fetchAll();
+}
 ?>
 
 <style>
@@ -364,10 +304,10 @@ $selectedCategory = $_GET['category'] ?? '';
         <h3 class="category-title">제품 카테고리</h3>
         <nav class="category-list">
             <a href="sales.php" class="category-item <?php echo !$selectedCategory ? 'active' : ''; ?>">전체 제품</a>
-            <?php foreach($categories as $key => $name): ?>
-                <a href="?category=<?php echo $key; ?>" 
-                   class="category-item <?php echo $selectedCategory === $key ? 'active' : ''; ?>">
-                    <?php echo $name; ?>
+            <?php foreach($categories as $category): ?>
+                <a href="?category=<?php echo $category['category_code']; ?>" 
+                   class="category-item <?php echo $selectedCategory === $category['category_code'] ? 'active' : ''; ?>">
+                    <?php echo htmlspecialchars($category['category_name']); ?>
                 </a>
             <?php endforeach; ?>
         </nav>
@@ -375,17 +315,28 @@ $selectedCategory = $_GET['category'] ?? '';
     
     <!-- 메인 콘텐츠 -->
     <main class="sales-content">
-        <?php if($selectedCategory && isset($categories[$selectedCategory])): ?>
+        <?php 
+        $selectedCategoryName = '';
+        if($selectedCategory) {
+            foreach($categories as $category) {
+                if($category['category_code'] === $selectedCategory) {
+                    $selectedCategoryName = $category['category_name'];
+                    break;
+                }
+            }
+        }
+        ?>
+        <?php if($selectedCategory && $selectedCategoryName): ?>
             <!-- 선택된 카테고리 표시 -->
             <div class="content-header">
-                <h2 class="content-title"><?php echo $categories[$selectedCategory]; ?></h2>
+                <h2 class="content-title"><?php echo htmlspecialchars($selectedCategoryName); ?></h2>
                 <p class="content-desc">
-                    충남스틸에서 공급하는 <?php echo $categories[$selectedCategory]; ?> 제품입니다.
+                    충남스틸에서 공급하는 <?php echo htmlspecialchars($selectedCategoryName); ?> 제품입니다.
                     모든 제품은 품질 검증을 거친 정품만을 취급합니다.
                 </p>
             </div>
             
-            <?php if(isset($products[$selectedCategory])): ?>
+            <?php if(!empty($products)): ?>
                 <div class="products-section">
                     <table class="product-table">
                         <thead>
@@ -398,14 +349,14 @@ $selectedCategory = $_GET['category'] ?? '';
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach($products[$selectedCategory] as $product): ?>
+                            <?php foreach($products as $product): ?>
                                 <tr>
-                                    <td class="product-name"><?php echo $product['name']; ?></td>
-                                    <td><?php echo $product['spec']; ?></td>
-                                    <td><?php echo $product['unit']; ?></td>
-                                    <td><?php echo $product['description']; ?></td>
+                                    <td class="product-name"><?php echo htmlspecialchars($product['product_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($product['specifications']); ?></td>
+                                    <td><?php echo htmlspecialchars($product['unit'] ?? 'EA'); ?></td>
+                                    <td><?php echo htmlspecialchars($product['description']); ?></td>
                                     <td>
-                                        <a href="quote.php?product=<?php echo urlencode($product['name']); ?>" 
+                                        <a href="quote.php?product=<?php echo urlencode($product['product_name']); ?>" 
                                            class="btn-quote">견적요청</a>
                                     </td>
                                 </tr>
@@ -444,19 +395,31 @@ $selectedCategory = $_GET['category'] ?? '';
                 <div class="category-grid">
                     <?php 
                     $icons = [
-                        'rebar' => '🔩', 'h-beam' => '🏗️', 'steel-plate' => '📐', 
-                        'metal-lath' => '🔲', 'light-h-beam' => '🏢', 'i-beam' => '📍',
-                        'angle' => '📏', 'channel' => '🔨', 'round-bar' => '⭕',
-                        'flat-bar' => '➖', 'c-beam' => '🔧', 'deck-plate' => '🏗️',
-                        'square-pipe' => '⬜', 'round-pipe' => '⚪', 'rail' => '🚂',
-                        'sheet-pile' => '🔱', 'stainless' => '✨'
+                        'light-h-beam' => '🏢',
+                        'i-beam' => '📍',
+                        'angle' => '📏',
+                        'unequal-angle' => '📐',
+                        'channel' => '🔨',
+                        'c-beam' => '🔧',
+                        'round-bar' => '⭕',
+                        'flat-bar' => '➖',
+                        'deck-plate' => '🏗️',
+                        'square-pipe' => '⬜',
+                        'checkered-plate' => '🔲',
+                        'expanded-metal' => '🔷',
+                        'grating' => '⚏',
+                        'color-steel' => '🎨',
+                        'galvanized' => '✨',
+                        'cold-rolled' => '❄️',
+                        'hot-rolled' => '🔥',
+                        'conduit-pipe' => '🔌'
                     ];
                     
-                    foreach($categories as $key => $name): 
+                    foreach($categories as $category): 
                     ?>
-                        <a href="?category=<?php echo $key; ?>" class="category-card">
-                            <div class="category-icon"><?php echo $icons[$key] ?? '📦'; ?></div>
-                            <div class="category-name"><?php echo $name; ?></div>
+                        <a href="?category=<?php echo $category['category_code']; ?>" class="category-card">
+                            <div class="category-icon"><?php echo $icons[$category['category_code']] ?? '📦'; ?></div>
+                            <div class="category-name"><?php echo htmlspecialchars($category['category_name']); ?></div>
                         </a>
                     <?php endforeach; ?>
                 </div>

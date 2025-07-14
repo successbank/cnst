@@ -36,13 +36,14 @@ try {
     $totalInquiries = 0;
     
     // 견적문의 개수
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM board_quote WHERE writer = ?");
-    $stmt->execute([$user_id]);
+    // member_id가 있으면 member_id로, 없으면 writer로 조회
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM board_quote WHERE member_id = ? OR writer = ?");
+    $stmt->execute([$member_id, $_SESSION['name'] ?? $user_id]);
     $totalQuotes = $stmt->fetchColumn();
     
-    // 중계판매 문의 개수
+    // 중계판매 문의 개수  
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM board_consignment WHERE writer = ?");
-    $stmt->execute([$user_id]);
+    $stmt->execute([$_SESSION['name'] ?? $user_id]);
     $totalConsignments = $stmt->fetchColumn();
     
     $total = $totalQuotes + $totalConsignments;
@@ -55,10 +56,10 @@ try {
         $stmt = $pdo->prepare("
             SELECT 'quote' as type, id, title, company, created_at, is_answered as status
             FROM board_quote 
-            WHERE writer = ?
+            WHERE member_id = ? OR writer = ?
             ORDER BY created_at DESC
         ");
-        $stmt->execute([$user_id]);
+        $stmt->execute([$member_id, $_SESSION['name'] ?? $user_id]);
         $quotes = $stmt->fetchAll();
         
         foreach($quotes as $quote) {
@@ -69,14 +70,14 @@ try {
     }
     
     if ($type === 'all' || $type === 'consignment') {
-        // 중계판매 문의 조회
+        // 중계판매 문의 조회 
         $stmt = $pdo->prepare("
-            SELECT 'consignment' as type, id, title, company, created_at, status
+            SELECT 'consignment' as type, id, title, company_name as company, created_at, status
             FROM board_consignment 
             WHERE writer = ?
             ORDER BY created_at DESC
         ");
-        $stmt->execute([$user_id]);
+        $stmt->execute([$_SESSION['name'] ?? $user_id]);
         $consignments = $stmt->fetchAll();
         
         foreach($consignments as $consignment) {
@@ -167,11 +168,7 @@ myPageSidebar('inquiries');
                                 </span>
                             </td>
                             <td class="text-center">
-                                <?php if($inquiry['type'] === 'quote'): ?>
-                                    <a href="board_view.php?board=quote&id=<?php echo $inquiry['id']; ?>" class="btn-small">보기</a>
-                                <?php else: ?>
-                                    <a href="board_view.php?board=consignment&id=<?php echo $inquiry['id']; ?>" class="btn-small">보기</a>
-                                <?php endif; ?>
+                                <button type="button" class="btn-small" onclick="viewInquiryDetail('<?php echo $inquiry['type']; ?>', <?php echo $inquiry['id']; ?>)">보기</button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -336,6 +333,26 @@ myPageSidebar('inquiries');
                     <button type="button" class="btn btn-secondary" onclick="toggleConsignmentForm()">취소</button>
                 </div>
             </form>
+        </div>
+        
+        <!-- 문의 상세보기 모달 -->
+        <div id="inquiryDetailModal" class="modal" style="display: none;">
+            <div class="modal-overlay" onclick="closeInquiryModal()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">문의 상세</h3>
+                    <button type="button" class="close-btn" onclick="closeInquiryModal()">×</button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <div class="loading-spinner">
+                        <svg width="40" height="40" viewBox="0 0 50 50">
+                            <circle cx="25" cy="25" r="20" fill="none" stroke="#1A237E" stroke-width="4" stroke-dasharray="31.4 31.4" transform="rotate(-90 25 25)">
+                                <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s" repeatCount="indefinite"/>
+                            </circle>
+                        </svg>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </main>
@@ -755,6 +772,11 @@ myPageSidebar('inquiries');
     color: white;
 }
 
+.alert-info {
+    background: #2196F3;
+    color: white;
+}
+
 @keyframes slideIn {
     from {
         transform: translateX(100%);
@@ -764,6 +786,106 @@ myPageSidebar('inquiries');
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+/* 모달 스타일 */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    max-width: 800px;
+    width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #E5E5E7;
+}
+
+.modal-header h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+.detail-section {
+    margin-bottom: 24px;
+}
+
+.detail-section h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+}
+
+.detail-info {
+    background: #F8F9FA;
+    padding: 16px;
+    border-radius: 8px;
+}
+
+.detail-info p {
+    margin: 8px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.detail-info strong {
+    color: #333;
+    font-weight: 600;
+}
+
+.content-box {
+    background: #F8F9FA;
+    padding: 16px;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 14px;
+    line-height: 1.6;
 }
 
 @media (max-width: 768px) {
@@ -777,6 +899,11 @@ myPageSidebar('inquiries');
     
     .form-actions {
         flex-direction: column;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-height: 90vh;
     }
 }
 </style>
@@ -838,7 +965,7 @@ document.getElementById('quoteForm').addEventListener('submit', async function(e
         submitBtn.disabled = true;
         submitBtn.textContent = '처리중...';
         
-        const response = await fetch('ajax/submit_quote.php', {
+        const response = await fetch('ajax/submit_quote_inquiry.php', {
             method: 'POST',
             body: formData
         });
@@ -896,6 +1023,104 @@ document.getElementById('consignmentForm').addEventListener('submit', async func
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = '중계판매 신청';
+    }
+});
+
+// 문의 상태 자동 업데이트 기능
+let statusCheckInterval;
+
+// 페이지 로드 시 자동 업데이트 시작
+document.addEventListener('DOMContentLoaded', function() {
+    // 5초마다 상태 확인
+    statusCheckInterval = setInterval(updateInquiryStatus, 5000);
+});
+
+// 페이지 벗어날 때 interval 정리
+window.addEventListener('beforeunload', function() {
+    if(statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+    }
+});
+
+// 문의 상태 업데이트 함수
+async function updateInquiryStatus() {
+    try {
+        const response = await fetch('ajax/check_inquiry_status.php');
+        const data = await response.json();
+        
+        if (data.updated) {
+            // 상태가 변경되었으면 테이블만 새로고침
+            refreshInquiryTable();
+        }
+    } catch (error) {
+        console.error('상태 확인 중 오류:', error);
+    }
+}
+
+// 문의 테이블만 새로고침
+async function refreshInquiryTable() {
+    try {
+        const response = await fetch('ajax/get_inquiry_list.php?type=<?php echo $type; ?>');
+        const html = await response.text();
+        
+        // 테이블 내용만 교체
+        const tableContainer = document.querySelector('.data-table tbody');
+        if (tableContainer && html) {
+            tableContainer.innerHTML = html;
+            
+            // 상태 변경 알림
+            showAlert('문의 상태가 업데이트되었습니다.', 'info');
+        }
+    } catch (error) {
+        console.error('테이블 새로고침 중 오류:', error);
+    }
+}
+
+// 문의 상세보기 함수
+async function viewInquiryDetail(type, id) {
+    const modal = document.getElementById('inquiryDetailModal');
+    const modalBody = document.getElementById('modalBody');
+    const modalTitle = document.getElementById('modalTitle');
+    
+    // 모달 표시
+    modal.style.display = 'flex';
+    
+    // 로딩 표시
+    modalBody.innerHTML = `
+        <div class="loading-spinner">
+            <svg width="40" height="40" viewBox="0 0 50 50">
+                <circle cx="25" cy="25" r="20" fill="none" stroke="#1A237E" stroke-width="4" stroke-dasharray="31.4 31.4" transform="rotate(-90 25 25)">
+                    <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s" repeatCount="indefinite"/>
+                </circle>
+            </svg>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch(`ajax/get_inquiry_detail.php?type=${type}&id=${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            modalTitle.textContent = data.title || '문의 상세';
+            modalBody.innerHTML = data.html;
+        } else {
+            modalBody.innerHTML = `<div class="alert alert-error">${data.message || '내용을 불러올 수 없습니다.'}</div>`;
+        }
+    } catch (error) {
+        modalBody.innerHTML = '<div class="alert alert-error">오류가 발생했습니다.</div>';
+    }
+}
+
+// 모달 닫기
+function closeInquiryModal() {
+    const modal = document.getElementById('inquiryDetailModal');
+    modal.style.display = 'none';
+}
+
+// ESC 키로 모달 닫기
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeInquiryModal();
     }
 });
 </script>

@@ -225,6 +225,28 @@ body.menu-open {
     overflow: hidden;
 }
 
+/* Cart count badge */
+.cart-btn {
+    position: relative;
+}
+
+.cart-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ff0000;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+}
+
 /* Adjust z-index for mobile menu */
 @media (max-width: 1050px) {
     .main-nav {
@@ -303,5 +325,29 @@ document.addEventListener('DOMContentLoaded', function() {
     if(overlay) {
         overlay.addEventListener('click', toggleMobileMenu);
     }
+    
+    // Cart button click handler
+    const cartBtn = document.querySelector('.cart-btn');
+    if(cartBtn) {
+        cartBtn.addEventListener('click', function() {
+            // 마이페이지의 제품견적서로 이동
+            window.location.href = 'my_quote_cart.php';
+        });
+    }
+    
+    // Update cart count on page load
+    function updateCartCount() {
+        const quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
+        const cartCount = quoteCart.reduce((sum, item) => sum + item.quantity, 0);
+        
+        const cartCountElement = document.querySelector('.cart-count');
+        if (cartCountElement) {
+            cartCountElement.textContent = cartCount;
+            cartCountElement.style.display = cartCount > 0 ? 'block' : 'none';
+        }
+    }
+    
+    // Call updateCartCount on page load
+    updateCartCount();
 });
 </script>

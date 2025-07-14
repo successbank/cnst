@@ -46,6 +46,13 @@
                     </div>
                 </div>
                 <div class="footer-bottom">
+                    <div class="footer-legal-links">
+                        <a href="terms.php">이용약관</a>
+                        <span class="separator">|</span>
+                        <a href="privacy.php">개인정보처리방침</a>
+                        <span class="separator">|</span>
+                        <a href="email-policy.php">이메일무단수집거부</a>
+                    </div>
                     <p>© <?php echo date('Y'); ?> 충남스틸. All Rights Reserved.</p>
                     <p>주소: 22605 인천 서구 봉수대로 1626 충남스틸 (금곡동)</p>
                 </div>

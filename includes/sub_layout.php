@@ -252,6 +252,7 @@ function myPageSidebar($current = '') {
         <nav class="sidebar-menu">
             <a href="mypage.php" class="<?php echo $current == 'info' ? 'active' : ''; ?>">회원정보</a>
             <a href="edit_profile.php" class="<?php echo $current == 'edit' ? 'active' : ''; ?>">정보수정</a>
+            <a href="my_quote_cart.php" class="<?php echo $current == 'quote_cart' ? 'active' : ''; ?>">제품견적서</a>
             <a href="my_inquiries.php" class="<?php echo $current == 'inquiries' ? 'active' : ''; ?>">문의내역</a>
             <a href="logout.php">로그아웃</a>
         </nav>

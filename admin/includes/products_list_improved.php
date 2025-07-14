@@ -81,6 +81,13 @@ $totalPages = ceil($totalCount / $perPage);
 
 <style>
 /* 기존 admin_style.css의 변수 사용 */
+/* 모든 링크와 버튼 항상 표시 */
+a, button, .btn, .category-tab {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
 .content-card {
     background: var(--admin-white);
     border-radius: 8px;
@@ -126,16 +133,16 @@ $totalPages = ceil($totalCount / $perPage);
 
 .search-form input:focus {
     outline: none;
-    border-color: var(--admin-accent);
+    border-color: #1428A0;
 }
 
 /* 버튼 스타일 */
 .btn {
     padding: 10px 20px;
     border-radius: 4px;
-    text-decoration: none;
+    text-decoration: none !important;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease;
     border: none;
     cursor: pointer;
     font-size: 14px;
@@ -145,40 +152,52 @@ $totalPages = ceil($totalCount / $perPage);
 }
 
 .btn-primary {
-    background: var(--admin-accent);
-    color: white;
+    background: #1428A0 !important;
+    color: white !important;
 }
 
 .btn-primary:hover {
-    background: #2980b9;
-    transform: translateY(-1px);
+    background: #0F1F7A !important;
+    color: white !important;
 }
 
 .btn-success {
-    background: #27ae60;
-    color: white;
+    background: #27ae60 !important;
+    color: white !important;
 }
 
 .btn-success:hover {
-    background: #229954;
+    background: #229954 !important;
+    color: white !important;
 }
 
 .btn-info {
-    background: #17a2b8;
-    color: white;
+    background: #17a2b8 !important;
+    color: white !important;
 }
 
 .btn-info:hover {
-    background: #138496;
+    background: #138496 !important;
+    color: white !important;
+}
+
+/* 버튼 간격 */
+.admin-table td .btn {
+    margin-right: 5px;
+}
+
+.admin-table td .btn:last-child {
+    margin-right: 0;
 }
 
 .btn-warning {
-    background: #f39c12;
-    color: white;
+    background: #f39c12 !important;
+    color: white !important;
 }
 
 .btn-warning:hover {
-    background: #e67e22;
+    background: #e67e22 !important;
+    color: white !important;
 }
 
 .btn-sm {
@@ -186,6 +205,7 @@ $totalPages = ceil($totalCount / $perPage);
     font-size: 13px;
     display: inline-block !important;
     visibility: visible !important;
+    opacity: 1 !important;
 }
 
 /* 카테고리 탭 */
@@ -205,24 +225,28 @@ $totalPages = ceil($totalCount / $perPage);
 .category-tab {
     padding: 8px 16px;
     background: white;
-    color: #666;
-    text-decoration: none;
+    color: #666 !important;
+    text-decoration: none !important;
     border-radius: 4px;
     border: 1px solid #e9ecef;
     font-size: 14px;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease;
     white-space: nowrap;
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .category-tab:hover {
     background: #f8f9fa;
     border-color: #dee2e6;
+    color: #666 !important;
 }
 
 .category-tab.active {
-    background: var(--admin-accent);
-    color: white;
-    border-color: var(--admin-accent);
+    background: #1428A0 !important;
+    color: white !important;
+    border-color: #1428A0 !important;
 }
 
 .category-tab .count {
@@ -329,23 +353,27 @@ $totalPages = ceil($totalCount / $perPage);
 .pagination a,
 .pagination span {
     padding: 8px 12px;
-    text-decoration: none;
-    color: #666;
+    text-decoration: none !important;
+    color: #666 !important;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 14px;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease;
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .pagination a:hover {
     background: #f8f9fa;
     border-color: #dee2e6;
+    color: #666 !important;
 }
 
 .pagination .active {
-    background: var(--admin-accent);
-    color: white;
-    border-color: var(--admin-accent);
+    background: #1428A0 !important;
+    color: white !important;
+    border-color: #1428A0 !important;
 }
 
 /* 반응형 */
@@ -464,6 +492,7 @@ $totalPages = ceil($totalCount / $perPage);
                     <th class="check-cell">
                         <input type="checkbox" id="selectAll" onchange="toggleAll()">
                     </th>
+                    <th style="width: 60px;">번호</th>
                     <th>제품명</th>
                     <th>규격</th>
                     <th>카테고리</th>
@@ -474,12 +503,16 @@ $totalPages = ceil($totalCount / $perPage);
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($products as $product): ?>
+                <?php 
+                $rowNumber = $totalCount - $offset;
+                foreach ($products as $product): 
+                ?>
                 <tr>
                     <td class="check-cell">
                         <input type="checkbox" name="selected[]" value="<?php echo $product['id']; ?>" 
                                onchange="updateSelectedCount()">
                     </td>
+                    <td style="text-align: center;"><?php echo $rowNumber--; ?></td>
                     <td>
                         <strong><?php echo htmlspecialchars($product['product_name']); ?></strong>
                     </td>
@@ -509,6 +542,8 @@ $totalPages = ceil($totalCount / $perPage);
                         <?php endif; ?>
                     </td>
                     <td>
+                        <a href="../product_detail.php?id=<?php echo $product['id']; ?>" 
+                           class="btn btn-info btn-sm" target="_blank">보기</a>
                         <a href="admin_products_edit.php?id=<?php echo $product['id']; ?>" 
                            class="btn btn-primary btn-sm">수정</a>
                     </td>
