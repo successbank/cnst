@@ -60,6 +60,10 @@ myPageSidebar('info');
                 <div class="info-label">휴대폰</div>
                 <div class="info-value"><?php echo htmlspecialchars($member['phone'] ?: '미등록'); ?></div>
             </div>
+            <div class="info-row">
+                <div class="info-label">일반전화번호</div>
+                <div class="info-value"><?php echo htmlspecialchars($member['landline'] ?: '미등록'); ?></div>
+            </div>
         </div>
         
         <!-- 회사정보 -->

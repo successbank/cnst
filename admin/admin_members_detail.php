@@ -31,6 +31,10 @@ if($id) {
             <div class="info-label">휴대폰</div>
             <div class="info-value"><?php echo htmlspecialchars($member['phone'] ?: '미등록'); ?></div>
         </div>
+        <div class="info-item">
+            <div class="info-label">일반전화번호</div>
+            <div class="info-value"><?php echo htmlspecialchars($member['landline'] ?: '미등록'); ?></div>
+        </div>
     </div>
 </div>
 
@@ -95,6 +99,26 @@ if($id) {
             <div class="info-value"><?php echo date('Y년 m월 d일 H:i', strtotime($member['updated_at'])); ?></div>
         </div>
     </div>
+</div>
+
+<!-- 비밀번호 변경 섹션 -->
+<div class="info-section">
+    <h4>비밀번호 변경</h4>
+    <form method="POST" action="admin_members_action.php" style="margin-top: 16px;">
+        <input type="hidden" name="action" value="change_password">
+        <input type="hidden" name="member_id" value="<?php echo $member['id']; ?>">
+        <div class="info-grid">
+            <div class="info-item" style="grid-column: 1 / -1;">
+                <div class="info-label">새 비밀번호</div>
+                <input type="password" name="new_password" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div class="info-item" style="grid-column: 1 / -1;">
+                <div class="info-label">새 비밀번호 확인</div>
+                <input type="password" name="new_password_confirm" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+        </div>
+        <button type="submit" style="margin-top: 16px; padding: 10px 20px; background: #1A237E; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">비밀번호 변경</button>
+    </form>
 </div>
 <?php
         else:
