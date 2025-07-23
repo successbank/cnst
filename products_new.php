@@ -30,6 +30,20 @@ if ($category_filter !== 'all' && empty($search) && $page == 1) {
 $stmt = $pdo->query("SELECT * FROM product_categories WHERE is_active = 1 ORDER BY display_order");
 $categories = $stmt->fetchAll();
 
+// 현재 선택된 카테고리 정보 가져오기
+$categoryInfo = null;
+if ($category_filter !== 'all') {
+    foreach ($categories as $cat) {
+        if ($cat['category_code'] === $category_filter) {
+            $categoryInfo = [
+                'code' => $cat['category_code'],
+                'name' => $cat['category_name']
+            ];
+            break;
+        }
+    }
+}
+
 // 전체 제품 수 계산 (페이지네이션용)
 $where_clause = "p.is_active = 1";
 $params = [];
@@ -659,6 +673,11 @@ $products = $stmt->fetchAll();
                     <div class="product-info">
                         <h3><?php echo escape($product['product_name']); ?></h3>
                         <p class="specs"><?php echo escape($product['specifications']); ?></p>
+                        <?php if ($categoryInfo && $categoryInfo['code'] === 'rebar' && preg_match('/단위중량:\s*([\d.]+)kg\/m/', $product['specifications'], $matches)): ?>
+                            <p class="unit-weight" style="color: #F57C00; font-weight: 600; font-size: 14px;">
+                                단위중량: <?php echo $matches[1]; ?>kg/m
+                            </p>
+                        <?php endif; ?>
                         <p class="description"><?php echo escape($product['description']); ?></p>
                         <span class="product-btn">견적문의</span>
                     </div>
@@ -704,6 +723,11 @@ $products = $stmt->fetchAll();
                             <h3 class="product-list-title"><?php echo escape($product['product_name']); ?></h3>
                         </div>
                         <p class="product-list-specs">규격: <?php echo escape($product['specifications']); ?></p>
+                        <?php if ($categoryInfo && $categoryInfo['code'] === 'rebar' && preg_match('/단위중량:\s*([\d.]+)kg\/m/', $product['specifications'], $matches)): ?>
+                            <p class="unit-weight" style="color: #F57C00; font-weight: 600; font-size: 14px; margin: 5px 0;">
+                                단위중량: <?php echo $matches[1]; ?>kg/m
+                            </p>
+                        <?php endif; ?>
                         <p class="product-list-description"><?php echo escape($product['description']); ?></p>
                         <div class="product-list-footer">
                             <span class="product-stock <?php echo $product['stock_status'] === 'out_of_stock' ? 'out-of-stock' : ''; ?>">

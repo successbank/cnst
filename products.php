@@ -28,7 +28,8 @@ $icons = [
     'structural-pipe' => '🏭',
     'steel-pipe-pile' => '🔩',
     'ks-pipe' => '🔧',
-    'bs-pipe' => '🔧'
+    'bs-pipe' => '🔧',
+    'rebar' => '🔩'
 ];
 
 // 카테고리 목록 가져오기 (click_count 포함)
@@ -173,6 +174,23 @@ $top_3_categories = array_slice(array_column($categories_by_clicks, 'category_co
     font-weight: 600;
 }
 
+/* 철근 카테고리 특별 스타일 */
+.category-card[href*="rebar_quote"] {
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    color: white;
+}
+
+.category-card[href*="rebar_quote"] .category-name,
+.category-card[href*="rebar_quote"] .category-count,
+.category-card[href*="rebar_quote"] .category-description {
+    color: white;
+}
+
+.category-card[href*="rebar_quote"]:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(33, 150, 243, 0.3);
+}
+
 @media (max-width: 768px) {
     .categories-grid {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -209,14 +227,24 @@ $top_3_categories = array_slice(array_column($categories_by_clicks, 'category_co
             $isEmpty = $category['product_count'] == 0;
             $isFeatured = in_array($category['category_code'], $top_3_categories);
             ?>
-            <a href="<?php echo $isEmpty ? '#' : 'products_new.php?category=' . $category['category_code'] . '&view=tile'; ?>" 
+            <?php 
+            // 철근 카테고리는 특별한 견적 페이지로 이동
+            $categoryLink = $isEmpty ? '#' : 
+                ($category['category_code'] == 'rebar' ? 'rebar_quote.php' : 
+                'products_new.php?category=' . $category['category_code'] . '&view=tile');
+            ?>
+            <a href="<?php echo $categoryLink; ?>" 
                class="category-card <?php echo $isEmpty ? 'empty' : ''; ?> <?php echo $isFeatured ? 'featured' : ''; ?>"
                <?php echo $isEmpty ? 'onclick="return false;"' : ''; ?>>
                 <span class="category-icon">
                     <?php echo isset($icons[$category['category_code']]) ? $icons[$category['category_code']] : '📦'; ?>
                 </span>
                 <h3 class="category-name"><?php echo htmlspecialchars($category['category_name']); ?></h3>
-                <p class="category-count">제품 <?php echo $category['product_count']; ?>개</p>
+                <?php if ($category['category_code'] == 'rebar'): ?>
+                    <p class="category-count" style="color: #ff6b6b; font-weight: 600;">📊 견적 계산기</p>
+                <?php else: ?>
+                    <p class="category-count">제품 <?php echo $category['product_count']; ?>개</p>
+                <?php endif; ?>
                 <?php if ($isFeatured && $category['click_count'] > 0): ?>
                     <p class="category-popular">🔥 인기 카테고리</p>
                 <?php endif; ?>

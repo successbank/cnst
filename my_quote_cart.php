@@ -120,6 +120,12 @@ myPageSidebar('quote_cart');
                     <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;" id="totalItems"></p>
                 </div>
                 <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="downloadPDF()" class="btn btn-outline-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 5px;">
+                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                        </svg>
+                        PDF 다운로드
+                    </button>
                     <button type="button" onclick="clearAllItems()" class="btn btn-outline-danger">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 5px;">
                             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -239,6 +245,17 @@ myPageSidebar('quote_cart');
 
 .btn-outline-danger:hover {
     background: #dc3545;
+    color: white;
+}
+
+.btn-outline-primary {
+    background: white;
+    color: var(--primary-blue);
+    border: 1px solid var(--primary-blue);
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-blue);
     color: white;
 }
 
@@ -540,6 +557,38 @@ function updateCartCount() {
         cartCountElement.textContent = cartCount;
         cartCountElement.style.display = cartCount > 0 ? 'flex' : 'none';
     }
+}
+
+// PDF 다운로드
+function downloadPDF() {
+    if (cartItems.length === 0) {
+        alert('견적서가 비어있습니다.');
+        return;
+    }
+    
+    // 선택된 제품이 있으면 선택된 것만, 없으면 전체
+    let itemsToExport = [];
+    if (selectedItems.size > 0) {
+        itemsToExport = Array.from(selectedItems).map(index => cartItems[index]);
+    } else {
+        itemsToExport = cartItems;
+    }
+    
+    // PDF 생성 요청
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'ajax/generate_quote_pdf.php';
+    form.target = '_blank';
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'items';
+    input.value = JSON.stringify(itemsToExport);
+    
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
 }
 </script>
 

@@ -980,14 +980,13 @@ $product_images = $stmt->fetchAll();
             </div>
 
             <div class="product-actions">
-                <a href="quote_write.php?product=<?php echo urlencode($product['product_name']); ?>&product_id=<?php echo $product['id']; ?>" 
-                   class="btn-quote" id="quoteLink">
+                <button type="button" onclick="addToQuoteCart()" class="btn-quote" id="quoteBtn">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5z"/>
                         <path d="M5 7h10M5 10h10M5 13h6"/>
                     </svg>
                     견적 문의하기
-                </a>
+                </button>
                 <a href="tel:041-532-6982" class="btn-secondary">
                     전화 문의
                 </a>
@@ -1072,6 +1071,116 @@ window.onload = function() {
     calculateWeight();
 };
 <?php endif; ?>
+</script>
+
+<!-- 견적문의 모달 -->
+<div id="quoteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 400px; width: 90%;">
+        <h3 style="margin-bottom: 20px; color: #333; font-size: 20px;">견적문의 추가</h3>
+        <p style="margin-bottom: 24px; color: #666; line-height: 1.6;">
+            <strong id="modalProductName" style="color: #1428A0;"></strong> 제품이 견적서에 담겼습니다.<br>
+            제품견적서 페이지로 이동하시겠습니까?
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <button onclick="closeQuoteModal()" style="padding: 10px 24px; background: #f0f0f0; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">아니오</button>
+            <button onclick="goToQuote()" style="padding: 10px 24px; background: #1428A0; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">예</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// 견적 카트에 제품 추가
+function addToQuoteCart() {
+    // 제품 정보 가져오기
+    const productId = '<?php echo $product['id']; ?>';
+    const productName = '<?php echo addslashes($product['product_name']); ?>';
+    const productSpecs = '<?php echo addslashes($product['specifications']); ?>';
+    
+    // 현재 선택된 값들 가져오기 (단중표가 있는 경우)
+    let selectedInfo = {
+        id: productId,
+        name: productName,
+        specifications: productSpecs
+    };
+    
+    <?php if ($unit_weight): ?>
+    // 단중표가 있는 경우 추가 정보 포함
+    const length = document.getElementById('lengthInput') ? document.getElementById('lengthInput').value : '';
+    const quantity = document.getElementById('quantityInput') ? document.getElementById('quantityInput').value : 1;
+    const totalWeight = document.getElementById('totalWeight') ? document.getElementById('totalWeight').textContent.replace(/[^0-9]/g, '') : '';
+    
+    if (length) {
+        selectedInfo.length = length;
+        selectedInfo.quantity = quantity;
+        selectedInfo.totalWeight = totalWeight;
+    }
+    <?php endif; ?>
+    
+    // 세션 스토리지에서 기존 카트 가져오기
+    let quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
+    
+    // 중복 확인
+    const existingIndex = quoteCart.findIndex(item => item.id === productId);
+    if (existingIndex === -1) {
+        // 새 제품 추가
+        quoteCart.push({
+            ...selectedInfo,
+            quantity: selectedInfo.quantity || 1,
+            addedAt: new Date().toISOString()
+        });
+    } else {
+        // 이미 있는 제품은 수량 증가
+        quoteCart[existingIndex].quantity = parseInt(quoteCart[existingIndex].quantity) + parseInt(selectedInfo.quantity || 1);
+    }
+    
+    // 세션 스토리지에 저장
+    sessionStorage.setItem('quoteCart', JSON.stringify(quoteCart));
+    
+    // 카트 카운트 업데이트
+    updateCartCount();
+    
+    // 모달에 제품명 표시
+    document.getElementById('modalProductName').textContent = productName;
+    
+    // 모달 표시
+    document.getElementById('quoteModal').style.display = 'block';
+}
+
+// 카트 카운트 업데이트
+function updateCartCount() {
+    const quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
+    const cartCount = quoteCart.reduce((sum, item) => sum + parseInt(item.quantity), 0);
+    
+    // 상단 카트 아이콘의 카운트 업데이트 (head.php에 있다면)
+    const cartCountElement = document.querySelector('.cart-count');
+    if (cartCountElement) {
+        cartCountElement.textContent = cartCount;
+        cartCountElement.style.display = cartCount > 0 ? 'block' : 'none';
+    }
+}
+
+// 모달 닫기
+function closeQuoteModal() {
+    document.getElementById('quoteModal').style.display = 'none';
+}
+
+// 제품견적서 페이지로 이동
+function goToQuote() {
+    // 마이페이지의 제품견적서로 이동
+    window.location.href = 'my_quote_cart.php';
+}
+
+// 모달 외부 클릭 시 닫기
+document.getElementById('quoteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeQuoteModal();
+    }
+});
+
+// 페이지 로드 시 카트 카운트 업데이트
+window.addEventListener('DOMContentLoaded', function() {
+    updateCartCount();
+});
 </script>
 
 <?php include 'tail.php'; ?>

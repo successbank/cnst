@@ -3,6 +3,13 @@ require_once 'member_check.php';
 require_once 'db.php';
 require_once 'includes/sub_layout.php';
 
+// 캐시 방지 헤더 설정 (강화)
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // 과거 날짜
+header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT"); // 항상 수정됨
+
 // 로그인 체크
 checkLogin();
 
@@ -111,6 +118,14 @@ try {
 
 $currentPage = 'mypage';
 $pageTitle = '문의내역';
+
+// 추가 메타 태그 (캐시 방지)
+$additionalMeta = '
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+';
+
 include 'head.php';
 
 // 서브페이지 레이아웃 시작
@@ -541,6 +556,9 @@ myPageSidebar('inquiries');
     font-size: 13px;
     display: inline-block;
     transition: all 0.3s ease;
+    white-space: nowrap;
+    border: none;
+    cursor: pointer;
 }
 
 .btn-small:hover {
