@@ -132,6 +132,47 @@ if ($action === 'save_memo') {
     }
 }
 
+// 메모 추가 처리 (AJAX)
+if ($action === 'add_memo') {
+    header('Content-Type: application/json; charset=utf-8');
+    
+    $member_id = (int)($_POST['member_id'] ?? 0);
+    $new_memo = trim($_POST['new_memo'] ?? '');
+    
+    // 유효성 검사
+    if (!$member_id) {
+        echo json_encode(['success' => false, 'message' => '잘못된 회원 정보입니다.']);
+        exit;
+    }
+    
+    if (!$new_memo) {
+        echo json_encode(['success' => false, 'message' => '메모 내용을 입력해주세요.']);
+        exit;
+    }
+    
+    try {
+        // 기존 메모 가져오기
+        $stmt = $pdo->prepare("SELECT memo FROM members WHERE id = ?");
+        $stmt->execute([$member_id]);
+        $current_memo = $stmt->fetchColumn() ?: '';
+        
+        // 새 메모 추가
+        $updated_memo = $current_memo ? $current_memo . "\n---\n" . $new_memo : $new_memo;
+        
+        // 메모 업데이트
+        $stmt = $pdo->prepare("UPDATE members SET memo = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$updated_memo, $member_id]);
+        
+        echo json_encode(['success' => true, 'message' => '메모가 추가되었습니다.']);
+        exit;
+        
+    } catch (PDOException $e) {
+        error_log('Memo add error: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => '저장 중 오류가 발생했습니다.']);
+        exit;
+    }
+}
+
 // 다른 action들을 위한 확장 가능
 header('Location: admin_members.php');
 exit;

@@ -324,18 +324,210 @@ $additionalStyles = '
 }
 
 .memo-add-btn {
-    padding: 4px 8px;
+    padding: 3px 6px;
     background: #2196F3;
     color: white;
     border: none;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 11px;
     cursor: pointer;
-    margin-left: 8px;
     transition: background 0.3s ease;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .memo-add-btn:hover {
+    background: #1976D2;
+}
+
+.memo-view-btn {
+    padding: 3px 6px;
+    background: #FF9800;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    margin-left: 6px;
+    transition: background 0.3s ease;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.memo-view-btn:hover {
+    background: #F57C00;
+}
+
+.member-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+.search-highlight {
+    background-color: #FFEB3B;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+/* 모달 스타일 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+    padding: 20px 24px;
+    background: #1A237E;
+    color: white;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.modal-close {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 20px;
+    transition: opacity 0.3s ease;
+}
+
+.modal-close:hover {
+    opacity: 0.8;
+}
+
+.modal-body {
+    padding: 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.modal-memo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.modal-memo-item {
+    background: #F5F5F7;
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid #1A237E;
+}
+
+.modal-memo-date {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.modal-memo-content {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.modal-no-memo {
+    text-align: center;
+    color: #999;
+    padding: 40px 0;
+}
+
+.modal-footer {
+    padding: 20px 24px;
+    background: #F5F5F7;
+    border-top: 1px solid #E5E5E7;
+    border-radius: 0 0 12px 12px;
+}
+
+.modal-add-memo-section {
+    display: none;
+}
+
+.modal-add-memo-section.active {
+    display: block;
+}
+
+.modal-memo-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 12px;
+    border: 2px solid #E5E5E7;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+    font-family: inherit;
+    margin-bottom: 12px;
+}
+
+.modal-memo-textarea:focus {
+    outline: none;
+    border-color: #1A237E;
+}
+
+.modal-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.modal-btn-primary {
+    background: #4CAF50;
+    color: white;
+    margin-right: 8px;
+}
+
+.modal-btn-primary:hover {
+    background: #45A049;
+}
+
+.modal-btn-secondary {
+    background: #666;
+    color: white;
+}
+
+.modal-btn-secondary:hover {
+    background: #555;
+}
+
+.modal-add-btn {
+    background: #2196F3;
+    color: white;
+}
+
+.modal-add-btn:hover {
     background: #1976D2;
 }
 
@@ -446,9 +638,9 @@ if($action === 'list') {
         $params = [];
         
         if($search) {
-            $where_conditions[] = "(user_id LIKE ? OR name LIKE ? OR email LIKE ? OR company LIKE ?)";
+            $where_conditions[] = "(user_id LIKE ? OR name LIKE ? OR email LIKE ? OR company LIKE ? OR memo LIKE ?)";
             $search_param = "%$search%";
-            $params = array_merge($params, [$search_param, $search_param, $search_param, $search_param]);
+            $params = array_merge($params, [$search_param, $search_param, $search_param, $search_param, $search_param]);
         }
         
         if($filter === 'active') {
@@ -931,12 +1123,12 @@ if($action === 'list') {
         <?php else: ?>
             <div class="page-header">
                 <h1>회원 관리</h1>
-                <p>가입된 회원을 조회하고 관리할 수 있습니다.</p>
+                <p>가입된 회원을 조회하고 관리할 수 있습니다. <?php if($search): ?><strong>검색어: "<?php echo htmlspecialchars($search); ?>"</strong><?php endif; ?></p>
             </div>
             
             <form method="GET" action="" class="search-bar">
                 <input type="text" name="search" class="search-input" 
-                       placeholder="아이디, 이름, 이메일, 회사명으로 검색" 
+                       placeholder="아이디, 이름, 이메일, 회사명, 메모로 검색" 
                        value="<?php echo htmlspecialchars($search); ?>">
                 <select name="filter" class="filter-select">
                     <option value="all" <?php echo $filter === 'all' ? 'selected' : ''; ?>>전체</option>
@@ -956,8 +1148,7 @@ if($action === 'list') {
                             <th width="60">번호</th>
                             <th width="120">아이디</th>
                             <th width="100">이름</th>
-                            <th>이메일</th>
-                            <th width="150">회사명</th>
+                            <th width="200">회사명</th>
                             <th width="120">가입일</th>
                             <th width="80">상태</th>
                             <th width="150">관리</th>
@@ -966,7 +1157,7 @@ if($action === 'list') {
                     <tbody>
                         <?php if(empty($members)): ?>
                             <tr>
-                                <td colspan="8" style="text-align: center; padding: 40px;">
+                                <td colspan="7" style="text-align: center; padding: 40px;">
                                     등록된 회원이 없습니다.
                                 </td>
                             </tr>
@@ -976,17 +1167,22 @@ if($action === 'list') {
                                     <td><?php echo $member['id']; ?></td>
                                     <td><?php echo htmlspecialchars($member['user_id']); ?></td>
                                     <td>
-                                        <?php echo htmlspecialchars($member['name']); ?>
-                                        <?php if($member['is_admin']): ?>
-                                            <small style="color: #1A237E;">(관리자)</small>
-                                        <?php endif; ?>
-                                        <?php if(!empty($member['memo'])): ?>
-                                            <span class="memo-icon" title="<?php echo htmlspecialchars(mb_substr($member['memo'], 0, 50) . (mb_strlen($member['memo']) > 50 ? '...' : '')); ?>">📝</span>
-                                        <?php else: ?>
-                                            <button type="button" class="memo-add-btn" onclick="window.location.href='?action=view&id=<?php echo $member['id']; ?>#admin-memo'">메모 추가</button>
-                                        <?php endif; ?>
+                                        <div class="member-name-cell">
+                                            <span>
+                                                <?php echo htmlspecialchars($member['name']); ?>
+                                                <?php if($member['is_admin']): ?>
+                                                    <small style="color: #1A237E;">(관리자)</small>
+                                                <?php endif; ?>
+                                            </span>
+                                            <?php if(!empty($member['memo'])): ?>
+                                                <button type="button" class="memo-view-btn" onclick="showMemoModal(<?php echo $member['id']; ?>, '<?php echo htmlspecialchars($member['name']); ?>', <?php echo htmlspecialchars(json_encode($member['memo'])); ?>)">
+                                                    메모 보기
+                                                </button>
+                                            <?php else: ?>
+                                                <button type="button" class="memo-add-btn" onclick="showMemoModal(<?php echo $member['id']; ?>, '<?php echo htmlspecialchars($member['name']); ?>', '')">메모 추가</button>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
-                                    <td><?php echo htmlspecialchars($member['email']); ?></td>
                                     <td><?php echo htmlspecialchars($member['company'] ?? '-'); ?></td>
                                     <td><?php echo date('Y-m-d', strtotime($member['created_at'])); ?></td>
                                     <td>
@@ -1116,6 +1312,206 @@ if($action === 'list') {
                     </div>
                 </div>
             </div>
+            
+            <!-- 메모 모달 -->
+            <div id="memoModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 id="modalMemberName">회원 메모</h2>
+                        <span class="modal-close" onclick="closeMemoModal()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div id="modalMemoContent" class="modal-memo-list">
+                            <!-- 메모 내용이 여기에 표시됩니다 -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="modal-btn modal-add-btn" onclick="toggleModalMemoAdd()">
+                            + 메모 추가
+                        </button>
+                        <div class="modal-add-memo-section" id="modal-add-memo-section">
+                            <textarea id="modal-new-memo-content" class="modal-memo-textarea" placeholder="새 메모를 작성하세요..."></textarea>
+                            <div>
+                                <button type="button" class="modal-btn modal-btn-primary" onclick="saveModalMemo()">
+                                    저장
+                                </button>
+                                <button type="button" class="modal-btn modal-btn-secondary" onclick="toggleModalMemoAdd()">
+                                    취소
+                                </button>
+                            </div>
+                            <span id="modal-memo-save-result" style="margin-left: 12px; font-size: 14px;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+            let currentModalMemberId = null;
+            let currentModalMemberName = null;
+            
+            function showMemoModal(memberId, memberName, memoData) {
+                const modal = document.getElementById('memoModal');
+                const modalTitle = document.getElementById('modalMemberName');
+                const modalContent = document.getElementById('modalMemoContent');
+                
+                // 현재 회원 정보 저장
+                currentModalMemberId = memberId;
+                currentModalMemberName = memberName;
+                
+                // 타이틀 설정
+                modalTitle.textContent = memberName + '님의 메모';
+                
+                // 메모 내용 파싱 및 표시
+                if (memoData) {
+                    const memos = memoData.split('\\n---\\n').filter(memo => memo.trim());
+                    
+                    if (memos.length > 0) {
+                        modalContent.innerHTML = memos.map(memo => {
+                            const lines = memo.split('\\n');
+                            let dateStr = '';
+                            let content = memo;
+                            
+                            // 날짜 형식 검사
+                            if (lines[0] && lines[0].startsWith('[') && lines[0].endsWith(']')) {
+                                dateStr = lines[0];
+                                content = lines.slice(1).join('\\n');
+                            }
+                            
+                            return `
+                                <div class="modal-memo-item">
+                                    ${dateStr ? `<div class="modal-memo-date">${dateStr}</div>` : ''}
+                                    <div class="modal-memo-content">${content.replace(/\\n/g, '<br>')}</div>
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        modalContent.innerHTML = '<div class="modal-no-memo">등록된 메모가 없습니다.</div>';
+                    }
+                } else {
+                    modalContent.innerHTML = '<div class="modal-no-memo">등록된 메모가 없습니다.</div>';
+                }
+                
+                // 메모 추가 섹션 초기화
+                document.getElementById('modal-add-memo-section').classList.remove('active');
+                document.getElementById('modal-new-memo-content').value = '';
+                
+                // 메모가 없으면 자동으로 메모 추가 섹션 열기
+                if (!memoData || memoData.trim() === '') {
+                    setTimeout(() => {
+                        toggleModalMemoAdd();
+                    }, 100);
+                }
+                
+                // 모달 표시
+                modal.style.display = 'block';
+            }
+            
+            function closeMemoModal() {
+                document.getElementById('memoModal').style.display = 'none';
+                currentModalMemberId = null;
+                currentModalMemberName = null;
+            }
+            
+            function toggleModalMemoAdd() {
+                const addSection = document.getElementById('modal-add-memo-section');
+                addSection.classList.toggle('active');
+                if (addSection.classList.contains('active')) {
+                    document.getElementById('modal-new-memo-content').focus();
+                }
+            }
+            
+            function saveModalMemo() {
+                if (!currentModalMemberId) return;
+                
+                const newMemoContent = document.getElementById('modal-new-memo-content').value.trim();
+                if (!newMemoContent) {
+                    alert('메모 내용을 입력해주세요.');
+                    return;
+                }
+                
+                const resultSpan = document.getElementById('modal-memo-save-result');
+                
+                // 현재 메모 가져오기 (로커 검색을 통해 현재 메모 상태 파악)
+                const modalContent = document.getElementById('modalMemoContent');
+                const hasExistingMemo = !modalContent.querySelector('.modal-no-memo');
+                
+                // 새 메모 포맷 (날짜 포함)
+                const now = new Date();
+                const dateStr = now.getFullYear() + '-' + 
+                               String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                               String(now.getDate()).padStart(2, '0') + ' ' + 
+                               String(now.getHours()).padStart(2, '0') + ':' + 
+                               String(now.getMinutes()).padStart(2, '0');
+                
+                const newMemoFormatted = '[' + dateStr + ']\\n' + newMemoContent;
+                
+                // AJAX 요청
+                fetch('admin_members_action.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=add_memo&member_id=' + currentModalMemberId + '&new_memo=' + encodeURIComponent(newMemoFormatted)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        resultSpan.textContent = '✅ 메모가 추가되었습니다';
+                        resultSpan.style.color = '#4CAF50';
+                        
+                        // 모달에 새 메모 추가
+                        const newMemoHtml = `
+                            <div class="modal-memo-item">
+                                <div class="modal-memo-date">[${dateStr}]</div>
+                                <div class="modal-memo-content">${newMemoContent.replace(/\n/g, '<br>')}</div>
+                            </div>
+                        `;
+                        
+                        if (hasExistingMemo) {
+                            modalContent.insertAdjacentHTML('afterbegin', newMemoHtml);
+                        } else {
+                            modalContent.innerHTML = newMemoHtml;
+                        }
+                        
+                        // 입력 필드 초기화
+                        document.getElementById('modal-new-memo-content').value = '';
+                        toggleModalMemoAdd();
+                        
+                        setTimeout(() => {
+                            resultSpan.textContent = '';
+                        }, 3000);
+                    } else {
+                        resultSpan.textContent = '❌ ' + (data.message || '저장 실패');
+                        resultSpan.style.color = '#F44336';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    resultSpan.textContent = '❌ 오류 발생';
+                    resultSpan.style.color = '#F44336';
+                });
+            }
+            
+            // 모달 외부 클릭 시 닫기
+            window.onclick = function(event) {
+                const modal = document.getElementById('memoModal');
+                if (event.target === modal) {
+                    closeMemoModal();
+                }
+            }
+            
+            // ESC 키로 모달 닫기
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    closeMemoModal();
+                }
+            });
+            </script>
         <?php endif; ?>
 
 <?php require_once 'admin_tail.php'; ?>
