@@ -278,7 +278,18 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(response => response.text())
+        .then(text => {
+            console.log('Response:', text);
+            try {
+                const data = JSON.parse(text);
+                return data;
+            } catch (e) {
+                console.error('JSON parse error:', e);
+                console.error('Response text:', text);
+                throw new Error('서버 응답을 파싱할 수 없습니다.');
+            }
+        })
         .then(data => {
             if (data.success) {
                 alert(data.message);
@@ -304,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('견적 요청 중 오류가 발생했습니다.');
+            alert('견적 요청 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
         });
     });
 });

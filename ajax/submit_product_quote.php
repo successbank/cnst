@@ -52,9 +52,12 @@ try {
         $item_stmt = $pdo->prepare($item_sql);
         
         foreach ($items as $item) {
+            // product_id가 문자열인 경우 (rebar_quote에서 온 경우) null로 처리
+            $product_id = isset($item['id']) && is_numeric($item['id']) ? $item['id'] : null;
+            
             $item_stmt->execute([
                 $quote_id,
-                $item['id'] ?? null,
+                $product_id,
                 $item['name'],
                 $item['specifications'] ?? '',
                 $item['quantity']
@@ -75,9 +78,11 @@ try {
     
 } catch (PDOException $e) {
     $pdo->rollBack();
-    echo json_encode(['success' => false, 'message' => '데이터베이스 오류가 발생했습니다.']);
+    error_log("Product Quote DB Error: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => '데이터베이스 오류가 발생했습니다. 관리자에게 문의해주세요.', 'error' => $e->getMessage()]);
 } catch (Exception $e) {
     $pdo->rollBack();
+    error_log("Product Quote Error: " . $e->getMessage());
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 ?>
