@@ -323,6 +323,59 @@ if (isset($_GET['action'])) {
             border-radius: 6px;
             margin-top: 10px;
         }
+        
+        .product-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn-quote {
+            flex: 1;
+            padding: 18px 30px;
+            background: #1428A0;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-quote:hover {
+            background: #0F1F7A;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            padding: 18px 30px;
+            background: white;
+            color: #1428A0;
+            border: 2px solid #1428A0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-secondary:hover {
+            background: #1428A0;
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .product-actions {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
@@ -448,11 +501,24 @@ if (isset($_GET['action'])) {
                         적용 단가 = 기준단가 + 재질 추가단가<br>
                         총 금액 = 총 중량 × 적용 단가
                     </div>
+                    
+                    <div class="product-actions">
+                        <button type="button" onclick="sendQuote()" class="btn-quote">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5z"/>
+                                <path d="M5 7h10M5 10h10M5 13h6"/>
+                            </svg>
+                            견적 문의하기
+                        </button>
+                        <a href="tel:032-564-1616" class="btn-secondary">
+                            전화 문의
+                        </a>
+                    </div>
                 </div>
                 
                 <div id="empty-result" class="result-box">
                     <p style="text-align: center; color: #7f8c8d; padding: 40px 0;">
-                        제품을 선택하고 견적 계산 버튼을 클릭해주세요.
+                        철근 규격, 재질, 길이, 수량을 모두 선택하면 자동으로 계산됩니다.
                     </p>
                 </div>
             </div>
@@ -601,6 +667,127 @@ if (isset($_GET['action'])) {
                 errorDiv.innerHTML = '';
             }, 3000);
         }
+        
+        // 견적 카트에 제품 추가
+        function addToQuoteCart() {
+            // 계산된 데이터가 있는지 확인
+            const resultContainer = document.getElementById('result-container');
+            if (resultContainer.style.display === 'none') {
+                alert('먼저 제품을 선택하고 계산을 완료해주세요.');
+                return;
+            }
+            
+            // 계산된 데이터 수집
+            const productName = document.getElementById('result-product').textContent;
+            const quoteData = {
+                id: 'rebar_' + selectedSpecId + '_' + selectedMaterialId, // 고유 ID 생성
+                name: productName,
+                specifications: productName + ' ' + document.getElementById('result-material').textContent,
+                length: document.getElementById('result-length').textContent,
+                ton_quantity: document.getElementById('result-ton-quantity').textContent,
+                quantity: document.getElementById('result-quantity').textContent.split('본')[0].trim(),
+                material: document.getElementById('result-material').textContent,
+                totalWeight: document.getElementById('result-total-weight').textContent,
+                totalPrice: document.getElementById('result-total-price').textContent,
+                unitPrice: document.getElementById('result-final-price').textContent,
+                category: '철근'
+            };
+            
+            // 세션 스토리지에서 기존 카트 가져오기
+            let quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
+            
+            // 중복 확인
+            const existingIndex = quoteCart.findIndex(item => 
+                item.name === quoteData.name && 
+                item.length === quoteData.length &&
+                item.material === quoteData.material
+            );
+            
+            if (existingIndex === -1) {
+                // 새 제품 추가
+                quoteCart.push({
+                    ...quoteData,
+                    addedAt: new Date().toISOString()
+                });
+            } else {
+                // 이미 있는 제품은 수량 증가
+                const existingQty = parseInt(quoteCart[existingIndex].quantity) || 1;
+                const newQty = parseInt(quoteData.quantity) || 1;
+                quoteCart[existingIndex].quantity = (existingQty + newQty).toString();
+                // 금액도 업데이트
+                quoteCart[existingIndex].totalPrice = document.getElementById('result-total-price').textContent;
+                quoteCart[existingIndex].totalWeight = document.getElementById('result-total-weight').textContent;
+            }
+            
+            // 세션 스토리지에 저장
+            sessionStorage.setItem('quoteCart', JSON.stringify(quoteCart));
+            
+            // 카트 카운트 업데이트
+            updateCartCount();
+            
+            // 모달에 제품명 표시
+            document.getElementById('modalProductName').textContent = productName + ' ' + quoteData.material;
+            
+            // 모달 표시
+            document.getElementById('quoteModal').style.display = 'block';
+        }
+        
+        // sendQuote 함수를 addToQuoteCart로 연결
+        function sendQuote() {
+            addToQuoteCart();
+        }
+        
+        // 카트 카운트 업데이트
+        function updateCartCount() {
+            const quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
+            const cartCount = quoteCart.reduce((sum, item) => sum + parseInt(item.quantity || 1), 0);
+            
+            // 상단 카트 아이콘의 카운트 업데이트 (head.php에 있다면)
+            const cartCountElement = document.querySelector('.cart-count');
+            if (cartCountElement) {
+                cartCountElement.textContent = cartCount;
+                cartCountElement.style.display = cartCount > 0 ? 'block' : 'none';
+            }
+        }
+        
+        // 모달 닫기
+        function closeQuoteModal() {
+            document.getElementById('quoteModal').style.display = 'none';
+        }
+        
+        // 제품견적서 페이지로 이동
+        function goToQuote() {
+            // 마이페이지의 제품견적서로 이동
+            window.location.href = 'my_quote_cart.php';
+        }
+        
+        // 모달 외부 클릭 시 닫기
+        document.getElementById('quoteModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeQuoteModal();
+            }
+        });
+        
+        // 페이지 로드 시 카트 카운트 업데이트
+        window.addEventListener('DOMContentLoaded', function() {
+            updateCartCount();
+        });
     </script>
+
+<!-- 견적문의 모달 -->
+<div id="quoteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 400px; width: 90%;">
+        <h3 style="margin-bottom: 20px; color: #333; font-size: 20px;">견적문의 추가</h3>
+        <p style="margin-bottom: 24px; color: #666; line-height: 1.6;">
+            <strong id="modalProductName" style="color: #1428A0;"></strong> 제품이 견적서에 담겼습니다.<br>
+            제품견적서 페이지로 이동하시겠습니까?
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <button onclick="closeQuoteModal()" style="padding: 10px 24px; background: #f0f0f0; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">아니오</button>
+            <button onclick="goToQuote()" style="padding: 10px 24px; background: #1428A0; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">예</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
