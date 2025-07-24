@@ -84,23 +84,105 @@ $additionalStyles = '
 .members-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .members-table th,
 .members-table td {
-    padding: 12px;
+    padding: 12px 8px;
     text-align: left;
     border-bottom: 1px solid #E5E5E7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .members-table th {
     font-weight: 600;
     color: #666;
     font-size: 14px;
+    background: #F8F9FA;
 }
 
 .members-table tr:hover {
     background: #F5F5F7;
+}
+
+/* 테이블 컬럼 너비 비율 */
+.members-table th:nth-child(1),
+.members-table td:nth-child(1) { width: 8%; text-align: center; } /* 번호 */
+.members-table th:nth-child(2),
+.members-table td:nth-child(2) { width: 15%; } /* 아이디 */
+.members-table th:nth-child(3),
+.members-table td:nth-child(3) { width: 12%; } /* 이름 */
+.members-table th:nth-child(4),
+.members-table td:nth-child(4) { width: 25%; } /* 회사명 */
+.members-table th:nth-child(5),
+.members-table td:nth-child(5) { width: 15%; text-align: center; } /* 가입일 */
+.members-table th:nth-child(6),
+.members-table td:nth-child(6) { width: 10%; text-align: center; } /* 상태 */
+.members-table th:nth-child(7),
+.members-table td:nth-child(7) { width: 15%; text-align: center; } /* 관리 */
+
+/* 테이블 wrapper 스타일 추가 */
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -32px;
+    padding: 0 32px;
+}
+
+/* 회사명 등 긴 텍스트 처리 */
+.text-ellipsis {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* 액션 링크 스타일 */
+.action-links {
+    display: flex;
+    gap: 3px;
+    justify-content: center;
+    flex-wrap: nowrap;
+}
+
+.action-links a {
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.btn-view {
+    background: #E8EAF6;
+    color: #3F51B5;
+}
+
+.btn-view:hover {
+    background: #C5CAE9;
+}
+
+.btn-toggle {
+    background: #FFF3E0;
+    color: #FB8C00;
+}
+
+.btn-toggle:hover {
+    background: #FFE0B2;
+}
+
+.btn-delete {
+    background: #FFEBEE;
+    color: #E53935;
+}
+
+.btn-delete:hover {
+    background: #FFCDD2;
 }
 
 .status-active {
@@ -397,6 +479,11 @@ $additionalStyles = '
     align-items: center;
     gap: 6px;
     flex-wrap: nowrap;
+    min-width: 0;
+}
+
+.member-name-cell > span {
+    white-space: nowrap;
 }
 
 .search-highlight {
@@ -600,6 +687,7 @@ $additionalStyles = '
     padding: 32px;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
 }
 ';
 
@@ -1147,18 +1235,19 @@ if($action === 'list') {
             </form>
             
             <div class="content-box">
-                <table class="members-table">
-                    <thead>
-                        <tr>
-                            <th width="60">번호</th>
-                            <th width="120">아이디</th>
-                            <th width="100">이름</th>
-                            <th width="200">회사명</th>
-                            <th width="120">가입일</th>
-                            <th width="80">상태</th>
-                            <th width="150">관리</th>
-                        </tr>
-                    </thead>
+                <div class="table-wrapper">
+                    <table class="members-table">
+                        <thead>
+                            <tr>
+                                <th>번호</th>
+                                <th>아이디</th>
+                                <th>이름</th>
+                                <th>회사명</th>
+                                <th>가입일</th>
+                                <th>상태</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
                     <tbody>
                         <?php if(empty($members)): ?>
                             <tr>
@@ -1188,7 +1277,11 @@ if($action === 'list') {
                                             <?php endif; ?>
                                         </div>
                                     </td>
-                                    <td><?php echo htmlspecialchars($member['company'] ?? '-'); ?></td>
+                                    <td>
+                                        <span class="text-ellipsis" title="<?php echo htmlspecialchars($member['company'] ?? '-'); ?>">
+                                            <?php echo htmlspecialchars($member['company'] ?? '-'); ?>
+                                        </span>
+                                    </td>
                                     <td><?php echo date('Y-m-d', strtotime($member['created_at'])); ?></td>
                                     <td>
                                         <?php if($member['is_active']): ?>
@@ -1219,6 +1312,7 @@ if($action === 'list') {
                         <?php endif; ?>
                     </tbody>
                 </table>
+                </div>
                 
                 <!-- 페이지네이션 및 표시 개수 선택 -->
                 <div class="pagination-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
