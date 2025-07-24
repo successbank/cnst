@@ -308,6 +308,12 @@ if($action === 'list') {
                                 <input type="text" name="company" value="<?php echo htmlspecialchars($member_detail['company'] ?? ''); ?>" 
                                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                             </div>
+                            <div class="detail-item">
+                                <div class="detail-label">홈페이지</div>
+                                <input type="url" name="homepage" placeholder="https://example.com"
+                                       value="<?php echo htmlspecialchars($member_detail['homepage'] ?? ''); ?>" 
+                                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
                             <div class="detail-item" style="grid-column: 1 / -1;">
                                 <div class="detail-label">휴대폰</div>
                                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">

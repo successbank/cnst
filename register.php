@@ -20,6 +20,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     $phone = trim($_POST['phone'] ?? '');
     $landline = trim($_POST['landline'] ?? '');
     $company = trim($_POST['company'] ?? '');
+    $homepage = trim($_POST['homepage'] ?? '');
     $position = trim($_POST['position'] ?? '');
     $zipcode = trim($_POST['zipcode'] ?? '');
     $address = trim($_POST['address'] ?? '');
@@ -51,10 +52,10 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // 회원가입 처리
                     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
                     $stmt = $pdo->prepare("
-                        INSERT INTO members (user_id, password, name, email, phone, landline, company, position, zipcode, address, address_detail) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO members (user_id, password, name, email, phone, landline, company, homepage, position, zipcode, address, address_detail) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
-                    $stmt->execute([$user_id, $hashed_password, $name, $email, $phone, $landline, $company, $position, $zipcode, $address, $address_detail]);
+                    $stmt->execute([$user_id, $hashed_password, $name, $email, $phone, $landline, $company, $homepage, $position, $zipcode, $address, $address_detail]);
                     
                     // 회원가입 성공 시 자동 로그인 처리
                     $_SESSION['member_id'] = $pdo->lastInsertId();
@@ -341,6 +342,13 @@ include 'head.php';
                         <label for="company">회사명</label>
                         <input type="text" id="company" name="company" 
                                value="<?php echo htmlspecialchars($_POST['company'] ?? ''); ?>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="homepage">홈페이지</label>
+                        <input type="url" id="homepage" name="homepage" 
+                               placeholder="https://example.com"
+                               value="<?php echo htmlspecialchars($_POST['homepage'] ?? ''); ?>">
                     </div>
                     
                     <div class="form-group">

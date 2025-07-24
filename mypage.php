@@ -74,6 +74,18 @@ myPageSidebar('info');
                 <div class="info-value"><?php echo htmlspecialchars($member['company'] ?: '미등록'); ?></div>
             </div>
             <div class="info-row">
+                <div class="info-label">홈페이지</div>
+                <div class="info-value">
+                    <?php if($member['homepage']): ?>
+                        <a href="<?php echo htmlspecialchars($member['homepage']); ?>" target="_blank" style="color: #1A237E;">
+                            <?php echo htmlspecialchars($member['homepage']); ?>
+                        </a>
+                    <?php else: ?>
+                        미등록
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="info-row">
                 <div class="info-label">직급/부서</div>
                 <div class="info-value"><?php echo htmlspecialchars($member['position'] ?: '미등록'); ?></div>
             </div>

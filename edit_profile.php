@@ -32,6 +32,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     $phone = trim($_POST['phone'] ?? '');
     $landline = trim($_POST['landline'] ?? '');
     $company = trim($_POST['company'] ?? '');
+    $homepage = trim($_POST['homepage'] ?? '');
     $position = trim($_POST['position'] ?? '');
     $zipcode = trim($_POST['zipcode'] ?? '');
     $address = trim($_POST['address'] ?? '');
@@ -72,11 +73,11 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // 정보 업데이트
                     $stmt = $pdo->prepare("
                         UPDATE members SET 
-                            name = ?, email = ?, phone = ?, landline = ?, company = ?, 
+                            name = ?, email = ?, phone = ?, landline = ?, company = ?, homepage = ?,
                             position = ?, zipcode = ?, address = ?, address_detail = ?
                         WHERE id = ?
                     ");
-                    $stmt->execute([$name, $email, $phone, $landline, $company, $position, $zipcode, $address, $address_detail, $member_id]);
+                    $stmt->execute([$name, $email, $phone, $landline, $company, $homepage, $position, $zipcode, $address, $address_detail, $member_id]);
                     
                     // 세션 정보 업데이트
                     $_SESSION['member_name'] = $name;
@@ -222,6 +223,12 @@ myPageSidebar('edit');
                 <div class="form-group">
                     <label>회사명</label>
                     <input type="text" name="company" value="<?php echo htmlspecialchars($_POST['company'] ?? $member['company']); ?>">
+                </div>
+                
+                <div class="form-group">
+                    <label>홈페이지</label>
+                    <input type="url" name="homepage" placeholder="https://example.com"
+                           value="<?php echo htmlspecialchars($_POST['homepage'] ?? $member['homepage']); ?>">
                 </div>
                 
                 <div class="form-group">

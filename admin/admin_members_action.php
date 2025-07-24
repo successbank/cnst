@@ -55,6 +55,7 @@ if ($action === 'update_member') {
     $member_id = (int)($_POST['member_id'] ?? 0);
     $email = trim($_POST['email'] ?? '');
     $company = trim($_POST['company'] ?? '');
+    $homepage = trim($_POST['homepage'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $landline = trim($_POST['landline'] ?? '');
     $zipcode = trim($_POST['zipcode'] ?? '');
@@ -85,12 +86,12 @@ if ($action === 'update_member') {
         // 회원 정보 업데이트
         $stmt = $pdo->prepare("
             UPDATE members SET 
-                email = ?, company = ?, phone = ?, landline = ?, 
+                email = ?, company = ?, homepage = ?, phone = ?, landline = ?, 
                 zipcode = ?, address = ?, address_detail = ?,
                 is_active = ?, updated_at = NOW()
             WHERE id = ?
         ");
-        $stmt->execute([$email, $company, $phone, $landline, $zipcode, $address, $address_detail, $is_active, $member_id]);
+        $stmt->execute([$email, $company, $homepage, $phone, $landline, $zipcode, $address, $address_detail, $is_active, $member_id]);
         
         header('Location: admin_members.php?action=view&id=' . $member_id . '&msg=info_updated');
         exit;
