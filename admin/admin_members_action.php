@@ -1,6 +1,7 @@
 <?php
-require_once 'admin_check.php';
+session_start();
 require_once '../db.php';
+require_once 'admin_check.php';
 
 // POST 요청만 처리
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -169,6 +170,105 @@ if ($action === 'add_memo') {
     } catch (PDOException $e) {
         error_log('Memo add error: ' . $e->getMessage());
         echo json_encode(['success' => false, 'message' => '저장 중 오류가 발생했습니다.']);
+        exit;
+    }
+}
+
+// 회원 추가 처리
+if ($action === 'add_member') {
+    $user_id = trim($_POST['user_id'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $company = trim($_POST['company'] ?? '');
+    $homepage = trim($_POST['homepage'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $landline = trim($_POST['landline'] ?? '');
+    $zipcode = trim($_POST['zipcode'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    $address_detail = trim($_POST['address_detail'] ?? '');
+    $position = trim($_POST['position'] ?? '');
+    $memo = trim($_POST['memo'] ?? '');
+    $is_active = isset($_POST['is_active']) ? 1 : 0;
+    $is_admin = isset($_POST['is_admin']) ? 1 : 0;
+    
+    // 유효성 검사
+    if (!$user_id || !$password || !$name || !$email) {
+        $_SESSION['error_message'] = '필수 항목을 모두 입력해주세요.';
+        header('Location: admin_members_add.php');
+        exit;
+    }
+    
+    if (strlen($user_id) < 4 || strlen($user_id) > 20) {
+        $_SESSION['error_message'] = '아이디는 4-20자여야 합니다.';
+        header('Location: admin_members_add.php');
+        exit;
+    }
+    
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $user_id)) {
+        $_SESSION['error_message'] = '아이디는 영문, 숫자, 언더스코어(_)만 사용 가능합니다.';
+        header('Location: admin_members_add.php');
+        exit;
+    }
+    
+    if (strlen($password) < 4) {
+        $_SESSION['error_message'] = '비밀번호는 4자 이상이어야 합니다.';
+        header('Location: admin_members_add.php');
+        exit;
+    }
+    
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $_SESSION['error_message'] = '올바른 이메일 주소를 입력해주세요.';
+        header('Location: admin_members_add.php');
+        exit;
+    }
+    
+    try {
+        // 아이디 중복 체크
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM members WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        if ($stmt->fetchColumn() > 0) {
+            $_SESSION['error_message'] = '이미 사용중인 아이디입니다.';
+            header('Location: admin_members_add.php');
+            exit;
+        }
+        
+        // 이메일 중복 체크
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM members WHERE email = ?");
+        $stmt->execute([$email]);
+        if ($stmt->fetchColumn() > 0) {
+            $_SESSION['error_message'] = '이미 사용중인 이메일입니다.';
+            header('Location: admin_members_add.php');
+            exit;
+        }
+        
+        // 비밀번호 해시화
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        
+        // 회원 정보 삽입
+        $stmt = $pdo->prepare("
+            INSERT INTO members (
+                user_id, password, name, email, company, homepage, phone, landline,
+                zipcode, address, address_detail, position, memo, is_active, is_admin,
+                created_at, updated_at
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()
+            )
+        ");
+        
+        $stmt->execute([
+            $user_id, $hashed_password, $name, $email, $company, $homepage, $phone, $landline,
+            $zipcode, $address, $address_detail, $position, $memo, $is_active, $is_admin
+        ]);
+        
+        $_SESSION['success_message'] = '회원이 성공적으로 추가되었습니다.';
+        header('Location: admin_members.php');
+        exit;
+        
+    } catch (PDOException $e) {
+        error_log('Member add error: ' . $e->getMessage());
+        $_SESSION['error_message'] = '회원 추가 중 오류가 발생했습니다.';
+        header('Location: admin_members_add.php');
         exit;
     }
 }

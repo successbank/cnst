@@ -1219,6 +1219,10 @@ if($action === 'list') {
                 <p>가입된 회원을 조회하고 관리할 수 있습니다. <?php if($search): ?><strong>검색어: "<?php echo htmlspecialchars($search); ?>"</strong><?php endif; ?></p>
             </div>
             
+            <div style="margin-bottom: 20px; text-align: right;">
+                <a href="admin_members_add.php" class="btn btn-primary" style="padding: 10px 20px; background: #1A237E; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">+ 회원 추가</a>
+            </div>
+            
             <form method="GET" action="" class="search-bar">
                 <input type="text" name="search" class="search-input" 
                        placeholder="아이디, 이름, 이메일, 회사명, 메모로 검색" 
