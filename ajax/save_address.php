@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once '../db.php';
 require_once '../member_check.php';
 
@@ -126,8 +127,16 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("Address Save Error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => '데이터베이스 오류가 발생했습니다.']);
+    error_log("Address Save PDO Error: " . $e->getMessage());
+    error_log("SQL State: " . $e->getCode());
+    
+    // 개발 환경에서는 실제 에러 메시지 반환
+    $errorMessage = '데이터베이스 오류가 발생했습니다.';
+    if (isset($_SERVER['SERVER_NAME']) && ($_SERVER['SERVER_NAME'] === 'localhost' || strpos($_SERVER['SERVER_NAME'], '211.248.112.67') !== false)) {
+        $errorMessage .= ' - ' . $e->getMessage();
+    }
+    
+    echo json_encode(['success' => false, 'message' => $errorMessage]);
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();

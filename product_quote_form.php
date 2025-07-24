@@ -791,7 +791,42 @@ function saveNewAddress() {
     .then(data => {
         if (data.success) {
             alert('배송지가 추가되었습니다.');
-            location.reload(); // 페이지 새로고침으로 주소 목록 업데이트
+            
+            // 새로 추가된 주소를 바로 적용
+            const newAddressData = {
+                id: data.address_id,
+                name: addressName,
+                zipcode: zipcode,
+                address: address,
+                address_detail: addressDetail
+            };
+            
+            // Hidden inputs 업데이트
+            document.getElementById('selected_address_id').value = newAddressData.id;
+            document.getElementById('zipcode').value = newAddressData.zipcode;
+            document.getElementById('address').value = newAddressData.address;
+            document.getElementById('address_detail').value = newAddressData.address_detail;
+            
+            // 화면에 표시
+            document.getElementById('selected_address_display').innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 5px;">
+                            ${newAddressData.name}
+                        </div>
+                        <div style="color: #666; font-size: 14px;">
+                            (${newAddressData.zipcode}) ${newAddressData.address} ${newAddressData.address_detail}
+                        </div>
+                    </div>
+                    <button type="button" onclick="showAddressModal()" class="btn btn-outline">변경</button>
+                </div>
+            `;
+            
+            // 모달 닫기
+            closeAddressModal();
+            
+            // 나중에 페이지 새로고침이 필요한 경우를 위해 플래그 설정
+            // location.reload();
         } else {
             alert(data.message || '저장 중 오류가 발생했습니다.');
         }
