@@ -31,7 +31,7 @@ if ($member_id) {
                 ");
                 $stmt->execute([
                     $member_id,
-                    '기본 주소',
+                    '기본주소',
                     $member_info['name'],
                     $member_info['phone'],
                     $member_info['zipcode'],
@@ -125,7 +125,7 @@ myPageSidebar('quote_cart');
                             <div style="display: flex; justify-content: space-between; align-items: start;">
                                 <div>
                                     <div style="font-weight: 600; margin-bottom: 5px;">
-                                        <?php echo htmlspecialchars($default_address['address_name'] ?? '기본 주소'); ?>
+                                        <?php echo htmlspecialchars($default_address['address_name'] ?? '기본주소'); ?>
                                     </div>
                                     <div style="color: #666; font-size: 14px;">
                                         (<?php echo htmlspecialchars($default_address['zipcode']); ?>) 
@@ -186,7 +186,7 @@ myPageSidebar('quote_cart');
                          data-zipcode="<?php echo htmlspecialchars($addr['zipcode']); ?>"
                          data-address="<?php echo htmlspecialchars($addr['address']); ?>"
                          data-address-detail="<?php echo htmlspecialchars($addr['address_detail'] ?? ''); ?>"
-                         data-name="<?php echo htmlspecialchars($addr['address_name'] ?? '주소'); ?>">
+                         data-name="<?php echo htmlspecialchars($addr['address_name'] ?? '기본주소'); ?>">
                         <div class="address-radio">
                             <input type="radio" name="modal_address" value="<?php echo $addr['id']; ?>" 
                                    id="addr_<?php echo $addr['id']; ?>"
@@ -194,7 +194,7 @@ myPageSidebar('quote_cart');
                         </div>
                         <label for="addr_<?php echo $addr['id']; ?>" class="address-content">
                             <div class="address-name">
-                                <?php echo htmlspecialchars($addr['address_name'] ?? '주소'); ?>
+                                <?php echo htmlspecialchars($addr['address_name'] ?? '기본주소'); ?>
                                 <?php if ($addr['is_default']): ?>
                                 <span class="default-badge">기본</span>
                                 <?php endif; ?>
@@ -711,10 +711,20 @@ function cancelNewAddress() {
     
     // 폼 초기화
     document.getElementById('new_address_name').value = '';
+    document.getElementById('new_recipient_name').value = '';
+    document.getElementById('new_recipient_phone').value = '';
     document.getElementById('new_zipcode').value = '';
     document.getElementById('new_address').value = '';
     document.getElementById('new_address_detail').value = '';
     document.getElementById('new_is_default').checked = false;
+    
+    // 폼 제목과 버튼 원래대로 복원
+    document.querySelector('#newAddressForm h3').textContent = '새 배송지 추가';
+    const saveButton = document.querySelector('#newAddressForm button[onclick^="updateAddress"]');
+    if (saveButton) {
+        saveButton.setAttribute('onclick', 'saveNewAddress()');
+        saveButton.textContent = '저장';
+    }
 }
 
 function applySelectedAddress() {
@@ -725,13 +735,28 @@ function applySelectedAddress() {
     }
     
     const addressItem = selectedRadio.closest('.address-item');
+    if (!addressItem) {
+        alert('주소 정보를 찾을 수 없습니다.');
+        return;
+    }
+    
+    // 디버깅을 위한 로그
+    console.log('Address Item:', addressItem);
+    console.log('Dataset:', addressItem.dataset);
+    
     const addressData = {
-        id: addressItem.dataset.id,
-        name: addressItem.dataset.name,
-        zipcode: addressItem.dataset.zipcode,
-        address: addressItem.dataset.address,
-        address_detail: addressItem.dataset.addressDetail
+        id: addressItem.dataset.id || addressItem.getAttribute('data-id'),
+        name: addressItem.dataset.name || addressItem.getAttribute('data-name'),
+        zipcode: addressItem.dataset.zipcode || addressItem.getAttribute('data-zipcode'),
+        address: addressItem.dataset.address || addressItem.getAttribute('data-address'),
+        address_detail: addressItem.dataset.addressDetail || addressItem.getAttribute('data-address-detail') || ''
     };
+    
+    // 데이터 검증
+    if (!addressData.zipcode || !addressData.address) {
+        alert('주소 정보가 올바르지 않습니다.');
+        return;
+    }
     
     // Hidden inputs 업데이트
     document.getElementById('selected_address_id').value = addressData.id;
@@ -866,9 +891,100 @@ function deleteAddress(addressId) {
     });
 }
 
-// 주소 수정 (간단한 alert로 구현, 필요시 모달로 확장 가능)
+// 주소 수정
 function editAddress(addressId) {
-    alert('주소 수정 기능은 준비 중입니다.');
+    // 주소 정보 가져오기
+    const addressItem = document.querySelector(`.address-item[data-id="${addressId}"]`);
+    if (!addressItem) {
+        alert('주소 정보를 찾을 수 없습니다.');
+        return;
+    }
+    
+    // 기존 주소 정보 추출
+    const addressData = {
+        id: addressItem.dataset.id,
+        name: addressItem.dataset.name,
+        recipientName: addressItem.querySelector('.address-info').textContent.includes('수령인:') ? 
+            addressItem.querySelector('.address-info').textContent.match(/수령인: ([^\n]+)/)?.[1]?.trim() : '',
+        recipientPhone: addressItem.querySelector('.address-info').textContent.includes('연락처:') ? 
+            addressItem.querySelector('.address-info').textContent.match(/연락처: ([^\n]+)/)?.[1]?.trim() : '',
+        zipcode: addressItem.dataset.zipcode,
+        address: addressItem.dataset.address,
+        addressDetail: addressItem.dataset.addressDetail || ''
+    };
+    
+    // 수정 폼 표시
+    showEditAddressForm(addressData);
+}
+
+// 수정 폼 표시
+function showEditAddressForm(addressData) {
+    // 새 주소 추가 폼을 수정 폼으로 사용
+    document.getElementById('newAddressForm').style.display = 'block';
+    document.querySelector('.address-list').style.display = 'none';
+    document.querySelector('.add-address-section').style.display = 'none';
+    
+    // 폼 제목 변경
+    document.querySelector('#newAddressForm h3').textContent = '배송지 수정';
+    
+    // 폼에 기존 데이터 채우기
+    document.getElementById('new_address_name').value = addressData.name;
+    document.getElementById('new_recipient_name').value = addressData.recipientName || '';
+    document.getElementById('new_recipient_phone').value = addressData.recipientPhone || '';
+    document.getElementById('new_zipcode').value = addressData.zipcode;
+    document.getElementById('new_address').value = addressData.address;
+    document.getElementById('new_address_detail').value = addressData.addressDetail;
+    
+    // 저장 버튼 동작 변경
+    const saveButton = document.querySelector('#newAddressForm button[onclick="saveNewAddress()"]');
+    saveButton.setAttribute('onclick', `updateAddress(${addressData.id})`);
+    saveButton.textContent = '수정';
+}
+
+// 주소 업데이트
+function updateAddress(addressId) {
+    const addressName = document.getElementById('new_address_name').value.trim();
+    const recipientName = document.getElementById('new_recipient_name').value.trim();
+    const recipientPhone = document.getElementById('new_recipient_phone').value.trim();
+    const zipcode = document.getElementById('new_zipcode').value.trim();
+    const address = document.getElementById('new_address').value.trim();
+    const addressDetail = document.getElementById('new_address_detail').value.trim();
+    const isDefault = document.getElementById('new_is_default').checked;
+    
+    if (!addressName || !zipcode || !address) {
+        alert('필수 항목을 입력해주세요.');
+        return;
+    }
+    
+    // AJAX로 수정
+    const formData = new FormData();
+    formData.append('action', 'update_address');
+    formData.append('address_id', addressId);
+    formData.append('address_name', addressName);
+    formData.append('recipient_name', recipientName);
+    formData.append('recipient_phone', recipientPhone);
+    formData.append('zipcode', zipcode);
+    formData.append('address', address);
+    formData.append('address_detail', addressDetail);
+    formData.append('is_default', isDefault ? '1' : '0');
+    
+    fetch('ajax/save_address.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('배송지가 수정되었습니다.');
+            location.reload();
+        } else {
+            alert(data.message || '수정 중 오류가 발생했습니다.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('수정 중 오류가 발생했습니다.');
+    });
 }
 
 // 새 주소 우편번호 찾기
@@ -942,14 +1058,14 @@ function showAddressManager() {
     window.open('address_manager.php', 'addressManager', 'width=800,height=600,scrollbars=yes');
 }
 
-// 주소록에서 선택한 주소 적용 (팝업에서 호출)
-function applySelectedAddress(addressData) {
+// 주소록에서 선택한 주소 적용 (팝업에서 호출) - 레거시 함수
+function applyAddressFromPopup(addressData) {
     document.getElementById('zipcode').value = addressData.zipcode;
     document.getElementById('address').value = addressData.address;
     document.getElementById('address_detail').value = addressData.address_detail || '';
     
     // 저장된 주소 선택 업데이트
-    if (savedAddressSelect) {
+    if (typeof savedAddressSelect !== 'undefined' && savedAddressSelect) {
         savedAddressSelect.value = addressData.id;
     }
 }

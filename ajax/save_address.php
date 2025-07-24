@@ -93,6 +93,68 @@ try {
             'message' => '배송지가 삭제되었습니다.'
         ]);
         
+    } elseif ($action === 'update_address') {
+        // 주소 수정
+        $address_id = $_POST['address_id'] ?? 0;
+        $address_name = $_POST['address_name'] ?? '';
+        $recipient_name = $_POST['recipient_name'] ?? '';
+        $recipient_phone = $_POST['recipient_phone'] ?? '';
+        $zipcode = $_POST['zipcode'] ?? '';
+        $address = $_POST['address'] ?? '';
+        $address_detail = $_POST['address_detail'] ?? '';
+        $is_default = $_POST['is_default'] ?? '0';
+        
+        // 필수 필드 검증
+        if (!$address_id || empty($address_name) || empty($zipcode) || empty($address)) {
+            echo json_encode(['success' => false, 'message' => '필수 항목을 입력해주세요.']);
+            exit;
+        }
+        
+        // 본인 소유 주소인지 확인
+        $stmt = $pdo->prepare("SELECT id FROM member_addresses WHERE id = ? AND member_id = ?");
+        $stmt->execute([$address_id, $member_id]);
+        
+        if (!$stmt->fetch()) {
+            echo json_encode(['success' => false, 'message' => '수정 권한이 없습니다.']);
+            exit;
+        }
+        
+        $pdo->beginTransaction();
+        
+        // 기본 배송지로 설정하는 경우, 기존 기본 배송지 해제
+        if ($is_default == '1') {
+            $stmt = $pdo->prepare("UPDATE member_addresses SET is_default = 0 WHERE member_id = ?");
+            $stmt->execute([$member_id]);
+        }
+        
+        // 주소 업데이트
+        $stmt = $pdo->prepare("
+            UPDATE member_addresses 
+            SET address_name = ?, recipient_name = ?, recipient_phone = ?, 
+                zipcode = ?, address = ?, address_detail = ?, is_default = ?,
+                updated_at = NOW()
+            WHERE id = ? AND member_id = ?
+        ");
+        
+        $stmt->execute([
+            $address_name,
+            $recipient_name,
+            $recipient_phone,
+            $zipcode,
+            $address,
+            $address_detail,
+            $is_default,
+            $address_id,
+            $member_id
+        ]);
+        
+        $pdo->commit();
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => '배송지가 수정되었습니다.'
+        ]);
+        
     } elseif ($action === 'set_default') {
         // 기본 배송지 설정
         $address_id = $_POST['address_id'] ?? 0;
