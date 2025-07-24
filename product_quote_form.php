@@ -186,7 +186,9 @@ myPageSidebar('quote_cart');
                          data-zipcode="<?php echo htmlspecialchars($addr['zipcode']); ?>"
                          data-address="<?php echo htmlspecialchars($addr['address']); ?>"
                          data-address-detail="<?php echo htmlspecialchars($addr['address_detail'] ?? ''); ?>"
-                         data-name="<?php echo htmlspecialchars($addr['address_name'] ?? '기본주소'); ?>">
+                         data-name="<?php echo htmlspecialchars($addr['address_name'] ?? '기본주소'); ?>"
+                         data-recipient-name="<?php echo htmlspecialchars($addr['recipient_name'] ?? ''); ?>"
+                         data-recipient-phone="<?php echo htmlspecialchars($addr['recipient_phone'] ?? ''); ?>">
                         <div class="address-radio">
                             <input type="radio" name="modal_address" value="<?php echo $addr['id']; ?>" 
                                    id="addr_<?php echo $addr['id']; ?>"
@@ -904,10 +906,8 @@ function editAddress(addressId) {
     const addressData = {
         id: addressItem.dataset.id,
         name: addressItem.dataset.name,
-        recipientName: addressItem.querySelector('.address-info').textContent.includes('수령인:') ? 
-            addressItem.querySelector('.address-info').textContent.match(/수령인: ([^\n]+)/)?.[1]?.trim() : '',
-        recipientPhone: addressItem.querySelector('.address-info').textContent.includes('연락처:') ? 
-            addressItem.querySelector('.address-info').textContent.match(/연락처: ([^\n]+)/)?.[1]?.trim() : '',
+        recipientName: addressItem.dataset.recipientName || '',
+        recipientPhone: addressItem.dataset.recipientPhone || '',
         zipcode: addressItem.dataset.zipcode,
         address: addressItem.dataset.address,
         addressDetail: addressItem.dataset.addressDetail || ''
