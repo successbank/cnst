@@ -280,30 +280,33 @@ if (isset($_SESSION['error_message'])) {
     <h2>재질 관리</h2>
     
     <!-- 재질 추가 폼 -->
-    <form method="POST" class="form-inline">
-        <input type="hidden" name="action" value="add_material">
-        <div class="form-group">
-            <label>재질 코드</label>
-            <input type="text" name="material_code" required style="width: 100px;">
-        </div>
-        <div class="form-group">
-            <label>재질명</label>
-            <input type="text" name="material_name" required style="width: 120px;">
-        </div>
-        <div class="form-group">
-            <label>추가단가(원/kg)</label>
-            <input type="number" name="additional_price" min="0" step="0.01" required style="width: 120px;">
-        </div>
-        <div class="form-group">
-            <label>설명</label>
-            <input type="text" name="description" style="width: 200px;">
-        </div>
-        <div class="form-group">
-            <label>표시순서</label>
-            <input type="number" name="display_order" value="0" style="width: 80px;">
-        </div>
-        <button type="submit" class="btn btn-primary">재질 추가</button>
-    </form>
+    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px;">
+        <h3 style="margin-bottom: 20px; font-size: 18px; color: #333;">새 재질 추가</h3>
+        <form method="POST" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+            <input type="hidden" name="action" value="add_material">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label style="font-size: 13px; color: #666; font-weight: 500;">재질 코드</label>
+                <input type="text" name="material_code" required class="price-input" style="width: 100px;">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label style="font-size: 13px; color: #666; font-weight: 500;">재질명</label>
+                <input type="text" name="material_name" required class="price-input" style="width: 120px;">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label style="font-size: 13px; color: #666; font-weight: 500;">추가단가(원/kg)</label>
+                <input type="number" name="additional_price" min="0" step="0.01" required class="price-input" style="width: 120px;">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label style="font-size: 13px; color: #666; font-weight: 500;">설명</label>
+                <input type="text" name="description" class="price-input" style="width: 250px;">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label style="font-size: 13px; color: #666; font-weight: 500;">표시순서</label>
+                <input type="number" name="display_order" value="0" class="price-input" style="width: 80px;">
+            </div>
+            <button type="submit" style="padding: 10px 24px; background: #1A237E; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; height: fit-content;">재질 추가</button>
+        </form>
+    </div>
     
     <!-- 재질 목록 -->
     <div class="data-table">
@@ -328,8 +331,8 @@ if (isset($_SESSION['error_message'])) {
                     <td><?= htmlspecialchars($material['material_code']) ?></td>
                     <td><input type="text" name="material_name" value="<?= htmlspecialchars($material['material_name']) ?>" class="price-input"></td>
                     <td><input type="number" name="additional_price" value="<?= $material['additional_price'] ?>" min="0" step="0.01" class="price-input"></td>
-                    <td><input type="text" name="description" value="<?= htmlspecialchars($material['description'] ?? '') ?>" style="width: 200px;"></td>
-                    <td><input type="number" name="display_order" value="<?= $material['display_order'] ?>" style="width: 60px;"></td>
+                    <td><input type="text" name="description" value="<?= htmlspecialchars($material['description'] ?? '') ?>" class="price-input" style="width: 200px;"></td>
+                    <td><input type="number" name="display_order" value="<?= $material['display_order'] ?>" class="price-input" style="width: 60px;"></td>
                     <td>
                         <label style="display: inline-flex; align-items: center; margin: 0;">
                             <input type="checkbox" name="is_active" value="1" <?= $material['is_active'] ? 'checked' : '' ?>>
