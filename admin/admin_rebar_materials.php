@@ -332,7 +332,7 @@ if (isset($_SESSION['error_message'])) {
                     <td><input type="text" name="material_name" value="<?= htmlspecialchars($material['material_name']) ?>" class="price-input"></td>
                     <td><input type="number" name="additional_price" value="<?= $material['additional_price'] ?>" min="0" step="0.01" class="price-input"></td>
                     <td><input type="text" name="description" value="<?= htmlspecialchars($material['description'] ?? '') ?>" class="price-input" style="width: 200px;"></td>
-                    <td><input type="number" name="display_order" value="<?= $material['display_order'] ?>" class="price-input" style="width: 60px;"></td>
+                    <td><input type="number" name="display_order" value="<?= $material['display_order'] ?>" class="price-input" style="width: 60px; margin-left: 20%;"></td>
                     <td>
                         <label style="display: inline-flex; align-items: center; margin: 0;">
                             <input type="checkbox" name="is_active" value="1" <?= $material['is_active'] ? 'checked' : '' ?>>

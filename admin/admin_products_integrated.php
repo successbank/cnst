@@ -30,15 +30,127 @@ $additionalStyles = '
 
 .data-table th {
     text-align: center;
+    background: #f8f9fa;
+    font-weight: 600;
+    padding: 12px;
+    border-bottom: 2px solid #dee2e6;
 }
 
 .data-table td {
     text-align: center;
+    padding: 12px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
     word-break: break-word;
 }
 
 .data-table td:nth-child(2) {
     text-align: left;
+}
+
+.page-header {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 30px;
+}
+
+.page-header h1 {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+    font-size: 28px;
+}
+
+.page-header p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 16px;
+}
+
+.content-section {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 30px;
+}
+
+.content-section h2 {
+    margin: 0 0 20px 0;
+    color: #2c3e50;
+    font-size: 24px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.form-inline {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group label {
+    font-weight: 500;
+    color: #495057;
+    font-size: 14px;
+}
+
+.price-input {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.price-input:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 3px rgba(0,123,255,.25);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
+.active-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background: #28a745;
+    color: white;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+.inactive-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background: #6c757d;
+    color: white;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-left: 5px;
 }
 
 .filter-form input[type="text"] {
@@ -147,6 +259,19 @@ $additionalStyles = '
 ';
 
 require_once 'admin_head.php';
+?>
+
+<?php
+// 메시지 표시
+if (isset($_SESSION['success_message'])) {
+    echo '<div class="msg success">' . $_SESSION['success_message'] . '</div>';
+    unset($_SESSION['success_message']);
+}
+
+if (isset($_SESSION['error_message'])) {
+    echo '<div class="msg error">' . $_SESSION['error_message'] . '</div>';
+    unset($_SESSION['error_message']);
+}
 ?>
 
 <div class="page-header">

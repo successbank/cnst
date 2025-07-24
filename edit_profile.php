@@ -222,18 +222,18 @@ myPageSidebar('edit');
                 
                 <div class="form-group">
                     <label>회사명</label>
-                    <input type="text" name="company" value="<?php echo htmlspecialchars($_POST['company'] ?? $member['company']); ?>">
+                    <input type="text" name="company" value="<?php echo htmlspecialchars($_POST['company'] ?? $member['company'] ?? ''); ?>">
                 </div>
                 
                 <div class="form-group">
                     <label>홈페이지</label>
                     <input type="url" name="homepage" placeholder="https://example.com"
-                           value="<?php echo htmlspecialchars($_POST['homepage'] ?? $member['homepage']); ?>">
+                           value="<?php echo htmlspecialchars($_POST['homepage'] ?? $member['homepage'] ?? ''); ?>">
                 </div>
                 
                 <div class="form-group">
                     <label>직급/부서</label>
-                    <input type="text" name="position" value="<?php echo htmlspecialchars($_POST['position'] ?? $member['position']); ?>">
+                    <input type="text" name="position" value="<?php echo htmlspecialchars($_POST['position'] ?? $member['position'] ?? ''); ?>">
                 </div>
             </div>
             
@@ -246,14 +246,14 @@ myPageSidebar('edit');
                     <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                         <input type="text" id="zipcode" name="zipcode" placeholder="우편번호" readonly
                                style="width: 150px; background: #F8F9FA;"
-                               value="<?php echo htmlspecialchars($_POST['zipcode'] ?? $member['zipcode']); ?>">
+                               value="<?php echo htmlspecialchars($_POST['zipcode'] ?? $member['zipcode'] ?? ''); ?>">
                         <button type="button" class="btn btn-secondary" onclick="findZipcode()">우편번호 찾기</button>
                     </div>
                     <input type="text" id="address" name="address" placeholder="기본주소" readonly
                            style="background: #F8F9FA; margin-bottom: 12px;"
-                           value="<?php echo htmlspecialchars($_POST['address'] ?? $member['address']); ?>">
+                           value="<?php echo htmlspecialchars($_POST['address'] ?? $member['address'] ?? ''); ?>">
                     <input type="text" id="address_detail" name="address_detail" placeholder="상세주소"
-                           value="<?php echo htmlspecialchars($_POST['address_detail'] ?? $member['address_detail']); ?>">
+                           value="<?php echo htmlspecialchars($_POST['address_detail'] ?? $member['address_detail'] ?? ''); ?>">
                 </div>
             </div>
             
