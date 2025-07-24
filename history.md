@@ -373,3 +373,113 @@
 - 제품 검색 기능 강화
 - 가격 자동 계산 기능 확장
 - 재고 관리 시스템 연동
+
+## 작업 일자: 2025-07-24 - Roundcube 웹메일 설치
+
+### 요구사항
+- 웹메일 시스템: Roundcube 설치
+- 경로: /webmail/
+- DB: 기존 MySQL 사용 (별도 데이터베이스 생성)
+- 설치 전 DB 진행 방법 확인 후 진행
+
+### 구현 내용
+
+#### 1. 시스템 요구사항 확인
+- PHP 8.3.6 설치 확인 ✓
+- Docker 28.3.1 설치 확인 ✓
+- 기존 project1 Docker 환경 활용
+
+#### 2. 데이터베이스 준비
+- MySQL 컨테이너: project1_mysql
+- 데이터베이스 생성: `roundcube`
+- 사용자: 기존 user/userpassword 계정 사용
+- 문자셋: utf8mb4_unicode_ci
+
+#### 3. Roundcube 설치
+- 버전: 1.6.9 (최신 안정 버전)
+- 다운로드 및 압축 해제
+- 경로: /html/webmail/roundcube/ → /html/webmail/ (이동 완료)
+- 설정 파일: config/config.inc.php 생성
+
+#### 4. 웹서버 설정
+- Nginx 설정 파일 수정 (nginx.conf)
+- /webmail 경로 추가
+- PHP-FPM 연동 설정
+
+#### 5. 설치 중 발생한 문제 및 해결
+
+##### 5.1 PHP intl 확장 누락
+- 문제: `INTL_IDNA_VARIANT_UTS46` 상수 미정의 오류
+- 해결: intl_fix.php 파일 생성하여 누락된 상수 정의
+- iniset.php에 자동 로드 추가
+
+##### 5.2 IMAP 서버 부재
+- 문제: 실제 메일 서버 없이 UI만 확인하려는 요구사항
+- 시도한 해결방법:
+  - demo_mode 플러그인 생성
+  - no_imap 플러그인 생성
+  - 각종 바이패스 스크립트 (demo_bypass.php, force_login.php 등)
+- 최종 해결: GreenMail 테스트 IMAP 서버 Docker 컨테이너로 설치
+
+##### 5.3 기타 문제
+- zipdownload 플러그인 비활성화 (PHP zip 확장 없음)
+- preg_match 정규식 오류 수정
+- 세션 검증 문제
+
+#### 6. 보안 설정
+- installer 디렉토리 삭제 완료
+- enable_installer = false 설정
+- 보안 경고 메시지 제거
+
+#### 7. 최종 구성
+
+##### 7.1 설치된 구성요소
+- Roundcube 1.6.9
+- GreenMail 테스트 IMAP 서버 (컨테이너명: test-imap)
+- MySQL 데이터베이스: roundcube
+
+##### 7.2 접속 정보
+- URL: http://211.248.112.67:1112/webmail/
+- 테스트 계정: demo@example.com / demo
+- 한국어 인터페이스 설정 완료
+
+##### 7.3 주요 설정
+```php
+$config['imap_host'] = 'localhost:143';
+$config['smtp_host'] = 'localhost:3025';
+$config['language'] = 'ko_KR';
+$config['use_idn'] = false;  // intl 확장 없음
+$config['auto_create_user'] = true;
+```
+
+### 생성/수정된 파일 목록
+1. `/html/webmail/` - Roundcube 설치 디렉토리
+2. `/html/webmail/config/config.inc.php` - 메인 설정 파일
+3. `/html/webmail/intl_fix.php` - PHP intl 확장 대체
+4. `/html/webmail/plugins/demo_mode/` - 데모 모드 플러그인 (사용 안 함)
+5. `/html/webmail/plugins/no_imap/` - IMAP 우회 플러그인 (사용 안 함)
+6. `/nginx.conf` - 웹서버 설정 업데이트
+7. 각종 테스트 파일들 (demo_*.php, force_login.php 등)
+
+### Docker 컨테이너
+- test-imap: GreenMail 테스트 메일 서버
+  - 포트: 143 (IMAP), 3025 (SMTP)
+  - 이미지: greenmail/standalone:latest
+
+### 사용 방법
+1. http://211.248.112.67:1112/webmail/ 접속
+2. demo@example.com / demo 로그인
+3. 웹메일 인터페이스 확인
+
+### 주요 특징
+- IMAP/SMTP 테스트 서버 포함
+- PHP intl 확장 없이 작동
+- 한국어 인터페이스
+- 자동 사용자 생성
+- 메모리 기반 테스트 서버 (재시작 시 메일 초기화)
+
+### 향후 개선 사항
+- PHP intl 확장 설치 (Dockerfile 수정)
+- 실제 운영용 메일 서버 구축
+- SSL/TLS 인증서 설정
+- 스팸 필터 및 보안 기능 추가

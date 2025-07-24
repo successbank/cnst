@@ -63,7 +63,7 @@ if (isset($_GET['action'])) {
         $result = $stmt->fetch();
         
         if ($result) {
-            $ton_quantity = intval($_GET['quantity']); // 사용자 입력은 톤 단위
+            $quantity = intval($_GET['quantity']);
             $material_id = isset($_GET['material_id']) ? intval($_GET['material_id']) : null;
             
             // 재질 추가 단가 조회
@@ -79,13 +79,9 @@ if (isset($_GET['action'])) {
                 }
             }
             
-            // 톤당 본수를 이용하여 실제 본수 계산
-            $pieces_per_ton = $result['pieces_per_ton'];
-            $actual_quantity = $ton_quantity * $pieces_per_ton; // 실제 본수 = 톤 수 × 톤당 본수
-            
             // 계산식 적용
             $weight_per_piece = $result['unit_weight'] * $result['length']; // 본당 중량 = 단위중량 × 길이
-            $total_weight = $weight_per_piece * $actual_quantity; // 총 중량 = 본당 중량 × 실제 본수
+            $total_weight = $weight_per_piece * $quantity; // 총 중량 = 본당 중량 × 수량(BD 본수)
             $base_price = $result['unit_price'] ?: 0;
             $final_price = $base_price + $material_price; // 적용 단가 = 기준단가 + 재질 추가단가
             $total_price = $total_weight * $final_price; // 총 금액 = 총 중량 × 적용 단가
@@ -93,8 +89,7 @@ if (isset($_GET['action'])) {
             $data = [
                 'spec_name' => $result['spec_name'],
                 'length' => $result['length'],
-                'ton_quantity' => $ton_quantity,  // 톤 단위 수량
-                'quantity' => $actual_quantity,    // 실제 본수
+                'quantity' => $quantity,
                 'unit_weight' => $result['unit_weight'],
                 'weight_per_piece' => $weight_per_piece,
                 'total_weight' => $total_weight,
@@ -103,7 +98,7 @@ if (isset($_GET['action'])) {
                 'material_price' => $material_price,
                 'final_price' => $final_price,
                 'total_price' => $total_price,
-                'pieces_per_ton' => $pieces_per_ton
+                'pieces_per_ton' => $result['pieces_per_ton']
             ];
             
             echo json_encode(['success' => true, 'data' => $data]);
@@ -372,9 +367,8 @@ if (isset($_GET['action'])) {
                 
                 <!-- 수량 입력 -->
                 <div class="form-group">
-                    <label>수량 (톤)</label>
+                    <label>수량 (본)</label>
                     <input type="number" id="quantity-input" min="1" value="1" disabled>
-                    <small style="display: block; margin-top: 5px; color: #666;">* 입력한 톤 수 × 톤당 본수로 계산됩니다</small>
                 </div>
                 
                 <!-- 계산 버튼 -->
@@ -399,11 +393,7 @@ if (isset($_GET['action'])) {
                             <span class="result-value" id="result-length">-</span>
                         </div>
                         <div class="result-item">
-                            <span class="result-label">톤수</span>
-                            <span class="result-value" id="result-ton-quantity">-</span>
-                        </div>
-                        <div class="result-item">
-                            <span class="result-label">총 본수</span>
+                            <span class="result-label">수량</span>
                             <span class="result-value" id="result-quantity">-</span>
                         </div>
                         <div class="result-item">
@@ -513,8 +503,7 @@ if (isset($_GET['action'])) {
                         data.data.forEach(item => {
                             const option = document.createElement('option');
                             option.value = item.length;
-                            option.dataset.piecesPerTon = item.pieces_per_ton;
-                            option.textContent = `${item.length}m (톤당 ${item.pieces_per_ton}본)`;
+                            option.textContent = `${item.length}m (본당 ${item.weight_per_piece}kg, 톤당 ${item.pieces_per_ton}본)`;
                             lengthSelect.appendChild(option);
                         });
                         lengthSelect.disabled = false;
@@ -585,8 +574,7 @@ if (isset($_GET['action'])) {
             
             document.getElementById('result-product').textContent = data.spec_name;
             document.getElementById('result-length').textContent = data.length + 'm';
-            document.getElementById('result-ton-quantity').textContent = data.ton_quantity + '톤';
-            document.getElementById('result-quantity').textContent = data.quantity.toLocaleString() + '본 (' + data.ton_quantity + '톤 × ' + data.pieces_per_ton + '본)';
+            document.getElementById('result-quantity').textContent = data.quantity.toLocaleString() + '본';
             document.getElementById('result-material').textContent = data.material_name || '-';
             document.getElementById('result-unit-weight').textContent = data.unit_weight + 'kg/m';
             document.getElementById('result-weight-per-piece').textContent = data.weight_per_piece.toFixed(2) + 'kg';
