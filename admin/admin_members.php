@@ -1,4 +1,38 @@
 <?php
+// 세션 및 데이터베이스 연결 먼저 처리
+session_start();
+require_once '../db.php';
+require_once 'admin_check.php';
+
+// 액션 처리 (헤더 출력 전에 처리)
+$action = $_GET['action'] ?? 'list';
+
+// 회원 상태 변경 처리
+if($action === 'toggle_status' && isset($_GET['id'])) {
+    $id = (int)$_GET['id'];
+    try {
+        $stmt = $pdo->prepare("UPDATE members SET is_active = NOT is_active WHERE id = ?");
+        $stmt->execute([$id]);
+        header('Location: admin_members.php?msg=status_changed');
+        exit;
+    } catch(PDOException $e) {
+        $error = "상태 변경 중 오류가 발생했습니다.";
+    }
+}
+
+// 회원 삭제 처리
+if($action === 'delete' && isset($_GET['id'])) {
+    $id = (int)$_GET['id'];
+    try {
+        $stmt = $pdo->prepare("DELETE FROM members WHERE id = ? AND is_admin = 0");
+        $stmt->execute([$id]);
+        header('Location: admin_members.php?msg=deleted');
+        exit;
+    } catch(PDOException $e) {
+        $error = "삭제 중 오류가 발생했습니다.";
+    }
+}
+
 $pageTitle = '회원 관리';
 
 // 추가 스타일 정의
@@ -570,35 +604,6 @@ $additionalStyles = '
 ';
 
 require_once 'admin_head.php';
-
-// 액션 처리
-$action = $_GET['action'] ?? 'list';
-
-// 회원 상태 변경 처리
-if($action === 'toggle_status' && isset($_GET['id'])) {
-    $id = (int)$_GET['id'];
-    try {
-        $stmt = $pdo->prepare("UPDATE members SET is_active = NOT is_active WHERE id = ?");
-        $stmt->execute([$id]);
-        header('Location: admin_members.php?msg=status_changed');
-        exit;
-    } catch(PDOException $e) {
-        $error = "상태 변경 중 오류가 발생했습니다.";
-    }
-}
-
-// 회원 삭제 처리
-if($action === 'delete' && isset($_GET['id'])) {
-    $id = (int)$_GET['id'];
-    try {
-        $stmt = $pdo->prepare("DELETE FROM members WHERE id = ? AND is_admin = 0");
-        $stmt->execute([$id]);
-        header('Location: admin_members.php?msg=deleted');
-        exit;
-    } catch(PDOException $e) {
-        $error = "삭제 중 오류가 발생했습니다.";
-    }
-}
 
 // 검색 및 필터
 $search = $_GET['search'] ?? '';
