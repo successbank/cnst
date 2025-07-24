@@ -227,7 +227,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         INSERT INTO rebar_prices (spec_id, unit_price, effective_date, is_active, created_by) 
                         VALUES (?, ?, CURDATE(), TRUE, ?)
                     ");
-                    $stmt->execute([$spec_id, $price, $_SESSION['admin_id'] ?? 0]);
+                    // admin_id가 문자열인 경우 NULL 사용
+                    $admin_id = is_numeric($_SESSION['admin_id']) ? $_SESSION['admin_id'] : NULL;
+                    $stmt->execute([$spec_id, $price, $admin_id]);
                 }
             }
             $_SESSION['success_message'] = '단가가 업데이트되었습니다.';
