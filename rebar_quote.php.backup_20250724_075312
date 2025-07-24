@@ -2,6 +2,9 @@
 session_start();
 require_once 'db.php';
 
+$pageTitle = '철근 견적 계산';
+$additionalCSS = ['css/main.css'];
+
 // 철근 규격 목록 조회
 $stmt = $pdo->query("
     SELECT 
@@ -113,14 +116,12 @@ if (isset($_GET['action'])) {
         exit;
     }
 }
+
+// header include
+require_once 'head.php';
 ?>
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>철근 견적 계산</title>
-    <style>
+
+<style>
         * {
             margin: 0;
             padding: 0;
@@ -324,8 +325,9 @@ if (isset($_GET['action'])) {
             margin-top: 10px;
         }
     </style>
-</head>
-<body>
+
+<!-- 메인 컨텐츠 -->
+<main style="min-height: calc(100vh - 300px);">
     <div class="container">
         <div class="header">
             <h1>철근 견적 계산기</h1>
@@ -376,6 +378,9 @@ if (isset($_GET['action'])) {
                     <input type="number" id="quantity-input" min="1" value="1" disabled>
                     <small style="display: block; margin-top: 5px; color: #666;">* 입력한 톤 수 × 톤당 본수로 계산됩니다</small>
                 </div>
+                
+                <!-- 계산 버튼 -->
+                <button class="btn" id="calculate-btn" disabled>견적 계산</button>
                 
                 <div class="loading" id="loading">계산 중...</div>
                 <div id="error-message"></div>
@@ -492,7 +497,7 @@ if (isset($_GET['action'])) {
                 selectedMaterialId = this.dataset.materialId;
                 selectedMaterialName = this.dataset.materialName;
                 
-                autoCalculate();
+                checkCalculateButton();
             });
         });
         
@@ -516,7 +521,7 @@ if (isset($_GET['action'])) {
                         });
                         lengthSelect.disabled = false;
                         document.getElementById('quantity-input').disabled = false;
-                        autoCalculate();
+                        checkCalculateButton();
                     }
                 })
                 .catch(error => {
@@ -525,28 +530,41 @@ if (isset($_GET['action'])) {
                 });
         }
         
-        // 자동 계산 함수
-        function autoCalculate() {
+        // 계산 버튼 활성화 체크
+        function checkCalculateButton() {
             const lengthSelect = document.getElementById('length-select');
             const quantityInput = document.getElementById('quantity-input');
+            const calculateBtn = document.getElementById('calculate-btn');
             
-            // 모든 필수 항목이 선택되었는지 확인
-            if (selectedSpecId && selectedMaterialId && lengthSelect.value && quantityInput.value > 0) {
-                performCalculation();
+            if (selectedSpecId && lengthSelect.value && quantityInput.value > 0) {
+                calculateBtn.disabled = false;
+            } else {
+                calculateBtn.disabled = true;
             }
         }
         
-        // 실제 계산 수행
-        function performCalculation() {
+        // 길이 선택 변경 이벤트
+        document.getElementById('length-select').addEventListener('change', checkCalculateButton);
+        document.getElementById('quantity-input').addEventListener('input', checkCalculateButton);
+        
+        // 견적 계산
+        document.getElementById('calculate-btn').addEventListener('click', function() {
             const length = document.getElementById('length-select').value;
             const quantity = document.getElementById('quantity-input').value;
             
+            if (!selectedSpecId || !selectedMaterialId || !length || !quantity) {
+                showError('모든 항목을 선택해주세요.');
+                return;
+            }
+            
             document.getElementById('loading').style.display = 'block';
+            this.disabled = true;
             
             fetch(`rebar_quote.php?action=calculate&spec_id=${selectedSpecId}&material_id=${selectedMaterialId}&length=${length}&quantity=${quantity}`)
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('loading').style.display = 'none';
+                    this.disabled = false;
                     
                     if (data.success) {
                         showResult(data.data);
@@ -556,21 +574,10 @@ if (isset($_GET['action'])) {
                 })
                 .catch(error => {
                     document.getElementById('loading').style.display = 'none';
+                    this.disabled = false;
                     console.error('Error:', error);
                     showError('계산 중 오류가 발생했습니다.');
                 });
-        }
-        
-        // 길이 선택 변경 이벤트
-        document.getElementById('length-select').addEventListener('change', autoCalculate);
-        
-        // 수량 입력 변경 이벤트
-        document.getElementById('quantity-input').addEventListener('input', function() {
-            // 디바운싱을 위한 타이머
-            clearTimeout(this.inputTimer);
-            this.inputTimer = setTimeout(() => {
-                autoCalculate();
-            }, 500); // 0.5초 후 자동 계산
         });
         
         // 결과 표시
@@ -602,5 +609,7 @@ if (isset($_GET['action'])) {
             }, 3000);
         }
     </script>
-</body>
-</html>
+    </div>
+</main>
+
+<?php require_once 'tail.php'; ?>
