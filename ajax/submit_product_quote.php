@@ -15,6 +15,9 @@ try {
     $company = $_POST['company'] ?? '';
     $phone = $_POST['phone'] ?? '';
     $email = $_POST['email'] ?? '';
+    $zipcode = $_POST['zipcode'] ?? '';
+    $address = $_POST['address'] ?? '';
+    $address_detail = $_POST['address_detail'] ?? '';
     $products = $_POST['products'] ?? '';
     $notes = $_POST['notes'] ?? '';
     $items = isset($_POST['items']) ? json_decode($_POST['items'], true) : [];
@@ -29,8 +32,8 @@ try {
     $pdo->beginTransaction();
     
     // 견적서 저장
-    $sql = "INSERT INTO product_quotes (customer_name, company, phone, email, products, notes, member_id) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO product_quotes (customer_name, company, phone, email, zipcode, address, address_detail, products, notes, member_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
@@ -38,6 +41,9 @@ try {
         $company,
         $phone,
         $email,
+        $zipcode,
+        $address,
+        $address_detail,
         $products,
         $notes,
         $_SESSION['member_id'] ?? null
@@ -63,6 +69,30 @@ try {
                 $item['quantity']
             ]);
         }
+    }
+    
+    // 주소 저장 처리
+    if (isset($_POST['save_address']) && $_POST['save_address'] == '1' && !empty($zipcode) && !empty($address)) {
+        $address_name = $_POST['address_name'] ?? '주소 ' . date('Y-m-d');
+        
+        // 기본 배송지 해제
+        $stmt = $pdo->prepare("UPDATE member_addresses SET is_default = 0 WHERE member_id = ?");
+        $stmt->execute([$_SESSION['member_id']]);
+        
+        // 새 주소 저장
+        $stmt = $pdo->prepare("
+            INSERT INTO member_addresses (member_id, address_name, recipient_name, recipient_phone, zipcode, address, address_detail, is_default) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+        ");
+        $stmt->execute([
+            $_SESSION['member_id'],
+            $address_name,
+            $customer_name,
+            $phone,
+            $zipcode,
+            $address,
+            $address_detail
+        ]);
     }
     
     // 트랜잭션 커밋
