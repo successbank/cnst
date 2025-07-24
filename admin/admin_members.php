@@ -126,6 +126,249 @@ $additionalStyles = '
     background: #555;
 }
 
+.pagination {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.page-link {
+    padding: 8px 12px;
+    border: 1px solid #E5E5E7;
+    text-decoration: none;
+    color: #333;
+    font-size: 14px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    min-width: 36px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-link:hover {
+    background: #F5F5F5;
+    border-color: #1A237E;
+    color: #1A237E;
+}
+
+.page-link.active {
+    background: #1A237E;
+    color: white;
+    border-color: #1A237E;
+    font-weight: 600;
+}
+
+.page-dots {
+    color: #999;
+    padding: 0 8px;
+    font-size: 14px;
+}
+
+.pagination-wrapper {
+    border-top: 1px solid #E5E5E7;
+    padding-top: 20px;
+}
+
+.show-entries select {
+    font-size: 14px;
+    height: 36px;
+}
+
+.page-info {
+    min-width: 200px;
+    text-align: right;
+}
+
+.memo-icon {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background: #FFA726;
+    border-radius: 50%;
+    color: white;
+    text-align: center;
+    line-height: 20px;
+    font-size: 12px;
+    margin-left: 4px;
+    cursor: help;
+    position: relative;
+}
+
+.memo-icon:hover::after {
+    content: "메모 있음";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    margin-bottom: 4px;
+}
+
+.memo-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 2px solid #E5E5E7;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.memo-textarea:focus {
+    outline: none;
+    border-color: #1A237E;
+}
+
+.memo-list {
+    background: #F5F5F7;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 8px;
+}
+
+.memo-item {
+    background: white;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border: 1px solid #E5E5E7;
+    position: relative;
+}
+
+.memo-item:last-child {
+    margin-bottom: 0;
+}
+
+.memo-date {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.memo-content {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.memo-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 8px;
+}
+
+.memo-edit-btn, .memo-delete-btn {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.memo-edit-btn {
+    background: #2196F3;
+    color: white;
+}
+
+.memo-edit-btn:hover {
+    background: #1976D2;
+}
+
+.memo-delete-btn {
+    background: #F44336;
+    color: white;
+}
+
+.memo-delete-btn:hover {
+    background: #D32F2F;
+}
+
+.memo-add-section {
+    margin-top: 16px;
+    padding: 16px;
+    background: #E3F2FD;
+    border-radius: 8px;
+    display: none;
+}
+
+.memo-add-section.active {
+    display: block;
+}
+
+.add-memo-btn {
+    padding: 8px 16px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.add-memo-btn:hover {
+    background: #45A049;
+}
+
+.memo-add-btn {
+    padding: 4px 8px;
+    background: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: background 0.3s ease;
+}
+
+.memo-add-btn:hover {
+    background: #1976D2;
+}
+
+@media (max-width: 768px) {
+    .pagination-wrapper {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+    
+    .show-entries {
+        order: 1;
+    }
+    
+    .page-info {
+        order: 2;
+        text-align: center;
+        min-width: auto;
+    }
+    
+    .pagination {
+        order: 3;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .page-link {
+        min-width: 32px;
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+}
+
 .content-box {
     background: white;
     padding: 32px;
@@ -191,7 +434,11 @@ if($action === 'view' && isset($_GET['id'])) {
 if($action === 'list') {
     try {
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $limit = 20;
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+        // 유효한 limit 값만 허용
+        if(!in_array($limit, [10, 20, 30, 50, 100])) {
+            $limit = 20;
+        }
         $offset = ($page - 1) * $limit;
         
         // 기본 쿼리
@@ -431,6 +678,57 @@ if($action === 'list') {
                                 <div class="detail-label">관리자 여부</div>
                                 <div class="detail-value"><?php echo $member_detail['is_admin'] ? '관리자' : '일반회원'; ?></div>
                             </div>
+                            <div class="detail-item" style="grid-column: 1 / -1;">
+                                <div class="detail-label">관리자 메모</div>
+                                <input type="hidden" name="memo" value="<?php echo htmlspecialchars($member_detail['memo'] ?? ''); ?>">
+                                
+                                <!-- 메모 리스트 -->
+                                <div class="memo-list">
+                                    <?php if (!empty($member_detail['memo'])): ?>
+                                        <?php 
+                                        // 메모를 줄바꿈으로 구분하여 개별 메모로 처리
+                                        $memos = array_filter(explode("\n---\n", $member_detail['memo']));
+                                        foreach ($memos as $index => $memo): 
+                                            $memo_parts = explode("\n", $memo, 2);
+                                            $date_line = $memo_parts[0] ?? '';
+                                            $content = $memo_parts[1] ?? $memo;
+                                        ?>
+                                            <div class="memo-item">
+                                                <?php if (strpos($date_line, '[') === 0): ?>
+                                                    <div class="memo-date"><?php echo htmlspecialchars($date_line); ?></div>
+                                                    <div class="memo-content"><?php echo htmlspecialchars($content); ?></div>
+                                                <?php else: ?>
+                                                    <div class="memo-content"><?php echo htmlspecialchars($memo); ?></div>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <p style="text-align: center; color: #999; margin: 0;">등록된 메모가 없습니다.</p>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <!-- 메모 추가 버튼 -->
+                                <button type="button" class="add-memo-btn" onclick="toggleMemoAdd()" style="margin-top: 12px;">
+                                    + 메모 추가
+                                </button>
+                                
+                                <!-- 메모 추가 섹션 -->
+                                <div class="memo-add-section" id="memo-add-section">
+                                    <textarea id="new-memo-content" class="memo-textarea" placeholder="새 메모를 작성하세요..." style="margin-bottom: 12px;"></textarea>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button type="button" onclick="addMemo(<?php echo $member_detail['id']; ?>)" 
+                                                style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                                            저장
+                                        </button>
+                                        <button type="button" onclick="toggleMemoAdd()" 
+                                                style="padding: 8px 16px; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                                            취소
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <span id="memo-save-result" style="margin-left: 12px; font-size: 14px;"></span>
+                            </div>
                         </div>
                         <button type="submit" style="margin-top: 16px; padding: 10px 20px; background: #1A237E; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
                             정보 수정
@@ -462,6 +760,12 @@ if($action === 'list') {
                         </button>
                     </form>
                 </div>
+                
+                <!-- 로그인 이력 섹션 -->
+                <?php 
+                $member_id = $member_detail['id'];
+                include 'includes/member_login_history.php'; 
+                ?>
                 
                 <div class="action-links" style="margin-top: 24px;">
                     <a href="?action=toggle_status&id=<?php echo $member_detail['id']; ?>" 
@@ -554,6 +858,72 @@ if($action === 'list') {
                     }
                 }).open();
             }
+            
+            function toggleMemoAdd() {
+                const addSection = document.getElementById('memo-add-section');
+                addSection.classList.toggle('active');
+                if (addSection.classList.contains('active')) {
+                    document.getElementById('new-memo-content').focus();
+                }
+            }
+            
+            function addMemo(memberId) {
+                const newMemoContent = document.getElementById('new-memo-content').value.trim();
+                if (!newMemoContent) {
+                    alert('메모 내용을 입력해주세요.');
+                    return;
+                }
+                
+                const resultSpan = document.getElementById('memo-save-result');
+                
+                // 현재 메모 가져오기
+                const currentMemo = document.querySelector('input[name="memo"]').value;
+                
+                // 새 메모 포맷 (날짜 포함)
+                const now = new Date();
+                const dateStr = now.getFullYear() + '-' + 
+                               String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                               String(now.getDate()).padStart(2, '0') + ' ' + 
+                               String(now.getHours()).padStart(2, '0') + ':' + 
+                               String(now.getMinutes()).padStart(2, '0');
+                
+                const newMemoFormatted = '[' + dateStr + ']\n' + newMemoContent;
+                
+                // 기존 메모와 새 메모 결합
+                const updatedMemo = currentMemo ? currentMemo + '\n---\n' + newMemoFormatted : newMemoFormatted;
+                
+                // AJAX 요청
+                fetch('admin_members_action.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=save_memo&member_id=' + memberId + '&memo=' + encodeURIComponent(updatedMemo)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        resultSpan.textContent = '✅ 메모가 추가되었습니다';
+                        resultSpan.style.color = '#4CAF50';
+                        setTimeout(() => {
+                            location.reload(); // 페이지 새로고침으로 목록 업데이트
+                        }, 1000);
+                    } else {
+                        resultSpan.textContent = '❌ ' + (data.message || '저장 실패');
+                        resultSpan.style.color = '#F44336';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    resultSpan.textContent = '❌ 오류 발생';
+                    resultSpan.style.color = '#F44336';
+                });
+            }
             </script>
             
             <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -610,6 +980,11 @@ if($action === 'list') {
                                         <?php if($member['is_admin']): ?>
                                             <small style="color: #1A237E;">(관리자)</small>
                                         <?php endif; ?>
+                                        <?php if(!empty($member['memo'])): ?>
+                                            <span class="memo-icon" title="<?php echo htmlspecialchars(mb_substr($member['memo'], 0, 50) . (mb_strlen($member['memo']) > 50 ? '...' : '')); ?>">📝</span>
+                                        <?php else: ?>
+                                            <button type="button" class="memo-add-btn" onclick="window.location.href='?action=view&id=<?php echo $member['id']; ?>#admin-memo'">메모 추가</button>
+                                        <?php endif; ?>
                                     </td>
                                     <td><?php echo htmlspecialchars($member['email']); ?></td>
                                     <td><?php echo htmlspecialchars($member['company'] ?? '-'); ?></td>
@@ -644,19 +1019,102 @@ if($action === 'list') {
                     </tbody>
                 </table>
                 
-                <?php if($totalPages > 1): ?>
-                    <div class="pagination">
-                        <?php
-                        $queryString = http_build_query(array_merge($_GET, ['page' => '']));
-                        for($i = 1; $i <= $totalPages; $i++):
-                        ?>
-                            <a href="?<?php echo $queryString . $i; ?>" 
-                               class="page-link <?php echo $page == $i ? 'active' : ''; ?>">
-                                <?php echo $i; ?>
-                            </a>
-                        <?php endfor; ?>
+                <!-- 페이지네이션 및 표시 개수 선택 -->
+                <div class="pagination-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                    <div class="show-entries">
+                        <form method="GET" action="" style="display: flex; align-items: center; gap: 8px;">
+                            <?php foreach($_GET as $key => $value): ?>
+                                <?php if($key !== 'limit' && $key !== 'page'): ?>
+                                    <input type="hidden" name="<?php echo htmlspecialchars($key); ?>" value="<?php echo htmlspecialchars($value); ?>">
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                            <label style="font-size: 14px;">표시:</label>
+                            <select name="limit" onchange="this.form.submit()" class="filter-select" style="width: auto; padding: 6px 10px;">
+                                <option value="10" <?php echo $limit == 10 ? 'selected' : ''; ?>>10개</option>
+                                <option value="20" <?php echo $limit == 20 ? 'selected' : ''; ?>>20개</option>
+                                <option value="30" <?php echo $limit == 30 ? 'selected' : ''; ?>>30개</option>
+                                <option value="50" <?php echo $limit == 50 ? 'selected' : ''; ?>>50개</option>
+                                <option value="100" <?php echo $limit == 100 ? 'selected' : ''; ?>>100개</option>
+                            </select>
+                        </form>
                     </div>
-                <?php endif; ?>
+                    
+                    <?php if($totalPages > 1): ?>
+                        <div class="pagination">
+                            <?php
+                            $queryParams = $_GET;
+                            unset($queryParams['page']);
+                            $baseQuery = http_build_query($queryParams);
+                            $baseUrl = '?' . ($baseQuery ? $baseQuery . '&' : '');
+                            
+                            // 페이지 범위 계산
+                            $visiblePages = 5; // 표시할 페이지 번호 개수
+                            $halfVisible = floor($visiblePages / 2);
+                            
+                            $startPage = max(1, $page - $halfVisible);
+                            $endPage = min($totalPages, $page + $halfVisible);
+                            
+                            // 시작 페이지 조정
+                            if($endPage - $startPage + 1 < $visiblePages) {
+                                if($startPage == 1) {
+                                    $endPage = min($totalPages, $startPage + $visiblePages - 1);
+                                } else {
+                                    $startPage = max(1, $endPage - $visiblePages + 1);
+                                }
+                            }
+                            ?>
+                            
+                            <!-- 첫 페이지 -->
+                            <?php if($page > 1): ?>
+                                <a href="<?php echo $baseUrl; ?>page=1" class="page-link" title="첫 페이지">
+                                    <span style="font-size: 12px;">≪</span>
+                                </a>
+                            <?php endif; ?>
+                            
+                            <!-- 이전 페이지 -->
+                            <?php if($page > 1): ?>
+                                <a href="<?php echo $baseUrl; ?>page=<?php echo $page - 1; ?>" class="page-link" title="이전 페이지">
+                                    <span style="font-size: 12px;">＜</span>
+                                </a>
+                            <?php endif; ?>
+                            
+                            <!-- 페이지 번호 -->
+                            <?php if($startPage > 1): ?>
+                                <span class="page-dots">...</span>
+                            <?php endif; ?>
+                            
+                            <?php for($i = $startPage; $i <= $endPage; $i++): ?>
+                                <a href="<?php echo $baseUrl; ?>page=<?php echo $i; ?>" 
+                                   class="page-link <?php echo $page == $i ? 'active' : ''; ?>">
+                                    <?php echo $i; ?>
+                                </a>
+                            <?php endfor; ?>
+                            
+                            <?php if($endPage < $totalPages): ?>
+                                <span class="page-dots">...</span>
+                            <?php endif; ?>
+                            
+                            <!-- 다음 페이지 -->
+                            <?php if($page < $totalPages): ?>
+                                <a href="<?php echo $baseUrl; ?>page=<?php echo $page + 1; ?>" class="page-link" title="다음 페이지">
+                                    <span style="font-size: 12px;">＞</span>
+                                </a>
+                            <?php endif; ?>
+                            
+                            <!-- 마지막 페이지 -->
+                            <?php if($page < $totalPages): ?>
+                                <a href="<?php echo $baseUrl; ?>page=<?php echo $totalPages; ?>" class="page-link" title="마지막 페이지">
+                                    <span style="font-size: 12px;">≫</span>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <div class="page-info" style="font-size: 14px; color: #666;">
+                        전체 <?php echo number_format($total); ?>명 중 
+                        <?php echo number_format(($page - 1) * $limit + 1); ?>-<?php echo number_format(min($page * $limit, $total)); ?>명
+                    </div>
+                </div>
             </div>
         <?php endif; ?>
 

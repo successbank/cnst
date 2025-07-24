@@ -62,6 +62,7 @@ if ($action === 'update_member') {
     $address = trim($_POST['address'] ?? '');
     $address_detail = trim($_POST['address_detail'] ?? '');
     $is_active = isset($_POST['is_active']) ? 1 : 0;
+    $memo = trim($_POST['memo'] ?? '');
     
     // 유효성 검사
     if (!$member_id) {
@@ -88,10 +89,10 @@ if ($action === 'update_member') {
             UPDATE members SET 
                 email = ?, company = ?, homepage = ?, phone = ?, landline = ?, 
                 zipcode = ?, address = ?, address_detail = ?,
-                is_active = ?, updated_at = NOW()
+                is_active = ?, memo = ?, updated_at = NOW()
             WHERE id = ?
         ");
-        $stmt->execute([$email, $company, $homepage, $phone, $landline, $zipcode, $address, $address_detail, $is_active, $member_id]);
+        $stmt->execute([$email, $company, $homepage, $phone, $landline, $zipcode, $address, $address_detail, $is_active, $memo, $member_id]);
         
         header('Location: admin_members.php?action=view&id=' . $member_id . '&msg=info_updated');
         exit;
@@ -99,6 +100,34 @@ if ($action === 'update_member') {
     } catch (PDOException $e) {
         error_log('Member update error: ' . $e->getMessage());
         header('Location: admin_members.php?action=view&id=' . $member_id . '&error=update_failed');
+        exit;
+    }
+}
+
+// 메모만 저장 처리 (AJAX)
+if ($action === 'save_memo') {
+    header('Content-Type: application/json; charset=utf-8');
+    
+    $member_id = (int)($_POST['member_id'] ?? 0);
+    $memo = trim($_POST['memo'] ?? '');
+    
+    // 유효성 검사
+    if (!$member_id) {
+        echo json_encode(['success' => false, 'message' => '잘못된 회원 정보입니다.']);
+        exit;
+    }
+    
+    try {
+        // 메모 업데이트
+        $stmt = $pdo->prepare("UPDATE members SET memo = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$memo, $member_id]);
+        
+        echo json_encode(['success' => true, 'message' => '메모가 저장되었습니다.']);
+        exit;
+        
+    } catch (PDOException $e) {
+        error_log('Memo save error: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => '저장 중 오류가 발생했습니다: ' . $e->getMessage()]);
         exit;
     }
 }

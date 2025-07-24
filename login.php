@@ -37,6 +37,38 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt = $pdo->prepare("UPDATE members SET last_login = NOW() WHERE id = ?");
                     $stmt->execute([$member['id']]);
                     
+                    // 로그인 로그 기록
+                    try {
+                        $ip_address = $_SERVER['REMOTE_ADDR'] ?? '';
+                        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+                        
+                        // 로그인 로그 추가
+                        $stmt = $pdo->prepare("INSERT INTO member_login_logs 
+                            (member_id, user_id, login_date, ip_address, user_agent) 
+                            VALUES (?, ?, NOW(), ?, ?)");
+                        $stmt->execute([$member['id'], $member['user_id'], $ip_address, $user_agent]);
+                        
+                        // 로그인 카운트 증가
+                        $stmt = $pdo->prepare("UPDATE members SET total_login_count = IFNULL(total_login_count, 0) + 1 WHERE id = ?");
+                        $stmt->execute([$member['id']]);
+                        
+                        // 요약 테이블 업데이트
+                        $stmt = $pdo->prepare("INSERT INTO member_login_summary 
+                            (member_id, user_id, last_login_date, total_login_count, last_30_days_count) 
+                            VALUES (?, ?, NOW(), 1, 1)
+                            ON DUPLICATE KEY UPDATE 
+                            last_login_date = NOW(),
+                            total_login_count = total_login_count + 1,
+                            last_30_days_count = (
+                                SELECT COUNT(*) FROM member_login_logs 
+                                WHERE member_id = ? AND login_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                            )");
+                        $stmt->execute([$member['id'], $member['user_id'], $member['id']]);
+                    } catch(Exception $e) {
+                        // 로그 기록 실패해도 로그인은 진행
+                        error_log("Login log error: " . $e->getMessage());
+                    }
+                    
                     // 리다이렉트
                     header('Location: ' . urldecode($redirect));
                     exit;
