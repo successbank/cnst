@@ -132,6 +132,19 @@ myPageSidebar('quote_cart');
                                         <?php echo htmlspecialchars($default_address['address']); ?>
                                         <?php echo htmlspecialchars($default_address['address_detail'] ?? ''); ?>
                                     </div>
+                                    <?php if (!empty($default_address['recipient_name']) || !empty($default_address['recipient_phone'])): ?>
+                                    <div style="color: #333; font-size: 14px; margin-top: 5px;">
+                                        <?php if (!empty($default_address['recipient_name'])): ?>
+                                            수령인: <?php echo htmlspecialchars($default_address['recipient_name']); ?>
+                                        <?php endif; ?>
+                                        <?php if (!empty($default_address['recipient_name']) && !empty($default_address['recipient_phone'])): ?>
+                                            /
+                                        <?php endif; ?>
+                                        <?php if (!empty($default_address['recipient_phone'])): ?>
+                                            연락처: <?php echo htmlspecialchars($default_address['recipient_phone']); ?>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
                                 <button type="button" onclick="showAddressModal()" class="btn btn-outline">변경</button>
                             </div>
@@ -751,7 +764,9 @@ function applySelectedAddress() {
         name: addressItem.dataset.name || addressItem.getAttribute('data-name'),
         zipcode: addressItem.dataset.zipcode || addressItem.getAttribute('data-zipcode'),
         address: addressItem.dataset.address || addressItem.getAttribute('data-address'),
-        address_detail: addressItem.dataset.addressDetail || addressItem.getAttribute('data-address-detail') || ''
+        address_detail: addressItem.dataset.addressDetail || addressItem.getAttribute('data-address-detail') || '',
+        recipient_name: addressItem.dataset.recipientName || addressItem.getAttribute('data-recipient-name') || '',
+        recipient_phone: addressItem.dataset.recipientPhone || addressItem.getAttribute('data-recipient-phone') || ''
     };
     
     // 데이터 검증
@@ -776,6 +791,13 @@ function applySelectedAddress() {
                 <div style="color: #666; font-size: 14px;">
                     (${addressData.zipcode}) ${addressData.address} ${addressData.address_detail}
                 </div>
+                ${addressData.recipient_name || addressData.recipient_phone ? `
+                <div style="color: #333; font-size: 14px; margin-top: 5px;">
+                    ${addressData.recipient_name ? `수령인: ${addressData.recipient_name}` : ''}
+                    ${addressData.recipient_name && addressData.recipient_phone ? ' / ' : ''}
+                    ${addressData.recipient_phone ? `연락처: ${addressData.recipient_phone}` : ''}
+                </div>
+                ` : ''}
             </div>
             <button type="button" onclick="showAddressModal()" class="btn btn-outline">변경</button>
         </div>
@@ -844,6 +866,13 @@ function saveNewAddress() {
                         <div style="color: #666; font-size: 14px;">
                             (${newAddressData.zipcode}) ${newAddressData.address} ${newAddressData.address_detail}
                         </div>
+                        ${recipientName || recipientPhone ? `
+                        <div style="color: #333; font-size: 14px; margin-top: 5px;">
+                            ${recipientName ? `수령인: ${recipientName}` : ''}
+                            ${recipientName && recipientPhone ? ' / ' : ''}
+                            ${recipientPhone ? `연락처: ${recipientPhone}` : ''}
+                        </div>
+                        ` : ''}
                     </div>
                     <button type="button" onclick="showAddressModal()" class="btn btn-outline">변경</button>
                 </div>
