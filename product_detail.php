@@ -1149,7 +1149,7 @@ function addToQuoteCart() {
 // 카트 카운트 업데이트
 function updateCartCount() {
     const quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
-    const cartCount = quoteCart.reduce((sum, item) => sum + parseInt(item.quantity), 0);
+    const cartCount = quoteCart.length; // 아이템(건) 단위로 카운트
     
     // 상단 카트 아이콘의 카운트 업데이트 (head.php에 있다면)
     const cartCountElement = document.querySelector('.cart-count');

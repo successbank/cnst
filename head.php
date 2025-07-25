@@ -49,9 +49,9 @@ if(file_exists('includes/settings.php')) {
                 <!-- Navigation -->
                 <nav class="main-nav">
                     <ul>
-                        <li><a href="sales.php" class="<?php echo $currentPage == 'sales' ? 'active' : ''; ?>">판매제품</a></li>
+                        <li><a href="products.php" class="<?php echo $currentPage == 'products' ? 'active' : ''; ?>">판매제품</a></li>
                         <li><a href="about.php" class="<?php echo $currentPage == 'about' ? 'active' : ''; ?>">회사소개</a></li>
-                        <li><a href="products.php" class="<?php echo $currentPage == 'products' ? 'active' : ''; ?>">제품소개</a></li>
+                        <li><a href="http://211.248.112.67:1112/ebook/mobile/index.html#p=1" target="_blank" ; ?>단중표</a></li>
                         <li><a href="consignment.php" class="<?php echo $currentPage == 'consignment' ? 'active' : ''; ?>">중계판매</a></li>
                         <li><a href="quote.php" class="<?php echo $currentPage == 'quote' ? 'active' : ''; ?>">견적문의</a></li>
                         <li><a href="notice.php" class="<?php echo $currentPage == 'notice' ? 'active' : ''; ?>">공지사항</a></li>
@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update cart count on page load
     function updateCartCount() {
         const quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
-        const cartCount = quoteCart.reduce((sum, item) => sum + item.quantity, 0);
+        const cartCount = quoteCart.length; // 아이템(건) 단위로 카운트
         
         const cartCountElement = document.querySelector('.cart-count');
         if (cartCountElement) {

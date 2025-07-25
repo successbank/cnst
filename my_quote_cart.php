@@ -550,7 +550,7 @@ function requestQuote() {
 // 카트 카운트 업데이트 (헤더)
 function updateCartCount() {
     const quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
-    const cartCount = quoteCart.reduce((sum, item) => sum + item.quantity, 0);
+    const cartCount = quoteCart.length; // 아이템(건) 단위로 카운트
     
     const cartCountElement = document.querySelector('.cart-count');
     if (cartCountElement) {
