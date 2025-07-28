@@ -958,29 +958,7 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                 </div>
             </div>
 
-            <?php if ($is_rebar_category && $rebar_specifications && !empty($rebar_prices_by_material)): ?>
-            <!-- 철근 재질별 가격 표시 -->
-            <div class="product-price-section">
-                <div class="price-label">재질별 가격</div>
-                <div class="material-price-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                    <?php foreach ($rebar_materials as $material): ?>
-                    <?php 
-                    ?>
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e9ecef;">
-                        <div style="font-weight: 600; color: #333; margin-bottom: 5px;"><?php echo htmlspecialchars($material['material_name']); ?></div>
-                        <div style="font-size: 20px; font-weight: 700; color: #1428A0;">
-                            <?php echo number_format($material['additional_price']); ?>원
-                        </div>
-                        <div style="font-size: 12px; color: #666; margin-top: 3px;">원/kg</div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-                <div class="price-info">
-                    <span>※ kg당 가격 (부가세 별도)</span>
-                    <span>※ 수량에 따라 변동 가능</span>
-                </div>
-            </div>
-            <?php elseif ($product['price'] && $product['price'] > 0): ?>
+            <?php if ($product['price'] && $product['price'] > 0): ?>
             <div class="product-price-section">
                 <div class="price-label">가격범위</div>
                 <?php 
