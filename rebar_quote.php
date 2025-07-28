@@ -53,7 +53,8 @@ if (isset($_GET['action'])) {
                 rl.*,
                 rs.spec_name,
                 rs.unit_weight,
-                rp.unit_price
+                rp.unit_price,
+                rl.total_weight
             FROM rebar_length_info rl
             JOIN rebar_specifications rs ON rl.spec_id = rs.id
             LEFT JOIN rebar_prices rp ON rs.id = rp.spec_id AND rp.is_active = TRUE
@@ -85,7 +86,19 @@ if (isset($_GET['action'])) {
             
             // 계산식 적용
             $weight_per_piece = $result['unit_weight'] * $result['length']; // 본당 중량 = 단위중량 × 길이
-            $total_weight = $weight_per_piece * $actual_quantity; // 총 중량 = 본당 중량 × 실제 본수
+            
+            // 엑셀의 고정 중량값 사용 (total_weight가 있으면 사용, 없으면 계산)
+            $has_missing_data = false;
+            if ($result['total_weight'] && $result['pieces_per_ton'] && $result['pieces_per_ton'] > 0) {
+                $total_weight = $result['total_weight'] * $ton_quantity; // 총 중량 = 엑셀 톤당 중량 × 톤수
+            } else if (!$result['pieces_per_ton'] || $result['pieces_per_ton'] == 0 || !$result['total_weight']) {
+                // 본수 또는 중량 데이터가 없는 경우 (0도 없는 것으로 처리)
+                $has_missing_data = true;
+                $total_weight = 0; // 임시값
+                $actual_quantity = 0; // 본수도 0으로
+            } else {
+                $total_weight = $weight_per_piece * $actual_quantity; // 총 중량 = 본당 중량 × 실제 본수
+            }
             $base_price = $result['unit_price'] ?: 0;
             $final_price = $base_price + $material_price; // 적용 단가 = 기준단가 + 재질 추가단가
             $total_price = $total_weight * $final_price; // 총 금액 = 총 중량 × 적용 단가
@@ -103,7 +116,8 @@ if (isset($_GET['action'])) {
                 'material_price' => $material_price,
                 'final_price' => $final_price,
                 'total_price' => $total_price,
-                'pieces_per_ton' => $pieces_per_ton
+                'pieces_per_ton' => $pieces_per_ton,
+                'has_missing_data' => $has_missing_data
             ];
             
             echo json_encode(['success' => true, 'data' => $data]);
@@ -641,6 +655,12 @@ if (isset($_GET['action'])) {
         
         // 결과 표시
         function showResult(data) {
+            // 데이터가 누락된 경우 문의 모달 표시
+            if (data.has_missing_data) {
+                showInquiryModal();
+                return;
+            }
+            
             document.getElementById('empty-result').style.display = 'none';
             document.getElementById('result-container').style.display = 'block';
             
@@ -768,11 +788,43 @@ if (isset($_GET['action'])) {
             }
         });
         
+        // 문의 모달 표시
+        function showInquiryModal() {
+            document.getElementById('inquiryModal').style.display = 'block';
+        }
+        
+        // 문의 모달 닫기
+        function closeInquiryModal() {
+            document.getElementById('inquiryModal').style.display = 'none';
+        }
+        
         // 페이지 로드 시 카트 카운트 업데이트
         window.addEventListener('DOMContentLoaded', function() {
             updateCartCount();
+            
+            // 문의 모달 외부 클릭 시 닫기
+            document.getElementById('inquiryModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeInquiryModal();
+                }
+            });
         });
     </script>
+
+<!-- 문의요망 모달 -->
+<div id="inquiryModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 400px; width: 90%;">
+        <h3 style="margin-bottom: 20px; color: #333; font-size: 20px;">견적 문의 요망</h3>
+        <p style="margin-bottom: 24px; color: #666; line-height: 1.6;">
+            선택하신 제품의 상세 견적은 전화 문의 부탁드립니다.<br><br>
+            <strong style="color: #1428A0; font-size: 18px;">문의 전화: 010-9820-0495</strong>
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button onclick="closeInquiryModal()" style="padding: 10px 24px; background: #f0f0f0; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">닫기</button>
+            <a href="tel:010-9820-0495" style="padding: 10px 24px; background: #1428A0; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; text-decoration: none; display: inline-block;">전화하기</a>
+        </div>
+    </div>
+</div>
 
 <!-- 견적문의 모달 -->
 <div id="quoteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
