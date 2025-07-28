@@ -1,5 +1,6 @@
 <?php
 require_once 'db.php';
+require_once 'includes/rebar_unit_weights.php';
 $currentPage = 'products';
 $pageTitle = '제품소개';
 $additionalCSS = [];
@@ -636,6 +637,26 @@ $products = $stmt->fetchAll();
         <?php endforeach; ?>
     </div>
 
+    <?php 
+    // 철근 카테고리의 경우 제품명에서 규격을 추출하고 정렬
+    if ($category_filter === 'rebar') {
+        // 제품에 규격 정보 추가
+        foreach ($products as &$product) {
+            $spec = extractRebarSpec($product['product_name']);
+            $product['rebar_spec'] = $spec;
+            $product['unit_weight'] = $spec ? getRebarUnitWeight($spec) : null;
+            
+            // 규격 숫자 추출 (D10 -> 10)
+            $product['spec_number'] = $spec ? intval(substr($spec, 1)) : 999;
+        }
+        
+        // 규격 번호로 정렬
+        usort($products, function($a, $b) {
+            return $a['spec_number'] - $b['spec_number'];
+        });
+    }
+    ?>
+    
     <?php if ($view_type === 'tile'): ?>
         <!-- 타일 뷰 -->
         <div class="products-grid">
@@ -673,10 +694,16 @@ $products = $stmt->fetchAll();
                     <div class="product-info">
                         <h3><?php echo escape($product['product_name']); ?></h3>
                         <p class="specs"><?php echo escape($product['specifications']); ?></p>
-                        <?php if ($categoryInfo && $categoryInfo['code'] === 'rebar' && preg_match('/단위중량:\s*([\d.]+)kg\/m/', $product['specifications'], $matches)): ?>
+                        <?php if ($product['category_code'] === 'rebar'): ?>
+                            <?php
+                            // 이미 계산된 단중 사용
+                            $unitWeight = isset($product['unit_weight']) ? $product['unit_weight'] : getRebarUnitWeightFromProductName($product['product_name']);
+                            if ($unitWeight):
+                            ?>
                             <p class="unit-weight" style="color: #F57C00; font-weight: 600; font-size: 14px;">
-                                단위중량: <?php echo $matches[1]; ?>kg/m
+                                단위중량: <?php echo $unitWeight; ?>kg/m
                             </p>
+                            <?php endif; ?>
                         <?php endif; ?>
                         <p class="description"><?php echo escape($product['description']); ?></p>
                         <span class="product-btn">견적문의</span>
@@ -723,10 +750,16 @@ $products = $stmt->fetchAll();
                             <h3 class="product-list-title"><?php echo escape($product['product_name']); ?></h3>
                         </div>
                         <p class="product-list-specs">규격: <?php echo escape($product['specifications']); ?></p>
-                        <?php if ($categoryInfo && $categoryInfo['code'] === 'rebar' && preg_match('/단위중량:\s*([\d.]+)kg\/m/', $product['specifications'], $matches)): ?>
+                        <?php if ($product['category_code'] === 'rebar'): ?>
+                            <?php
+                            // 이미 계산된 단중 사용
+                            $unitWeight = isset($product['unit_weight']) ? $product['unit_weight'] : getRebarUnitWeightFromProductName($product['product_name']);
+                            if ($unitWeight):
+                            ?>
                             <p class="unit-weight" style="color: #F57C00; font-weight: 600; font-size: 14px; margin: 5px 0;">
-                                단위중량: <?php echo $matches[1]; ?>kg/m
+                                단위중량: <?php echo $unitWeight; ?>kg/m
                             </p>
+                            <?php endif; ?>
                         <?php endif; ?>
                         <p class="product-list-description"><?php echo escape($product['description']); ?></p>
                         <div class="product-list-footer">
@@ -745,6 +778,31 @@ $products = $stmt->fetchAll();
                 </a>
             <?php endforeach; ?>
         </div>
+    <?php endif; ?>
+    
+    <?php 
+    // 철근 카테고리에 제품이 없는 경우 기본 철근 규격 목록 표시
+    if ($category_filter === 'rebar' && empty($products)): 
+    ?>
+    <div class="rebar-specs-container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+        <h3 style="text-align: center; margin-bottom: 30px; color: #2c3e50; font-size: 24px;">철근 규격별 단위중량</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+            <?php 
+            $all_specs = getAllRebarSpecsWithWeight();
+            foreach ($all_specs as $spec): 
+            ?>
+            <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;">
+                <h4 style="color: #1428A0; font-size: 20px; margin-bottom: 10px;"><?php echo $spec['spec_name']; ?></h4>
+                <p style="color: #F57C00; font-weight: 600; font-size: 16px;"><?php echo $spec['unit_weight']; ?>kg/m</p>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="rebar_quote.php" class="btn" style="display: inline-block; padding: 15px 40px; background: #1428A0; color: white; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                철근 견적 계산하기
+            </a>
+        </div>
+    </div>
     <?php endif; ?>
     
     <!-- 페이지네이션 -->
