@@ -851,21 +851,13 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                 <div class="material-price-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
                     <?php foreach ($rebar_materials as $material): ?>
                     <?php 
-                        $price_info = isset($rebar_prices_by_material[$material['id']]) 
-                            ? $rebar_prices_by_material[$material['id']] 
-                            : ['total_price' => $material['additional_price'], 'base_price' => 0];
                     ?>
                     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e9ecef;">
                         <div style="font-weight: 600; color: #333; margin-bottom: 5px;"><?php echo htmlspecialchars($material['material_name']); ?></div>
                         <div style="font-size: 20px; font-weight: 700; color: #1428A0;">
-                            <?php echo number_format($price_info['total_price']); ?>원
+                            <?php echo number_format($material['additional_price']); ?>원
                         </div>
                         <div style="font-size: 12px; color: #666; margin-top: 3px;">원/kg</div>
-                        <?php if ($price_info['base_price'] > 0 && $material['additional_price'] > 0): ?>
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">
-                            (기본 <?php echo number_format($price_info['base_price']); ?> + <?php echo number_format($material['additional_price']); ?>)
-                        </div>
-                        <?php endif; ?>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -1073,20 +1065,14 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                         <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #555;">재질 선택</label>
                         <div class="material-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;">
                             <?php foreach ($rebar_materials as $material): ?>
-                            <?php 
-                                $material_price_info = isset($rebar_prices_by_material[$material['id']]) 
-                                    ? $rebar_prices_by_material[$material['id']] 
-                                    : ['total_price' => $material['additional_price']];
-                            ?>
                             <button type="button" 
                                     class="material-btn" 
                                     data-material-id="<?php echo $material['id']; ?>"
                                     data-material-price="<?php echo $material['additional_price']; ?>"
-                                    data-total-price="<?php echo $material_price_info['total_price']; ?>"
                                     style="padding: 12px; background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.3s ease; font-size: 14px;">
                                 <?php echo htmlspecialchars($material['material_name']); ?>
                                 <small style="display: block; font-size: 12px; margin-top: 3px; color: #666;">
-                                    <?php echo number_format($material_price_info['total_price']); ?>원/kg
+                                    <?php echo number_format($material['additional_price']); ?>원/kg
                                 </small>
                             </button>
                             <?php endforeach; ?>
@@ -1118,7 +1104,7 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                         </div>
                         <?php if ($is_rebar): ?>
                         <div class="result-item" id="materialPriceRow" style="display: none;">
-                            <span class="label">재질 추가단가:</span>
+                            <span class="label">재질단가:</span>
                             <span class="value" id="materialPrice">-</span>
                         </div>
                         <div class="result-item" id="finalPriceRow" style="display: none;">
@@ -1149,8 +1135,7 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                         </div>
                         <div class="price-notice-small">
                             <?php if ($is_rebar): ?>
-                            * 계산식: 총 중량(kg) × 적용단가(원/kg)<br>
-                            * 적용단가 = 기준단가 + 재질 추가단가
+                            * 계산식: 총 중량(kg) × 재질단가(원/kg)
                             <?php else: ?>
                             * 예상 금액 = 톤수 × 기준단가<br>
                             * 실제 가격은 재질, 길이, 수량에 따라 달라질 수 있습니다.
@@ -1289,8 +1274,6 @@ function changeImage(imageUrl) {
 let rebarData = {};
 let selectedMaterialId = null;
 let selectedMaterialPrice = 0;
-let selectedTotalPrice = 0;
-let basePrice = <?php echo isset($rebar_prices_by_material[array_keys($rebar_prices_by_material)[0]]['base_price']) ? $rebar_prices_by_material[array_keys($rebar_prices_by_material)[0]]['base_price'] : 0; ?>;
 
 // 재질 선택 이벤트
 document.querySelectorAll('.material-btn').forEach(btn => {
@@ -1302,10 +1285,9 @@ document.querySelectorAll('.material-btn').forEach(btn => {
         this.classList.add('active');
         selectedMaterialId = this.dataset.materialId;
         selectedMaterialPrice = parseFloat(this.dataset.materialPrice) || 0;
-        selectedTotalPrice = parseFloat(this.dataset.totalPrice) || 0;
         
         // 재질 정보 표시
-        document.getElementById('materialPrice').textContent = '+' + selectedMaterialPrice.toLocaleString() + ' 원/kg';
+        document.getElementById('materialPrice').textContent = selectedMaterialPrice.toLocaleString() + ' 원/kg';
         document.getElementById('materialPriceRow').style.display = 'flex';
         
         calculatePrice();
@@ -1377,8 +1359,8 @@ function calculatePrice() {
     // 총 중량 계산 (엑셀의 고정값 사용 - total_weight는 톤당 kg)
     const totalWeight = data.total_weight * tonQuantity;
     
-    // 적용 단가 계산 (재질별 총 단가 사용)
-    const finalPrice = selectedTotalPrice || (basePrice + selectedMaterialPrice);
+    // 적용 단가 = 재질의 추가단가 (최종 판매가격)
+    const finalPrice = selectedMaterialPrice;
     
     // 총 금액 계산
     const totalPrice = Math.round(totalWeight * finalPrice);

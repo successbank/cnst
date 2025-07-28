@@ -29,9 +29,7 @@ try {
                 rm.id AS material_id,
                 rm.material_code,
                 rm.material_name,
-                rm.additional_price,
-                COALESCE(rp.unit_price, 0) AS base_price,
-                (COALESCE(rp.unit_price, 0) + COALESCE(rm.additional_price, 0)) AS total_price,
+                rm.additional_price AS price,
                 rp.effective_date
             FROM rebar_specifications rs
             CROSS JOIN rebar_materials rm
@@ -92,9 +90,7 @@ try {
                 rm.id AS material_id,
                 rm.material_code,
                 rm.material_name,
-                rm.additional_price,
-                COALESCE(rp.unit_price, 0) AS base_price,
-                (COALESCE(rp.unit_price, 0) + COALESCE(rm.additional_price, 0)) AS total_price,
+                rm.additional_price AS price,
                 rp.effective_date
             FROM rebar_specifications rs
             CROSS JOIN rebar_materials rm
