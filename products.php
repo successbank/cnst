@@ -216,7 +216,7 @@ $top_3_categories = array_slice(array_column($categories_by_clicks, 'category_co
 </style>
 
 <section class="products-header">
-    <h2>제품소개</h2>
+    <h2>판매제품</h2>
     <p>충남스틸이 공급하는 고품질 철강 제품을 카테고리별로 확인하세요</p>
 </section>
 
@@ -230,7 +230,7 @@ $top_3_categories = array_slice(array_column($categories_by_clicks, 'category_co
             <?php 
             // 철근 카테고리는 특별한 견적 페이지로 이동
             $categoryLink = $isEmpty ? '#' : 
-                ($category['category_code'] == 'rebar' ? 'rebar_quote.php' : 
+                ($category['category_code'] == 'rebar' ? 'http://211.248.112.67:1112/products_new.php?category=rebar&view=tile&search=' : 
                 'products_new.php?category=' . $category['category_code'] . '&view=tile');
             ?>
             <a href="<?php echo $categoryLink; ?>" 
