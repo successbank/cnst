@@ -42,6 +42,63 @@ if ($product && $product['specifications']) {
     $unit_weight = $stmt->fetch();
 }
 
+// 철근 카테고리 확인 (문자열과 숫자 모두 체크)
+$is_rebar = ($product['category_code'] === 'rebar' || 
+             $product['category_code'] === '114' || 
+             $product['category_code'] == 114 ||
+             strpos(strtolower($product['category_name']), '철근') !== false);
+
+// 철근 제품인 경우 추가 데이터 가져오기
+$rebar_spec = null;
+$rebar_materials = [];
+$rebar_lengths = [];
+
+if ($is_rebar) {
+    // 규격명 추출 (예: D10, D13 등)
+    // 제품명에서 추출 시도
+    $spec_name = '';
+    if (preg_match('/(D\d+)/', $product['product_name'], $matches)) {
+        $spec_name = $matches[1];
+    }
+    // 규격에서도 추출 시도
+    if (!$spec_name && preg_match('/(D\d+)/', $product['specifications'], $matches)) {
+        $spec_name = $matches[1];
+    }
+    
+    // 철근 규격 정보 가져오기
+    if ($spec_name) {
+        $stmt = $pdo->prepare("
+            SELECT rs.*, rp.unit_price 
+            FROM rebar_specifications rs
+            LEFT JOIN rebar_prices rp ON rs.id = rp.spec_id AND rp.is_active = TRUE
+            WHERE rs.spec_name = ? AND rs.is_active = TRUE
+        ");
+        $stmt->execute([$spec_name]);
+        $rebar_spec = $stmt->fetch();
+        
+        // 길이 정보 가져오기
+        if ($rebar_spec) {
+            $stmt = $pdo->prepare("
+                SELECT rl.*, rs.unit_weight 
+                FROM rebar_length_info rl
+                JOIN rebar_specifications rs ON rl.spec_id = rs.id
+                WHERE rl.spec_id = ?
+                ORDER BY rl.length
+            ");
+            $stmt->execute([$rebar_spec['id']]);
+            $rebar_lengths = $stmt->fetchAll();
+        }
+    }
+    
+    // 재질 목록 가져오기
+    $stmt = $pdo->query("
+        SELECT * FROM rebar_materials 
+        WHERE is_active = TRUE 
+        ORDER BY display_order
+    ");
+    $rebar_materials = $stmt->fetchAll();
+}
+
 if (!$product) {
     echo "<script>alert('제품을 찾을 수 없습니다.'); history.back();</script>";
     exit;
@@ -629,6 +686,60 @@ $product_images = $stmt->fetchAll();
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
+/* 철근 계산기 스타일 */
+.rebar-calculator .material-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.rebar-calculator .material-btn:hover {
+    background: #f0f7ff !important;
+    border-color: #1428A0 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.rebar-calculator .material-btn.active {
+    background: #1428A0 !important;
+    border-color: #1428A0 !important;
+    color: white !important;
+}
+
+.rebar-calculator .material-btn.active small {
+    color: #e3f2fd !important;
+}
+
+.rebar-calculator select:focus,
+.rebar-calculator input:focus {
+    border-color: #1428A0 !important;
+    box-shadow: 0 0 0 3px rgba(20, 40, 160, 0.1);
+}
+
+.rebar-calculator .form-control {
+    font-size: 16px;
+}
+
+.rebar-calculator .result-item {
+    transition: background 0.3s ease;
+}
+
+.rebar-calculator .result-item:hover {
+    background: #f8f9fa;
+}
+
+/* 계산 버튼 스타일 */
+.calc-btn.primary:hover {
+    background: #0F1F7A !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(20, 40, 160, 0.3);
+}
+
+.calc-btn.secondary:hover {
+    background: #5a6268 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 /* 반응형 */
 @media (max-width: 768px) {
     .product-detail-content {
@@ -911,8 +1022,134 @@ $product_images = $stmt->fetchAll();
             </div>
             <?php endif; ?>
 
-            <?php if ($unit_weight): ?>
-            <!-- 길이/수량 선택 및 중량 계산 -->
+            <!-- 디버깅 정보 (임시) -->
+            <?php if ($is_rebar): ?>
+            <div style="background: #ffebee; padding: 10px; margin-bottom: 20px; border-radius: 8px; font-size: 12px;">
+                <strong>디버깅 정보:</strong><br>
+                카테고리 코드: <?php echo $product['category_code']; ?><br>
+                카테고리명: <?php echo $product['category_name']; ?><br>
+                철근 여부: <?php echo $is_rebar ? '예' : '아니오'; ?><br>
+                규격명: <?php echo $spec_name ?: '없음'; ?><br>
+                철근 스펙 존재: <?php echo $rebar_spec ? '예' : '아니오'; ?>
+            </div>
+            <?php endif; ?>
+            
+            <?php if ($is_rebar && $rebar_spec): ?>
+            <!-- 철근 계산기 (rebar_quote.php 방식) -->
+            <div class="rebar-calculator" style="background: #f8f9fa; padding: 30px; border-radius: 12px; margin-bottom: 30px;">
+                <h3 style="margin-bottom: 25px;">철근 견적 계산</h3>
+                
+                <!-- 재질 선택 -->
+                <div class="material-selection" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 600;">재질 선택</label>
+                    <div class="material-buttons" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+                        <?php foreach ($rebar_materials as $material): ?>
+                        <button type="button" 
+                                class="material-btn" 
+                                data-material-id="<?php echo $material['id']; ?>"
+                                data-material-price="<?php echo $material['additional_price']; ?>"
+                                style="padding: 15px 10px; background: white; border: 2px solid #e9ecef; border-radius: 8px; cursor: pointer; transition: all 0.3s;">
+                            <strong><?php echo escape($material['material_name']); ?></strong>
+                            <small style="display: block; margin-top: 5px; color: #666;">+<?php echo number_format($material['additional_price']); ?>원/kg</small>
+                        </button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                
+                <!-- 길이 선택 -->
+                <div class="length-selection" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 600;">길이 선택</label>
+                    <select id="lengthSelect" class="form-control" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <option value="">길이를 선택하세요</option>
+                        <?php foreach ($rebar_lengths as $length): ?>
+                        <option value="<?php echo $length['length']; ?>" 
+                                data-pieces-per-ton="<?php echo $length['pieces_per_ton']; ?>"
+                                data-weight-per-piece="<?php echo $length['weight_per_piece']; ?>"
+                                data-total-weight="<?php echo $length['total_weight'] ?? ''; ?>">
+                            <?php echo $length['length']; ?>m (톤당 <?php echo number_format($length['pieces_per_ton'], 0); ?>본)
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <!-- 수량 입력 -->
+                <div class="quantity-selection" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 600;">수량 (톤)</label>
+                    <input type="number" id="tonQuantity" class="form-control" min="1" value="1" step="0.1"
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px;">
+                    <small style="display: block; margin-top: 5px; color: #666;">* 입력한 톤 수 × 톤당 본수로 계산됩니다</small>
+                </div>
+                
+                <!-- 계산 버튼 -->
+                <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                    <button type="button" onclick="calculateRebarPrice()" class="calc-btn primary"
+                            style="flex: 1; padding: 12px; background: #1428A0; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        계산하기
+                    </button>
+                    <button type="button" onclick="resetCalculator()" class="calc-btn secondary"
+                            style="padding: 12px 24px; background: #6c757d; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        초기화
+                    </button>
+                </div>
+                
+                <!-- 계산 결과 -->
+                <div class="calc-result" style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef;">
+                    <h4 style="margin-bottom: 15px;">계산 결과</h4>
+                    <div class="result-grid" style="display: grid; gap: 10px;">
+                        <div class="result-item" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span>규격</span>
+                            <span id="resultSpec"><?php echo escape($rebar_spec['spec_name']); ?></span>
+                        </div>
+                        <div class="result-item" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span>재질</span>
+                            <span id="resultMaterial">-</span>
+                        </div>
+                        <div class="result-item" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span>길이</span>
+                            <span id="resultLength">-</span>
+                        </div>
+                        <div class="result-item" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span>톤수</span>
+                            <span id="resultTon">-</span>
+                        </div>
+                        <div class="result-item" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span>총 본수</span>
+                            <span id="resultQuantity">-</span>
+                        </div>
+                        <div class="result-item" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span>총 중량</span>
+                            <span id="resultTotalWeight">-</span>
+                        </div>
+                        <div class="result-item" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span>기준단가</span>
+                            <span id="resultBasePrice"><?php echo number_format($rebar_spec['unit_price'] ?: 0); ?>원/kg</span>
+                        </div>
+                        <div class="result-item" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span>재질 추가단가</span>
+                            <span id="resultMaterialPrice">-</span>
+                        </div>
+                        <div class="result-item" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span>적용 단가</span>
+                            <span id="resultFinalPrice">-</span>
+                        </div>
+                        <div class="result-item total" style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #333; margin-top: 10px; font-size: 18px; font-weight: bold;">
+                            <span>총 금액</span>
+                            <span id="resultTotalPrice" style="color: #1428A0;">-</span>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 6px; margin-top: 20px; font-size: 14px; color: #1976d2;">
+                        <strong>계산식:</strong><br>
+                        본당 중량 = 단위중량 × 길이<br>
+                        총 중량 = 본당 중량 × 실제 본수<br>
+                        적용 단가 = 기준단가 + 재질 추가단가<br>
+                        총 금액 = 총 중량 × 적용 단가
+                    </div>
+                </div>
+            </div>
+            
+            <?php elseif ($unit_weight): ?>
+            <!-- 길이/수량 선택 및 중량 계산 (일반 제품) -->
             <div class="weight-calculator">
                 <h3>수량 및 중량 계산</h3>
                 <div class="calculator-form">
@@ -1095,24 +1332,44 @@ function addToQuoteCart() {
     const productId = '<?php echo $product['id']; ?>';
     const productName = '<?php echo addslashes($product['product_name']); ?>';
     const productSpecs = '<?php echo addslashes($product['specifications']); ?>';
+    const categoryCode = '<?php echo $product['category_code']; ?>';
     
     // 현재 선택된 값들 가져오기 (단중표가 있는 경우)
     let selectedInfo = {
         id: productId,
         name: productName,
-        specifications: productSpecs
+        specifications: productSpecs,
+        category: categoryCode
     };
     
-    <?php if ($unit_weight): ?>
+    <?php if ($is_rebar && $rebar_spec): ?>
+    // 철근 제품인 경우
+    if (!selectedMaterialId || !document.getElementById('lengthSelect').value || !document.getElementById('tonQuantity').value) {
+        alert('재질, 길이, 수량을 모두 선택해주세요.');
+        return;
+    }
+    
+    selectedInfo.material = selectedMaterialName;
+    selectedInfo.materialId = selectedMaterialId;
+    selectedInfo.length = document.getElementById('resultLength').textContent;
+    selectedInfo.tonQuantity = document.getElementById('resultTon').textContent;
+    selectedInfo.quantity = document.getElementById('resultQuantity').textContent.replace(/[^0-9]/g, '');
+    selectedInfo.totalWeight = document.getElementById('resultTotalWeight').textContent;
+    selectedInfo.totalPrice = document.getElementById('resultTotalPrice').textContent;
+    selectedInfo.unitPrice = document.getElementById('resultFinalPrice').textContent;
+    selectedInfo.isRebar = true;
+    selectedInfo.specId = <?php echo $rebar_spec['id']; ?>;
+    
+    <?php elseif ($unit_weight): ?>
     // 단중표가 있는 경우 추가 정보 포함
-    const length = document.getElementById('lengthInput') ? document.getElementById('lengthInput').value : '';
-    const quantity = document.getElementById('quantityInput') ? document.getElementById('quantityInput').value : 1;
-    const totalWeight = document.getElementById('totalWeight') ? document.getElementById('totalWeight').textContent.replace(/[^0-9]/g, '') : '';
+    const length = document.getElementById('length') ? document.getElementById('length').value : '';
+    const quantity = document.getElementById('quantity') ? document.getElementById('quantity').value : 1;
+    const totalWeight = document.getElementById('totalWeight') ? document.getElementById('totalWeight').textContent.replace(/[^0-9.]/g, '') : '';
     
     if (length) {
-        selectedInfo.length = length;
+        selectedInfo.length = length + 'm';
         selectedInfo.quantity = quantity;
-        selectedInfo.totalWeight = totalWeight;
+        selectedInfo.totalWeight = totalWeight + 'kg';
     }
     <?php endif; ?>
     
@@ -1181,6 +1438,130 @@ document.getElementById('quoteModal').addEventListener('click', function(e) {
 window.addEventListener('DOMContentLoaded', function() {
     updateCartCount();
 });
+
+<?php if ($is_rebar && $rebar_spec): ?>
+// 철근 계산 로직 (rebar_quote.php 방식)
+let selectedMaterialId = null;
+let selectedMaterialPrice = 0;
+let selectedMaterialName = '';
+
+// 철근 데이터
+const rebarData = {
+    spec_id: <?php echo $rebar_spec['id']; ?>,
+    spec_name: '<?php echo $rebar_spec['spec_name']; ?>',
+    unit_weight: <?php echo $rebar_spec['unit_weight']; ?>,
+    base_price: <?php echo $rebar_spec['unit_price'] ?: 0; ?>
+};
+
+// 재질 버튼 클릭 이벤트
+document.querySelectorAll('.material-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // 이전 선택 제거
+        document.querySelectorAll('.material-btn').forEach(b => {
+            b.classList.remove('active');
+        });
+        
+        // 현재 선택 추가
+        this.classList.add('active');
+        
+        selectedMaterialId = this.dataset.materialId;
+        selectedMaterialPrice = parseFloat(this.dataset.materialPrice);
+        selectedMaterialName = this.querySelector('strong').textContent;
+        
+        document.getElementById('resultMaterial').textContent = selectedMaterialName;
+        
+        calculateRebarPrice();
+    });
+});
+
+// 길이 선택 변경 이벤트
+document.getElementById('lengthSelect').addEventListener('change', calculateRebarPrice);
+
+// 수량 입력 변경 이벤트
+document.getElementById('tonQuantity').addEventListener('input', function() {
+    clearTimeout(this.inputTimer);
+    this.inputTimer = setTimeout(calculateRebarPrice, 500);
+});
+
+// 철근 제품 가격 계산 함수 (rebar_quote.php 계산식 참조)
+function calculateRebarPrice() {
+    const lengthSelect = document.getElementById('lengthSelect');
+    const tonQuantity = parseFloat(document.getElementById('tonQuantity').value) || 0;
+    
+    if (!selectedMaterialId || !lengthSelect.value || tonQuantity <= 0) {
+        return;
+    }
+    
+    const selectedOption = lengthSelect.options[lengthSelect.selectedIndex];
+    const length = parseFloat(lengthSelect.value);
+    const piecesPerTon = parseFloat(selectedOption.dataset.piecesPerTon);
+    const dbTotalWeight = parseFloat(selectedOption.dataset.totalWeight) || 0;
+    
+    // 1. 실제 본수 계산 = 톤수 × 톤당 본수
+    const actualQuantity = Math.round(tonQuantity * piecesPerTon);
+    
+    // 2. 본당 중량 = 단위중량 × 길이
+    const weightPerPiece = rebarData.unit_weight * length;
+    
+    // 3. 총 중량 = DB에 고정된 중량 사용 (있는 경우), 없으면 계산
+    const totalWeight = dbTotalWeight > 0 ? dbTotalWeight * tonQuantity : weightPerPiece * actualQuantity;
+    
+    // 4. 적용 단가 = 기준단가 + 재질 추가단가
+    const finalPrice = rebarData.base_price + selectedMaterialPrice;
+    
+    // 5. 총 금액 = 총 중량 × 적용 단가
+    const totalPrice = Math.round(totalWeight * finalPrice);
+    
+    // 결과 표시
+    document.getElementById('resultLength').textContent = length + 'm';
+    document.getElementById('resultTon').textContent = tonQuantity + '톤';
+    document.getElementById('resultQuantity').textContent = actualQuantity.toLocaleString() + '본';
+    document.getElementById('resultTotalWeight').textContent = totalWeight.toFixed(2) + 'kg';
+    document.getElementById('resultMaterialPrice').textContent = '+' + selectedMaterialPrice.toLocaleString() + '원/kg';
+    document.getElementById('resultFinalPrice').textContent = finalPrice.toLocaleString() + '원/kg';
+    document.getElementById('resultTotalPrice').textContent = totalPrice.toLocaleString() + '원';
+}
+
+// 초기화 함수
+function resetCalculator() {
+    // 재질 선택 초기화
+    document.querySelectorAll('.material-btn').forEach(b => {
+        b.classList.remove('active');
+    });
+    selectedMaterialId = null;
+    selectedMaterialPrice = 0;
+    selectedMaterialName = '';
+    
+    // 입력 필드 초기화
+    document.getElementById('lengthSelect').value = '';
+    document.getElementById('tonQuantity').value = '1';
+    
+    // 결과 표시 초기화
+    document.getElementById('resultMaterial').textContent = '-';
+    document.getElementById('resultLength').textContent = '-';
+    document.getElementById('resultTon').textContent = '-';
+    document.getElementById('resultQuantity').textContent = '-';
+    document.getElementById('resultTotalWeight').textContent = '-';
+    document.getElementById('resultMaterialPrice').textContent = '-';
+    document.getElementById('resultFinalPrice').textContent = '-';
+    document.getElementById('resultTotalPrice').textContent = '-';
+}
+
+// 페이지 로드 시 첫 번째 재질 자동 선택
+window.addEventListener('DOMContentLoaded', function() {
+    const firstMaterialBtn = document.querySelector('.material-btn');
+    if (firstMaterialBtn) {
+        firstMaterialBtn.click();
+    }
+});
+
+// Enter 키 이벤트
+document.getElementById('tonQuantity').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        calculateRebarPrice();
+    }
+});
+<?php endif; ?>
 </script>
 
 <?php include 'tail.php'; ?>
