@@ -32,30 +32,21 @@ $icons = [
     'rebar' => '🔩'
 ];
 
-// 카테고리 목록 가져오기 (click_count 포함)
-try {
-    $stmt = $pdo->query("
-        SELECT pc.*, COUNT(DISTINCT p.id) as product_count,
-               COALESCE(pc.click_count, 0) as click_count
-        FROM product_categories pc
-        LEFT JOIN products p ON pc.category_code = p.category_code AND p.is_active = 1
-        WHERE pc.is_active = 1
-        GROUP BY pc.id, pc.category_code, pc.category_name, pc.display_order, pc.is_active, pc.click_count
-        ORDER BY pc.display_order ASC, pc.category_name ASC
-    ");
-} catch (Exception $e) {
-    // click_count 컬럼이 없는 경우 대체 쿼리
-    $stmt = $pdo->query("
-        SELECT pc.*, COUNT(DISTINCT p.id) as product_count,
-               0 as click_count
-        FROM product_categories pc
-        LEFT JOIN products p ON pc.category_code = p.category_code AND p.is_active = 1
-        WHERE pc.is_active = 1
-        GROUP BY pc.id, pc.category_code, pc.category_name, pc.display_order, pc.is_active
-        ORDER BY pc.display_order ASC, pc.category_name ASC
-    ");
+// 카테고리 목록 가져오기
+$categories = [];
+$stmt = $pdo->query("SELECT * FROM product_categories WHERE is_active = 1 ORDER BY display_order ASC");
+$all_categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 각 카테고리별 제품 수 계산
+foreach ($all_categories as $category) {
+    $count_stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE category_code = ? AND is_active = 1");
+    $count_stmt->execute([$category['category_code']]);
+    $product_count = $count_stmt->fetchColumn();
+    
+    $category['product_count'] = $product_count;
+    $category['click_count'] = isset($category['click_count']) ? $category['click_count'] : 0;
+    $categories[] = $category;
 }
-$categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 // 클릭 수 기준으로 상위 3개 카테고리 찾기
