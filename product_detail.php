@@ -1358,6 +1358,7 @@ function changeImage(imageUrl) {
 let rebarData = {};
 let selectedMaterialId = null;
 let selectedMaterialPrice = 0;
+let selectedMaterialName = '';
 
 // 재질 선택 이벤트
 document.querySelectorAll('.material-btn').forEach(btn => {
@@ -1368,6 +1369,7 @@ document.querySelectorAll('.material-btn').forEach(btn => {
         this.classList.add('active');
         selectedMaterialId = this.dataset.materialId;
         selectedMaterialPrice = parseFloat(this.dataset.materialPrice) || 0;
+        selectedMaterialName = this.childNodes[0].textContent.trim();
         
         // 재질 정보 표시
         document.getElementById('materialPrice').textContent = selectedMaterialPrice.toLocaleString() + ' 원/kg';
@@ -1566,12 +1568,34 @@ function addToQuoteCart() {
     
     selectedInfo.material = selectedMaterialName;
     selectedInfo.materialId = selectedMaterialId;
-    selectedInfo.length = document.getElementById('resultLength').textContent;
-    selectedInfo.tonQuantity = document.getElementById('resultTon').textContent;
-    selectedInfo.quantity = document.getElementById('resultQuantity').textContent.replace(/[^0-9]/g, '');
-    selectedInfo.totalWeight = document.getElementById('resultTotalWeight').textContent;
-    selectedInfo.totalPrice = document.getElementById('resultTotalPrice').textContent;
-    selectedInfo.unitPrice = document.getElementById('resultFinalPrice').textContent;
+    selectedInfo.length = document.getElementById('lengthSelect').value + 'm';
+    selectedInfo.tonQuantity = document.getElementById('tonQuantity').value + '톤';
+    
+    // actualQuantity가 있으면 사용, 없으면 계산
+    const actualQuantityEl = document.getElementById('actualQuantity');
+    if (actualQuantityEl && actualQuantityEl.textContent !== '-') {
+        selectedInfo.quantity = actualQuantityEl.textContent.replace(/[^0-9]/g, '');
+    } else {
+        selectedInfo.quantity = '0';
+    }
+    
+    // totalWeight 요소 확인
+    const totalWeightEl = document.getElementById('totalWeight');
+    if (totalWeightEl && totalWeightEl.textContent !== '-') {
+        selectedInfo.totalWeight = totalWeightEl.textContent;
+    } else {
+        selectedInfo.totalWeight = '0kg';
+    }
+    
+    // totalPrice 요소 확인
+    const totalPriceEl = document.getElementById('totalPrice');
+    if (totalPriceEl && totalPriceEl.textContent !== '-') {
+        selectedInfo.totalPrice = totalPriceEl.textContent;
+    } else {
+        selectedInfo.totalPrice = '0원';
+    }
+    
+    selectedInfo.unitPrice = (document.getElementById('basePrice')?.textContent || '0') + '원/kg';
     selectedInfo.isRebar = true;
     selectedInfo.specId = <?php echo $rebar_spec['id']; ?>;
     
@@ -1661,9 +1685,6 @@ window.addEventListener('DOMContentLoaded', function() {
 let selectedMaterialId = null;
 let selectedMaterialPrice = 0;
 let selectedMaterialName = '';
-<?php else: ?>
-// 변수는 위에서 이미 선언됨, selectedMaterialName만 추가
-let selectedMaterialName = '';
 <?php endif; ?>
 
 // 철근 데이터 설정
@@ -1741,14 +1762,33 @@ function calculateRebarPrice() {
     // 5. 총 금액 = 총 중량 × 적용 단가
     const totalPrice = Math.round(totalWeight * finalPrice);
     
-    // 결과 표시
-    document.getElementById('resultLength').textContent = length + 'm';
-    document.getElementById('resultTon').textContent = tonQuantity + '톤';
-    document.getElementById('resultQuantity').textContent = actualQuantity.toLocaleString() + '본';
-    document.getElementById('resultTotalWeight').textContent = totalWeight.toFixed(2) + 'kg';
-    document.getElementById('resultMaterialPrice').textContent = '+' + selectedMaterialPrice.toLocaleString() + '원/kg';
-    document.getElementById('resultFinalPrice').textContent = finalPrice.toLocaleString() + '원/kg';
-    document.getElementById('resultTotalPrice').textContent = totalPrice.toLocaleString() + '원';
+    // 결과 표시 - 존재하는 요소만 업데이트
+    if (document.getElementById('piecesPerTon')) {
+        document.getElementById('piecesPerTon').textContent = piecesPerTon.toLocaleString() + '본';
+        document.getElementById('piecesPerTonRow').style.display = 'flex';
+    }
+    
+    if (document.getElementById('actualQuantity')) {
+        document.getElementById('actualQuantity').textContent = actualQuantity.toLocaleString() + '본';
+        document.getElementById('actualQuantityRow').style.display = 'flex';
+    }
+    
+    if (document.getElementById('totalWeight')) {
+        document.getElementById('totalWeight').textContent = totalWeight.toFixed(2) + 'kg';
+        document.getElementById('totalWeightRow').style.display = 'flex';
+    }
+    
+    if (document.getElementById('totalPrice')) {
+        document.getElementById('totalPrice').textContent = totalPrice.toLocaleString() + '원';
+    }
+    
+    // 재질가격 표시 (있는 경우)
+    if (document.getElementById('materialPrice') && selectedMaterialPrice > 0) {
+        document.getElementById('materialPrice').textContent = selectedMaterialPrice.toLocaleString() + '원/kg';
+        if (document.getElementById('materialPriceRow')) {
+            document.getElementById('materialPriceRow').style.display = 'flex';
+        }
+    }
 }
 
 // 초기화 함수
@@ -1765,15 +1805,32 @@ function resetCalculator() {
     document.getElementById('lengthSelect').value = '';
     document.getElementById('tonQuantity').value = '1';
     
-    // 결과 표시 초기화
-    document.getElementById('resultMaterial').textContent = '-';
-    document.getElementById('resultLength').textContent = '-';
-    document.getElementById('resultTon').textContent = '-';
-    document.getElementById('resultQuantity').textContent = '-';
-    document.getElementById('resultTotalWeight').textContent = '-';
-    document.getElementById('resultMaterialPrice').textContent = '-';
-    document.getElementById('resultFinalPrice').textContent = '-';
-    document.getElementById('resultTotalPrice').textContent = '-';
+    // 결과 표시 초기화 - 존재하는 요소만
+    if (document.getElementById('piecesPerTon')) {
+        document.getElementById('piecesPerTon').textContent = '-';
+        document.getElementById('piecesPerTonRow').style.display = 'none';
+    }
+    
+    if (document.getElementById('actualQuantity')) {
+        document.getElementById('actualQuantity').textContent = '-';
+        document.getElementById('actualQuantityRow').style.display = 'none';
+    }
+    
+    if (document.getElementById('totalWeight')) {
+        document.getElementById('totalWeight').textContent = '-';
+        document.getElementById('totalWeightRow').style.display = 'none';
+    }
+    
+    if (document.getElementById('totalPrice')) {
+        document.getElementById('totalPrice').textContent = '-';
+    }
+    
+    if (document.getElementById('materialPrice')) {
+        document.getElementById('materialPrice').textContent = '-';
+        if (document.getElementById('materialPriceRow')) {
+            document.getElementById('materialPriceRow').style.display = 'none';
+        }
+    }
 }
 
 // 페이지 로드 시 첫 번째 재질 자동 선택

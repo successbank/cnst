@@ -881,8 +881,8 @@ function saveNewAddress() {
             // 모달 닫기
             closeAddressModal();
             
-            // 나중에 페이지 새로고침이 필요한 경우를 위해 플래그 설정
-            // location.reload();
+            // 페이지 새로고침하여 주소 목록 업데이트
+            location.reload();
         } else {
             alert(data.message || '저장 중 오류가 발생했습니다.');
         }

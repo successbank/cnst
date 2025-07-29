@@ -84,7 +84,7 @@ $monthly_stats = $stmt->fetchAll();
         <div class="detail-item">
             <div class="detail-label">최근 30일 로그인</div>
             <div class="detail-value">
-                <?php echo number_format($login_summary['last_30_days_count'] ?? 0); ?>회
+                <?php echo number_format($login_summary['last_30days_count'] ?? 0); ?>회
             </div>
         </div>
     </div>
@@ -128,7 +128,7 @@ $monthly_stats = $stmt->fetchAll();
                         <?php echo date('Y-m-d H:i:s', strtotime($log['login_date'])); ?>
                     </td>
                     <td style="padding: 8px;">
-                        <?php echo $log['ip_address'] ?: '-'; ?>
+                        <?php echo $log['login_ip'] ?: '-'; ?>
                     </td>
                     <td style="padding: 8px;">
                         <?php 

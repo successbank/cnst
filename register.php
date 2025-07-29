@@ -69,7 +69,9 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         } catch(PDOException $e) {
-            $error = '회원가입 중 오류가 발생했습니다.';
+            $error = '회원가입 중 오류가 발생했습니다: ' . $e->getMessage();
+            // 개발 중에만 사용 - 운영 환경에서는 제거
+            error_log('Register error: ' . $e->getMessage());
         }
     }
 }
@@ -387,44 +389,86 @@ include 'head.php';
 
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script>
-// 지역번호 선택 변경 시 기타 입력 필드 표시/숨김
-document.querySelector('select[name="landline_area"]').addEventListener('change', function() {
-    const otherInput = document.querySelector('input[name="landline_area_other"]');
-    if (this.value === 'other') {
-        otherInput.style.display = 'inline-block';
-        otherInput.focus();
-    } else {
-        otherInput.style.display = 'none';
-        otherInput.value = '';
+// DOM이 완전히 로드된 후 실행
+document.addEventListener('DOMContentLoaded', function() {
+    // 지역번호 선택 변경 시 기타 입력 필드 표시/숨김
+    const landlineAreaSelect = document.querySelector('select[name="landline_area"]');
+    if (landlineAreaSelect) {
+        landlineAreaSelect.addEventListener('change', function() {
+            const otherInput = document.querySelector('input[name="landline_area_other"]');
+            if (otherInput) {
+                if (this.value === 'other') {
+                    otherInput.style.display = 'inline-block';
+                    otherInput.focus();
+                } else {
+                    otherInput.style.display = 'none';
+                    otherInput.value = '';
+                }
+            }
+        });
     }
-});
 
-// 폼 제출 시 일반전화번호 조합
-document.querySelector('#register-form').addEventListener('submit', function(e) {
-    const areaSelect = document.querySelector('select[name="landline_area"]');
-    let area = areaSelect.value;
-    
-    // 기타 선택 시 직접 입력한 값 사용
-    if (area === 'other') {
-        area = document.querySelector('input[name="landline_area_other"]').value;
+    // 폼 제출 시 일반전화번호 조합
+    const registerForm = document.querySelector('#register-form');
+    if (registerForm) {
+        registerForm.addEventListener('submit', function(e) {
+            const areaSelect = document.querySelector('select[name="landline_area"]');
+            if (areaSelect) {
+                let area = areaSelect.value;
+                
+                // 기타 선택 시 직접 입력한 값 사용
+                if (area === 'other') {
+                    const areaOther = document.querySelector('input[name="landline_area_other"]');
+                    area = areaOther ? areaOther.value : '';
+                }
+                
+                const middleInput = document.querySelector('input[name="landline_middle"]');
+                const lastInput = document.querySelector('input[name="landline_last"]');
+                const landlineInput = document.querySelector('input[name="landline"]');
+                
+                if (middleInput && lastInput && landlineInput) {
+                    const middle = middleInput.value;
+                    const last = lastInput.value;
+                    
+                    if (area && middle && last) {
+                        landlineInput.value = area + '-' + middle + '-' + last;
+                    } else {
+                        landlineInput.value = '';
+                    }
+                }
+            }
+        });
     }
-    
-    const middle = document.querySelector('input[name="landline_middle"]').value;
-    const last = document.querySelector('input[name="landline_last"]').value;
-    
-    if (area && middle && last) {
-        document.querySelector('input[name="landline"]').value = area + '-' + middle + '-' + last;
-    } else {
-        document.querySelector('input[name="landline"]').value = '';
-    }
-});
 
-// 숫자만 입력 가능하도록 제한
-document.querySelectorAll('input[name="landline_middle"], input[name="landline_last"], input[name="landline_area_other"]').forEach(input => {
-    input.addEventListener('input', function(e) {
-        this.value = this.value.replace(/[^0-9]/g, '');
+    // 숫자만 입력 가능하도록 제한
+    document.querySelectorAll('input[name="landline_middle"], input[name="landline_last"], input[name="landline_area_other"]').forEach(input => {
+        if (input) {
+            input.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+        }
     });
-});
+
+    // 비밀번호 확인
+    const passwordConfirm = document.getElementById('password_confirm');
+    if (passwordConfirm) {
+        passwordConfirm.addEventListener('input', function() {
+            const password = document.getElementById('password');
+            if (password) {
+                const passwordValue = password.value;
+                const confirm = this.value;
+                
+                if(passwordValue !== confirm) {
+                    this.setCustomValidity('비밀번호가 일치하지 않습니다.');
+                } else {
+                    this.setCustomValidity('');
+                }
+            }
+        });
+    }
+}); // DOMContentLoaded 끝
+
+// findZipcode 함수는 전역 스코프에 있어야 함
 function findZipcode() {
     new daum.Postcode({
         oncomplete: function(data) {
@@ -434,18 +478,6 @@ function findZipcode() {
         }
     }).open();
 }
-
-// 비밀번호 확인
-document.getElementById('password_confirm').addEventListener('input', function() {
-    const password = document.getElementById('password').value;
-    const confirm = this.value;
-    
-    if(password !== confirm) {
-        this.setCustomValidity('비밀번호가 일치하지 않습니다.');
-    } else {
-        this.setCustomValidity('');
-    }
-});
 </script>
 
 <?php include 'tail.php'; ?>

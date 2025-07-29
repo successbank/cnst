@@ -1,7 +1,21 @@
 <?php
 // 데이터베이스 연결 설정 - MySQL 사용 (현재 실행 중)
 if (!defined('DB_HOST')) {
-    define('DB_HOST', 'project1_mysql');
+    // Docker 컨테이너 실행 시: 'project1_mysql' 사용
+    // Docker 중지 시: 'localhost' 사용
+    $docker_host = 'project1_mysql';
+    $localhost = 'localhost';
+    
+    // Docker 컨테이너 연결 테스트
+    $test_connection = @fsockopen($docker_host, 3306, $errno, $errstr, 1);
+    if ($test_connection) {
+        define('DB_HOST', $docker_host);
+        fclose($test_connection);
+    } else {
+        // localhost의 경우 TCP 연결 대신 127.0.0.1 사용
+        define('DB_HOST', '127.0.0.1');
+    }
+    
     define('DB_PORT', '3306');
     define('DB_NAME', 'project1_db');
     define('DB_USER', 'root');
