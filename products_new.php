@@ -579,7 +579,7 @@ $products = $stmt->fetchAll();
 </style>
 
 <section class="products-header">
-    <h2>제품소개</h2>
+    <h2>판매제품</h2>
     <p>충남스틸이 공급하는 고품질 철강 제품을 소개합니다</p>
 </section>
 

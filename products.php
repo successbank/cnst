@@ -1,7 +1,7 @@
 <?php
 require_once 'db.php';
 $currentPage = 'products';
-$pageTitle = '제품소개';
+$pageTitle = '판매제품';
 $additionalCSS = [];
 require_once 'head.php';
 
