@@ -1236,7 +1236,6 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
             </div>
             <?php elseif (($unit_weight || ($is_rebar && $rebar_unit_weight)) && $product['price'] && $product['price'] > 0): ?>
             <!-- 기존 길이/수량 선택 및 중량 계산 (철근이 아닌 경우) -->
->>>>>>> 4779a5cf4f27bbf1862cfc06a4f3b51bbbb26bb7
             <div class="weight-calculator">
                 <h3>수량 및 중량 계산</h3>
                 <div class="calculator-form">

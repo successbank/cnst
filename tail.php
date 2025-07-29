@@ -46,6 +46,9 @@
                     </div>
                 </div>
                 <div class="footer-bottom">
+                    <div class="footer-banner">
+                        <img src="./img/below_banner.fw.png" alt="충남스틸 하단 배너" style="max-width: 50%; height: auto; display: block; margin: 0 auto 20px;">
+                    </div>
                     <div class="footer-legal-links">
                         <a href="terms.php">이용약관</a>
                         <span class="separator">|</span>
