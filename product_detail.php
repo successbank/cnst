@@ -1465,15 +1465,6 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
     </div>
     <?php endif; ?>
     
-    <?php if (!empty($product['technical_specs'])): ?>
-    <div class="product-specs-section">
-        <h3>기술 사양</h3>
-        <div class="tech-specs-content">
-            <?php echo nl2br(escape($product['technical_specs'])); ?>
-        </div>
-    </div>
-    <?php endif; ?>
-    
     <?php if (!empty($product['applications'])): ?>
     <div class="product-applications-section">
         <h3>사용 용도</h3>
