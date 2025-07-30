@@ -520,13 +520,28 @@ include 'admin_head.php';
         <div class="form-row">
             <div class="form-group">
                 <label for="price">기준단가</label>
-                <input type="number" id="price" name="price" step="0.01"
-                       value="<?php echo $product['price'] ?? ''; ?>"
-                       placeholder="0.00"
-                       onchange="calculatePriceRange()">
+                <div style="display: flex; gap: 10px; align-items: flex-start;">
+                    <input type="number" id="price" name="price" step="0.01"
+                           value="<?php echo $product['price'] ?? ''; ?>"
+                           placeholder="0.00"
+                           onchange="calculatePriceRange()"
+                           style="flex: 1;">
+                    <?php if (($product['category_code'] ?? '') === 'rebar' || !$id): ?>
+                    <button type="button" 
+                            id="applyRebarPriceBtn"
+                            onclick="checkAndApplyRebarPrice()"
+                            style="padding: 10px 16px; background: #17a2b8; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; white-space: nowrap; display: none;"
+                            title="철근 기본 단가 적용">
+                        단가 적용
+                    </button>
+                    <?php endif; ?>
+                </div>
                 <div class="help-text">
                     견적 문의 제품은 비워두세요<br>
                     <small style="color: #007bff;">계산식: 단위중량(kg/m) × 길이(m) × 수량(본) × 기준단가(원/TON)</small>
+                    <?php if (($product['category_code'] ?? '') === 'rebar' || !$id): ?>
+                    <br><small style="color: #17a2b8;">※ 철근 제품은 철근 자재 관리에서 설정한 기본 단가가 자동 적용됩니다.</small>
+                    <?php endif; ?>
                 </div>
             </div>
             
@@ -535,7 +550,7 @@ include 'admin_head.php';
                 <input type="number" id="min_price" name="min_price" step="0.01"
                        value="<?php echo isset($product['min_price']) ? $product['min_price'] : ''; ?>">
                 <div class="help-text">
-                    비워두면 기준단가의 95%로 자동 계산<br>
+                    비워두면 기준단가의 90%로 자동 계산<br>
                     <small style="color: #007bff;">※ 최저단가 × 기준길이(m) × 단위중량(kg/m) ÷ 1000 = 최저금액</small>
                 </div>
             </div>
@@ -545,7 +560,7 @@ include 'admin_head.php';
                 <input type="number" id="max_price" name="max_price" step="0.01"
                        value="<?php echo isset($product['max_price']) ? $product['max_price'] : ''; ?>">
                 <div class="help-text">
-                    비워두면 기준단가의 105%로 자동 계산<br>
+                    비워두면 기준단가의 110%로 자동 계산<br>
                     <small style="color: #007bff;">※ 최대단가 × 기준길이(m) × 단위중량(kg/m) ÷ 1000 = 최대금액</small>
                 </div>
             </div>
@@ -793,17 +808,91 @@ function calculatePriceRange() {
     
     if (priceInput.value && !minPriceInput.value) {
         const basePrice = parseFloat(priceInput.value);
-        minPriceInput.placeholder = (basePrice * 0.95).toFixed(2);
+        minPriceInput.placeholder = (basePrice * 0.90).toFixed(2);
     }
     
     if (priceInput.value && !maxPriceInput.value) {
         const basePrice = parseFloat(priceInput.value);
-        maxPriceInput.placeholder = (basePrice * 1.05).toFixed(2);
+        maxPriceInput.placeholder = (basePrice * 1.10).toFixed(2);
     }
 }
 
 // 페이지 로드 시 초기 계산
 calculatePriceRange();
+
+// 철근 단가 자동 적용 기능
+function checkAndApplyRebarPrice() {
+    const categoryCode = document.getElementById('category_code').value;
+    const specifications = document.getElementById('specifications').value;
+    const priceInput = document.getElementById('price');
+    
+    // 철근 카테고리이고 규격이 입력된 경우
+    if (categoryCode === 'rebar' && specifications && specifications.match(/D\d+/)) {
+        fetch(`ajax/get_rebar_price.php?category_code=${categoryCode}&specifications=${encodeURIComponent(specifications)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    // 기준단가 자동 적용
+                    priceInput.value = data.data.base_price;
+                    
+                    // 최저/최대단가 재계산
+                    calculatePriceRange();
+                    
+                    // 메시지 표시
+                    const messageBox = document.getElementById('messageBox');
+                    messageBox.style.display = 'block';
+                    messageBox.style.background = '#d1ecf1';
+                    messageBox.style.color = '#0c5460';
+                    messageBox.innerHTML = '✓ ' + data.data.message;
+                    
+                    // 3초 후 메시지 숨기기
+                    setTimeout(() => {
+                        messageBox.style.display = 'none';
+                    }, 3000);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching rebar price:', error);
+            });
+    }
+}
+
+// 단가 적용 버튼 표시/숨김 처리
+function toggleApplyPriceButton() {
+    const categoryCode = document.getElementById('category_code').value;
+    const applyBtn = document.getElementById('applyRebarPriceBtn');
+    
+    if (applyBtn) {
+        if (categoryCode === 'rebar') {
+            applyBtn.style.display = 'block';
+        } else {
+            applyBtn.style.display = 'none';
+        }
+    }
+}
+
+// 카테고리 변경 시 철근 단가 확인
+document.getElementById('category_code').addEventListener('change', function() {
+    toggleApplyPriceButton();
+    checkAndApplyRebarPrice();
+});
+
+// 규격 입력 시 철근 단가 확인
+document.getElementById('specifications').addEventListener('blur', function() {
+    checkAndApplyRebarPrice();
+});
+
+// 페이지 로드 시 버튼 상태 설정
+window.addEventListener('DOMContentLoaded', function() {
+    toggleApplyPriceButton();
+});
+
+// 페이지 로드 시 철근 제품인 경우 단가 확인
+<?php if ($id > 0 && ($product['category_code'] ?? '') === 'rebar' && !$product['price']): ?>
+window.addEventListener('DOMContentLoaded', function() {
+    checkAndApplyRebarPrice();
+});
+<?php endif; ?>
 
 // 폼 제출 시 처리
 document.querySelector('form').addEventListener('submit', function(e) {
