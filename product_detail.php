@@ -48,6 +48,9 @@ $is_rebar = ($product['category_code'] === 'rebar' ||
              $product['category_code'] == 114 ||
              strpos(strtolower($product['category_name']), '철근') !== false);
 
+// 나사철근 카테고리 확인
+$is_threaded_rebar = ($product['category_code'] === 'threaded-rebar');
+
 // 철근 제품인 경우 추가 데이터 가져오기
 $rebar_spec = null;
 $rebar_materials = [];
@@ -1148,10 +1151,30 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                         <span class="spec-value"><?php echo escape($product['specifications']); ?></span>
                     </div>
                     <?php if ($product['dimensions']): ?>
-                    <div class="spec-item">
-                        <span class="spec-label">치수</span>
-                        <span class="spec-value"><?php echo escape($product['dimensions']); ?></span>
-                    </div>
+                    <?php 
+                    // JSON 형태인지 확인
+                    $dimensions_display = $product['dimensions'];
+                    if (substr($dimensions_display, 0, 1) === '{' || substr($dimensions_display, 0, 1) === '[') {
+                        $dimensions_array = json_decode($product['dimensions'], true);
+                        if ($dimensions_array) {
+                            foreach ($dimensions_array as $dim_key => $dim_value) {
+                                ?>
+                                <div class="spec-item">
+                                    <span class="spec-label"><?php echo escape($dim_key); ?></span>
+                                    <span class="spec-value"><?php echo escape($dim_value); ?></span>
+                                </div>
+                                <?php
+                            }
+                        }
+                    } else {
+                        ?>
+                        <div class="spec-item">
+                            <span class="spec-label">치수</span>
+                            <span class="spec-value"><?php echo escape($product['dimensions']); ?></span>
+                        </div>
+                        <?php
+                    }
+                    ?>
                     <?php endif; ?>
                     <?php if ($product['weight']): ?>
                     <div class="spec-item">
@@ -1203,9 +1226,14 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                 <h3>제품 특징</h3>
                 <ul class="feature-list">
                     <?php 
-                    $features = explode("\n", $product['features']);
+                    // \n 문자열을 실제 개행으로 변환
+                    $features_text = str_replace('\\n', "\n", $product['features']);
+                    $features = explode("\n", $features_text);
                     foreach ($features as $feature):
-                        if (trim($feature)):
+                        $feature = trim($feature);
+                        if ($feature && $feature !== '•'): // 빈 문자열이나 • 만 있는 경우 제외
+                            // • 기호가 이미 있으면 제거 (중복 방지)
+                            $feature = ltrim($feature, '• ');
                     ?>
                     <li><?php echo escape(trim($feature)); ?></li>
                     <?php 
@@ -1371,6 +1399,73 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                     <p style="font-size: 14px; margin-top: 10px;">관리자에게 문의해주세요.</p>
                 </div>
                 <?php endif; ?>
+            </div>
+            <?php elseif ($is_threaded_rebar): ?>
+            <!-- 나사철근 갯수 선택 및 견적 계산 -->
+            <div class="weight-calculator">
+                <h3>견적 계산기</h3>
+                <div class="calculator-form">
+                    <div class="calc-row">
+                        <div class="calc-group">
+                            <label>길이 선택</label>
+                            <select id="threadedRebarLength" onchange="calculateThreadedRebarPrice()">
+                                <option value="6">6m</option>
+                                <option value="8">8m</option>
+                                <option value="10">10m</option>
+                                <option value="12">12m</option>
+                            </select>
+                        </div>
+                        <div class="calc-group">
+                            <label>수량 (개)</label>
+                            <input type="number" id="threadedRebarQuantity" value="1" min="1" step="1" onchange="calculateThreadedRebarPrice()" oninput="calculateThreadedRebarPrice()">
+                        </div>
+                    </div>
+                    
+                    <div class="calc-result">
+                        <div class="result-item">
+                            <span class="label">규격:</span>
+                            <span class="value"><?php echo escape($product['specifications']); ?></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">재질:</span>
+                            <span class="value"><?php echo escape($product['material'] ?: 'SD400'); ?></span>
+                        </div>
+                        <?php 
+                        // 나사철근 치수 정보 파싱
+                        $dimensions_data = null;
+                        if ($product['dimensions']) {
+                            $dimensions_data = json_decode($product['dimensions'], true);
+                        }
+                        ?>
+                        <?php if ($dimensions_data && isset($dimensions_data['단위 중량'])): ?>
+                        <div class="result-item">
+                            <span class="label">단위 중량:</span>
+                            <span class="value" id="threadedRebarUnitWeight"><?php echo escape($dimensions_data['단위 중량']); ?></span>
+                        </div>
+                        <?php endif; ?>
+                        <div class="result-item">
+                            <span class="label">선택 길이:</span>
+                            <span class="value" id="selectedLength">6m</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">1개당 중량:</span>
+                            <span class="value" id="threadedRebarPieceWeight">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">총 중량:</span>
+                            <span class="value" id="threadedRebarTotalWeight">-</span>
+                        </div>
+                        <div class="result-divider"></div>
+                        <div class="result-item total-price">
+                            <span class="label">예상 금액:</span>
+                            <span class="value" id="threadedRebarTotalPrice">견적 문의</span>
+                        </div>
+                        <div class="price-notice-small">
+                            * 나사철근은 규격, 수량, 재질에 따라 가격이 상이합니다.<br>
+                            * 정확한 견적은 문의 부탁드립니다.
+                        </div>
+                    </div>
+                </div>
             </div>
             <?php elseif (($unit_weight || ($is_rebar && $rebar_unit_weight) || $is_hbeam)): ?>
             <!-- 기존 길이/수량 선택 및 중량 계산 (철근이 아닌 경우) -->
@@ -1541,6 +1636,7 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
     </div>
     <?php endif; ?>
     
+    <?php /* 관련 규격/인증 및 제품 카탈로그 섹션 비활성화
     <?php if (!empty($product['certifications'])): ?>
     <div class="product-certifications-section">
         <h3>관련 규격/인증</h3>
@@ -1568,6 +1664,7 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
         </a>
     </div>
     <?php endif; ?>
+    */ ?>
 </div>
 <?php endif; ?>
 <?php endif; ?>
@@ -1605,6 +1702,35 @@ function changeImage(imageUrl) {
         thumb.classList.remove('active');
     });
     event.currentTarget.classList.add('active');
+}
+
+// 나사철근 가격 계산 함수
+function calculateThreadedRebarPrice() {
+    const length = parseFloat(document.getElementById('threadedRebarLength').value);
+    const quantity = parseInt(document.getElementById('threadedRebarQuantity').value) || 0;
+    
+    // 선택 길이 표시
+    document.getElementById('selectedLength').textContent = length + 'm';
+    
+    // 단위 중량 가져오기
+    const unitWeightEl = document.getElementById('threadedRebarUnitWeight');
+    if (unitWeightEl) {
+        const unitWeightText = unitWeightEl.textContent;
+        const unitWeight = parseFloat(unitWeightText.replace(/[^0-9.]/g, ''));
+        
+        if (!isNaN(unitWeight) && unitWeight > 0) {
+            // 1개당 중량 계산 (단위중량 × 길이)
+            const pieceWeight = unitWeight * length;
+            document.getElementById('threadedRebarPieceWeight').textContent = pieceWeight.toFixed(2) + 'kg';
+            
+            // 총 중량 계산 (1개당 중량 × 수량)
+            const totalWeight = pieceWeight * quantity;
+            document.getElementById('threadedRebarTotalWeight').textContent = totalWeight.toFixed(2) + 'kg';
+        } else {
+            document.getElementById('threadedRebarPieceWeight').textContent = '-';
+            document.getElementById('threadedRebarTotalWeight').textContent = '-';
+        }
+    }
 }
 
 <?php if ($is_rebar_category && $rebar_specifications): ?>
@@ -1736,6 +1862,11 @@ function calculatePrice() {
 
 // 페이지 로드시 초기화
 window.addEventListener('DOMContentLoaded', function() {
+    <?php if ($is_threaded_rebar): ?>
+    // 나사철근인 경우 초기 계산 실행
+    calculateThreadedRebarPrice();
+    <?php endif; ?>
+    
     loadLengthOptions();
     
     // SD400을 기본 선택
@@ -1880,7 +2011,16 @@ function addToQuoteCart() {
         category: categoryCode
     };
     
-    <?php if ($is_rebar && $rebar_spec): ?>
+    <?php if ($is_threaded_rebar): ?>
+    // 나사철근 제품인 경우
+    selectedInfo.length = document.getElementById('threadedRebarLength').value + 'm';
+    selectedInfo.quantity = document.getElementById('threadedRebarQuantity').value + '개';
+    
+    const totalWeightEl = document.getElementById('threadedRebarTotalWeight');
+    if (totalWeightEl && totalWeightEl.textContent !== '-') {
+        selectedInfo.totalWeight = totalWeightEl.textContent;
+    }
+    <?php elseif ($is_rebar && $rebar_spec): ?>
     // 철근 제품인 경우
     if (!selectedMaterialId || !document.getElementById('lengthSelect').value || !document.getElementById('tonQuantity').value) {
         alert('재질, 길이, 수량을 모두 선택해주세요.');
