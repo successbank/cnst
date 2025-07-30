@@ -80,20 +80,16 @@ if ($is_rebar) {
         $stmt->execute([$spec_name]);
         $rebar_spec = $stmt->fetch();
         
-        // 길이 정보 가져오기 (rebar_length_data 테이블 사용)
+        // 길이 정보 가져오기
         if ($rebar_spec) {
             $stmt = $pdo->prepare("
-                SELECT 
-                    length,
-                    piece_weight as weight_per_piece,
-                    pieces_per_ton,
-                    weight_per_ton as total_weight,
-                    unit_weight
-                FROM rebar_length_data
-                WHERE spec_name = ?
-                ORDER BY length
+                SELECT rl.*, rs.unit_weight 
+                FROM rebar_length_info rl
+                JOIN rebar_specifications rs ON rl.spec_id = rs.id
+                WHERE rl.spec_id = ?
+                ORDER BY rl.length
             ");
-            $stmt->execute([$spec_name]);
+            $stmt->execute([$rebar_spec['id']]);
             $rebar_lengths = $stmt->fetchAll();
         }
     }
@@ -146,20 +142,14 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
     $stmt->execute([$spec_name]);
     $rebar_specifications = $stmt->fetch();
     
-    // 철근 길이 정보 가져오기 (rebar_length_data 테이블 사용)
+    // 철근 길이 정보 가져오기
     if ($rebar_specifications) {
         $stmt = $pdo->prepare("
-            SELECT 
-                length,
-                piece_weight as weight_per_piece,
-                pieces_per_ton,
-                weight_per_ton as total_weight,
-                unit_weight
-            FROM rebar_length_data
-            WHERE spec_name = ?
+            SELECT * FROM rebar_length_info 
+            WHERE spec_id = ? 
             ORDER BY length
         ");
-        $stmt->execute([$spec_name]);
+        $stmt->execute([$rebar_specifications['id']]);
         $rebar_lengths = $stmt->fetchAll();
         
         // 재질 목록 가져오기
@@ -1590,8 +1580,8 @@ function loadLengthOptions() {
         return;
     }
     
-    // 새로운 API 엔드포인트 사용
-    fetch(`api/get_rebar_calc_data.php?action=get_lengths&spec_id=${specId}`)
+    // rebar_quote.php의 AJAX 엔드포인트 사용
+    fetch(`rebar_quote.php?action=get_lengths&spec_id=${specId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
