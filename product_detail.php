@@ -1120,10 +1120,9 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
             </div>
 
             <?php if ($product['price'] && $product['price'] > 0): ?>
-            <div class="product-price-section">
-                <div class="price-label">가격범위</div>
-                <?php 
-                // 기준길이 가져오기 (없으면 6m 기본값)
+            <!-- 상단 단가 범위 표시 제거 (하단 계산기에서 표시) -->
+            <?php 
+                // 기준길이 가져오기 (없으면 6m 기본값) - 하단 계산기에서 사용
                 $base_length = isset($product['base_length']) ? $product['base_length'] : 6;
                 
                 // 최저단가 계산: min_price가 DB에 있으면 사용, 없으면 기준단가의 90%
@@ -1135,55 +1134,9 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                 $max_price_per_ton = isset($product['max_price']) && $product['max_price'] > 0 
                     ? $product['max_price'] 
                     : $product['price'] * 1.10;
-                
-                // 단위중량이 있을 때만 계산 표시
-                if ($unit_weight && $unit_weight['unit_weight'] > 0): 
-                    // 최저/최대 금액 계산
-                    // 공식: 단가 × 기준길이(m) × 단위중량(kg/m) ÷ 1000 = 금액
-                    $min_total_price = $min_price_per_ton * $base_length * $unit_weight['unit_weight'] / 1000;
-                    $max_total_price = $max_price_per_ton * $base_length * $unit_weight['unit_weight'] / 1000;
-                ?>
-                <div class="price-range-display">
-                    <div class="price-range-text">
-                        <?php echo number_format($min_total_price); ?> ~ <?php echo number_format($max_total_price); ?> 원 / <?php echo escape($product['unit'] ?: 'TON'); ?>
-                    </div>
-                    <div class="price-range-info">
-                        기준길이 <?php echo $base_length; ?>m 기준 (단가: <?php echo number_format($min_price_per_ton); ?> ~ <?php echo number_format($max_price_per_ton); ?> 원/TON)
-                    </div>
-                </div>
-                <?php else: ?>
-                <!-- 단위중량이 없는 경우 기존 방식 표시 -->
-                <div class="price-range-container">
-                    <div class="price-item">
-                        <span class="price-type">최저단가</span>
-                        <div class="price-value min-price">
-                            <?php echo number_format($min_price_per_ton); ?> 원
-                        </div>
-                    </div>
-                    <div class="price-item main">
-                        <span class="price-type">기준단가</span>
-                        <div class="price-value">
-                            <?php echo number_format($product['price']); ?> 원
-                        </div>
-                    </div>
-                    <div class="price-item">
-                        <span class="price-type">최대단가</span>
-                        <div class="price-value max-price">
-                            <?php echo number_format($max_price_per_ton); ?> 원
-                        </div>
-                    </div>
-                </div>
-                <div class="price-unit-info">단위: <?php echo escape($product['unit'] ?: 'TON'); ?></div>
-                <?php endif; ?>
-            </div>
+            ?>
             <?php else: ?>
-            <div class="product-price-section">
-                <div class="price-label">기준단가</div>
-                <div class="price-value quote-required">
-                    견적문의
-                    <span class="price-notice">가격은 수량 및 납기에 따라 달라질 수 있습니다.</span>
-                </div>
-            </div>
+            <!-- 기준단가: 견적문의 영역 제거 -->
             <?php endif; ?>
 
 
