@@ -144,62 +144,56 @@ $additionalStyles = '
 
 require_once 'admin_head.php';
 
-// 데이터베이스 통계 조회
-$noticeCount = 0;
-$quoteCount = 0;
-$quotePending = 0;
-$newsCount = 0;
-$consignmentCount = 0;
-$consignmentActive = 0;
-$memberCount = 0;
-$kakaoSent = 0;
-$kakaoTotal = 0;
+// 대시보드 통계 데이터 조회
+// 기본값 설정
+$noticeStats = ['total' => 0];
+$quoteStats = ['total' => 0, 'pending' => 0];
+$newsStats = ['total' => 0];
+$consignmentStats = ['total' => 0, 'active' => 0];
+$memberStats = ['total' => 0];
+$kakaoStats = ['total' => 0, 'sent' => 0];
 $recentQuotes = [];
 $recentNotices = [];
 
-if (isset($pdo)) {
-    try {
-        // 공지사항
-        $stmt = $pdo->query("SELECT COUNT(*) FROM board_notice");
-        $noticeCount = $stmt->fetchColumn();
-        
-        // 견적문의
-        $stmt = $pdo->query("SELECT COUNT(*) as total, SUM(CASE WHEN is_answered = 0 OR is_answered IS NULL THEN 1 ELSE 0 END) as pending FROM board_quote");
-        $result = $stmt->fetch();
-        $quoteCount = $result['total'] ?? 0;
-        $quotePending = $result['pending'] ?? 0;
-        
-        // 철강뉴스
-        $stmt = $pdo->query("SELECT COUNT(*) FROM board_news");
-        $newsCount = $stmt->fetchColumn();
-        
-        // 위탁판매
-        $stmt = $pdo->query("SELECT COUNT(*) as total, SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active FROM board_consignment");
-        $result = $stmt->fetch();
-        $consignmentCount = $result['total'] ?? 0;
-        $consignmentActive = $result['active'] ?? 0;
-        
-        // 회원
-        $stmt = $pdo->query("SELECT COUNT(*) FROM members WHERE is_admin = 0");
-        $memberCount = $stmt->fetchColumn();
-        
-        // 카카오톡 알림 (오늘)
-        $stmt = $pdo->query("SELECT COUNT(*) as total, SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent FROM kakao_notifications WHERE DATE(created_at) = CURDATE()");
-        $result = $stmt->fetch();
-        $kakaoTotal = $result['total'] ?? 0;
-        $kakaoSent = $result['sent'] ?? 0;
-        
-        // 최근 견적문의
-        $stmt = $pdo->query("SELECT id, title, writer, created_at FROM board_quote ORDER BY created_at DESC LIMIT 5");
-        $recentQuotes = $stmt->fetchAll();
-        
-        // 최근 공지사항
-        $stmt = $pdo->query("SELECT id, title, created_at FROM board_notice ORDER BY created_at DESC LIMIT 5");
-        $recentNotices = $stmt->fetchAll();
-        
-    } catch (Exception $e) {
-        // 에러 무시하고 기본값 사용
-    }
+try {
+    // 공지사항
+    $noticeStmt = $pdo->query("SELECT COUNT(*) as total FROM board_notice");
+    $noticeStats = $noticeStmt->fetch();
+    
+    // 견적문의
+    $quoteStmt = $pdo->query("SELECT COUNT(*) as total, SUM(CASE WHEN is_answered = 0 OR is_answered IS NULL THEN 1 ELSE 0 END) as pending FROM board_quote");
+    $quoteStats = $quoteStmt->fetch();
+    
+    // 철강뉴스
+    $newsStmt = $pdo->query("SELECT COUNT(*) as total FROM board_news");
+    $newsStats = $newsStmt->fetch();
+    
+    // 위탁판매
+    $consignmentStmt = $pdo->query("SELECT COUNT(*) as total, SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active FROM board_consignment");
+    $consignmentStats = $consignmentStmt->fetch();
+    
+    // 회원
+    $memberStmt = $pdo->query("SELECT COUNT(*) as total FROM members WHERE is_admin = 0");
+    $memberStats = $memberStmt->fetch();
+    
+    // 카카오톡 알림 (오늘)
+    $kakaoStmt = $pdo->query("SELECT COUNT(*) as total, SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent FROM kakao_notifications WHERE DATE(created_at) = CURDATE()");
+    $kakaoStats = $kakaoStmt->fetch();
+    
+    // 최근 견적문의
+    $recentQuotes = $pdo->query("SELECT id, title, writer, created_at FROM board_quote ORDER BY created_at DESC LIMIT 5")->fetchAll();
+    
+    // 최근 공지사항
+    $recentNotices = $pdo->query("SELECT id, title, created_at FROM board_notice ORDER BY created_at DESC LIMIT 5")->fetchAll();
+    
+} catch (PDOException $e) {
+    // 에러 처리 및 디버깅
+    error_log("Dashboard Error: " . $e->getMessage());
+    echo "<!-- Debug Error: " . htmlspecialchars($e->getMessage()) . " -->";
+} catch (Exception $e) {
+    // 일반 에러 처리
+    error_log("Dashboard General Error: " . $e->getMessage());
+    echo "<!-- Debug General Error: " . htmlspecialchars($e->getMessage()) . " -->";
 }
 ?>
 
@@ -212,41 +206,41 @@ if (isset($pdo)) {
 <div class="dashboard-grid">
     <div class="stat-card">
         <div class="stat-icon icon-notices">📢</div>
-        <div class="stat-value"><?php echo number_format($noticeCount); ?></div>
+        <div class="stat-value"><?php echo $noticeStats['total']; ?></div>
         <div class="stat-label">공지사항</div>
     </div>
     
     <div class="stat-card">
         <div class="stat-icon icon-quotes">📋</div>
-        <div class="stat-value"><?php echo number_format($quoteCount); ?></div>
+        <div class="stat-value"><?php echo $quoteStats['total']; ?></div>
         <div class="stat-label">견적문의</div>
-        <div class="stat-meta">대기중: <?php echo number_format($quotePending); ?>건</div>
+        <div class="stat-meta">대기중: <?php echo $quoteStats['pending'] ?? 0; ?>건</div>
     </div>
     
     <div class="stat-card">
         <div class="stat-icon icon-news">📰</div>
-        <div class="stat-value"><?php echo number_format($newsCount); ?></div>
+        <div class="stat-value"><?php echo $newsStats['total']; ?></div>
         <div class="stat-label">철강뉴스</div>
     </div>
     
     <div class="stat-card">
         <div class="stat-icon icon-consignment">📦</div>
-        <div class="stat-value"><?php echo number_format($consignmentCount); ?></div>
+        <div class="stat-value"><?php echo $consignmentStats['total']; ?></div>
         <div class="stat-label">위탁판매</div>
-        <div class="stat-meta">진행중: <?php echo number_format($consignmentActive); ?>건</div>
+        <div class="stat-meta">진행중: <?php echo $consignmentStats['active'] ?? 0; ?>건</div>
     </div>
     
     <div class="stat-card">
         <div class="stat-icon icon-members">👥</div>
-        <div class="stat-value"><?php echo number_format($memberCount); ?></div>
+        <div class="stat-value"><?php echo $memberStats['total']; ?></div>
         <div class="stat-label">회원</div>
     </div>
     
     <div class="stat-card">
         <div class="stat-icon icon-kakao">💬</div>
-        <div class="stat-value"><?php echo number_format($kakaoSent); ?></div>
+        <div class="stat-value"><?php echo $kakaoStats['sent'] ?? 0; ?></div>
         <div class="stat-label">오늘 카카오톡 발송</div>
-        <div class="stat-meta">전체: <?php echo number_format($kakaoTotal); ?>건</div>
+        <div class="stat-meta">전체: <?php echo $kakaoStats['total'] ?? 0; ?>건</div>
     </div>
 </div>
 

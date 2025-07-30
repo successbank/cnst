@@ -820,6 +820,109 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
 .material-btn.active small {
     color: white !important;
 }
+
+/* 상세 내용 섹션 스타일 */
+.product-detailed-section,
+.product-features-section,
+.product-specs-section,
+.product-applications-section,
+.product-certifications-section,
+.product-brochure-section {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.product-detailed-section h3,
+.product-features-section h3,
+.product-specs-section h3,
+.product-applications-section h3,
+.product-certifications-section h3,
+.product-brochure-section h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.detailed-content {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #555;
+}
+
+.features-list,
+.applications-list {
+    list-style: none;
+    padding: 0;
+}
+
+.features-list li,
+.applications-list li {
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.features-list li:before,
+.applications-list li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--primary-blue);
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.tech-specs-content {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #555;
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.certifications-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.cert-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.brochure-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 24px;
+    background: var(--primary-blue);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.brochure-link:hover {
+    background: #0F1F7A;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(20, 40, 160, 0.3);
+}
 /* 반응형 */
 @media (max-width: 768px) {
     .product-detail-content {
@@ -1106,6 +1209,11 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
             // 철근 카테고리인지 확인
             $is_rebar = ($product['category_code'] === '114' || $product['category_code'] === 'rebar');
             
+            // H형강 카테고리인지 확인
+            $is_hbeam = ($product['category_code'] === 'h-beam' || 
+                        strpos(strtolower($product['category_name']), 'h형강') !== false ||
+                        strpos(strtolower($product['product_name']), 'h형강') !== false);
+            
             // 철근인 경우 단중 가져오기
             if ($is_rebar) {
                 require_once 'includes/rebar_unit_weights.php';
@@ -1234,10 +1342,10 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                 </div>
                 <?php endif; ?>
             </div>
-            <?php elseif (($unit_weight || ($is_rebar && $rebar_unit_weight)) && $product['price'] && $product['price'] > 0): ?>
+            <?php elseif (($unit_weight || ($is_rebar && $rebar_unit_weight) || $is_hbeam)): ?>
             <!-- 기존 길이/수량 선택 및 중량 계산 (철근이 아닌 경우) -->
             <div class="weight-calculator">
-                <h3>수량 및 중량 계산</h3>
+                <h3>견적 계산기</h3>
                 <div class="calculator-form">
                     <div class="calc-row">
                         <div class="calc-group">
@@ -1254,16 +1362,22 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                             </select>
                         </div>
                         <div class="calc-group">
-                            <label>수량(본)</label>
-                            <input type="number" id="quantity" value="1" min="1" onchange="calculateWeight()">
+                            <label><?php echo ($unit_weight && $unit_weight['unit_weight'] > 0) ? '수량(본)' : '수량(톤)'; ?></label>
+                            <input type="number" id="quantity" value="1" min="<?php echo ($unit_weight && $unit_weight['unit_weight'] > 0) ? '1' : '0.1'; ?>" step="<?php echo ($unit_weight && $unit_weight['unit_weight'] > 0) ? '1' : '0.1'; ?>" onchange="calculateWeight()" oninput="calculateWeight()">
                         </div>
                     </div>
                     
                     <div class="calc-result">
+                        <?php if ($unit_weight && $unit_weight['unit_weight'] > 0): ?>
+                        <div class="result-item">
+                            <span class="label">단위중량:</span>
+                            <span class="value"><?php echo number_format($unit_weight['unit_weight'], 1); ?> kg/m</span>
+                        </div>
                         <div class="result-item">
                             <span class="label">1본 중량:</span>
                             <span class="value" id="pieceWeight">-</span>
                         </div>
+                        <?php endif; ?>
                         <div class="result-item total">
                             <span class="label">총 중량:</span>
                             <span class="value" id="totalWeight">-</span>
@@ -1274,21 +1388,104 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                             <span class="label">기준단가:</span>
                             <span class="value"><?php echo number_format($product['price']); ?> 원/<?php echo escape($product['unit'] ?: 'TON'); ?></span>
                         </div>
+                        <?php if ($unit_weight && $unit_weight['unit_weight'] > 0): ?>
                         <div class="result-item">
                             <span class="label">1본 금액:</span>
                             <span class="value" id="piecePrice">-</span>
                         </div>
+                        <?php endif; ?>
                         <div class="result-item total-price">
                             <span class="label">예상 금액:</span>
                             <span class="value" id="totalPrice">-</span>
                         </div>
                         <div class="price-notice-small">
+                            <?php if ($unit_weight && $unit_weight['unit_weight'] > 0): ?>
                             * 계산식: 단위중량(kg/m) × 길이(m) × 수량(본) × 기준단가(원/TON)
+                            <?php else: ?>
+                            * 수량을 입력하시면 예상 금액이 계산됩니다.
+                            <?php endif; ?>
                         </div>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
+            
+            <?php if (isset($product['show_details']) ? $product['show_details'] : true): ?>
+            <!-- 상세 내용 섹션 -->
+            <?php if (!empty($product['detailed_description'])): ?>
+            <div class="product-detailed-section">
+                <h3>상세 설명</h3>
+                <div class="detailed-content">
+                    <?php echo nl2br(escape($product['detailed_description'])); ?>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($product['key_features'])): ?>
+            <div class="product-features-section">
+                <h3>주요 특징</h3>
+                <ul class="features-list">
+                    <?php 
+                    $features = array_filter(array_map('trim', explode("\n", $product['key_features'])));
+                    foreach ($features as $feature): 
+                    ?>
+                    <li><?php echo escape($feature); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($product['technical_specs'])): ?>
+            <div class="product-specs-section">
+                <h3>기술 사양</h3>
+                <div class="tech-specs-content">
+                    <?php echo nl2br(escape($product['technical_specs'])); ?>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($product['applications'])): ?>
+            <div class="product-applications-section">
+                <h3>사용 용도</h3>
+                <ul class="applications-list">
+                    <?php 
+                    $applications = array_filter(array_map('trim', explode("\n", $product['applications'])));
+                    foreach ($applications as $application): 
+                    ?>
+                    <li><?php echo escape($application); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($product['certifications'])): ?>
+            <div class="product-certifications-section">
+                <h3>관련 규격/인증</h3>
+                <div class="certifications-content">
+                    <?php 
+                    $certs = array_map('trim', explode(',', $product['certifications']));
+                    foreach ($certs as $cert): 
+                    ?>
+                    <span class="cert-badge"><?php echo escape($cert); ?></span>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($product['brochure_url'])): ?>
+            <div class="product-brochure-section">
+                <h3>제품 카탈로그</h3>
+                <a href="<?php echo escape($product['brochure_url']); ?>" target="_blank" class="brochure-link">
+                    <svg width="20" height="20" fill="currentColor" style="margin-right: 8px;">
+                        <path d="M11 1H3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7l-6-6z"/>
+                        <path d="M11 1v6h6"/>
+                        <path d="M13.5 10.5l-4 4-2-2"/>
+                    </svg>
+                    브로셔 다운로드
+                </a>
+            </div>
+            <?php endif; ?>
             <?php endif; ?>
 
             <div class="delivery-info">
@@ -1484,40 +1681,67 @@ window.addEventListener('DOMContentLoaded', function() {
         sd400Btn.click();
     }
 });
-<?php elseif ($unit_weight): ?>
+<?php elseif ($unit_weight || $is_hbeam): ?>
 // 중량 계산 함수
 function calculateWeight() {
+    <?php if ($unit_weight && $unit_weight['unit_weight'] > 0): ?>
     const unitWeight = <?php echo $unit_weight['unit_weight']; ?>;
+    <?php else: ?>
+    const unitWeight = 0; // 단위중량이 없는 경우
+    <?php endif; ?>
     const length = parseFloat(document.getElementById('length').value);
     const quantity = parseInt(document.getElementById('quantity').value) || 0;
     <?php if ($product['price'] && $product['price'] > 0): ?>
     const pricePerTon = <?php echo $product['price']; ?>;
     <?php endif; ?>
     
-    // 1본 중량 계산 (소수점 첫째자리 반올림)
-    const pieceWeight = Math.round(unitWeight * length);
-    
-    // 총 중량 계산
-    const totalWeight = pieceWeight * quantity;
-    
-    // 결과 표시
-    document.getElementById('pieceWeight').textContent = pieceWeight.toLocaleString() + ' kg';
-    document.getElementById('totalWeight').textContent = totalWeight.toLocaleString() + ' kg';
-    
-    <?php if ($product['price'] && $product['price'] > 0): ?>
-    // 금액 계산 (kg를 톤으로 변환: /1000)
-    const piecePrice = Math.round((pieceWeight / 1000) * pricePerTon);
-    const totalPrice = Math.round((totalWeight / 1000) * pricePerTon);
-    
-    // 금액 표시
-    document.getElementById('piecePrice').textContent = piecePrice.toLocaleString() + ' 원';
-    document.getElementById('totalPrice').textContent = totalPrice.toLocaleString() + ' 원';
-    <?php endif; ?>
+    if (unitWeight > 0) {
+        // 단위중량이 있는 경우
+        // 1본 중량 계산 (소수점 첫째자리 반올림)
+        const pieceWeight = Math.round(unitWeight * length);
+        
+        // 총 중량 계산
+        const totalWeight = pieceWeight * quantity;
+        
+        // 결과 표시
+        if (document.getElementById('pieceWeight')) {
+            document.getElementById('pieceWeight').textContent = pieceWeight.toLocaleString() + ' kg';
+        }
+        document.getElementById('totalWeight').textContent = totalWeight.toLocaleString() + ' kg';
+        
+        <?php if ($product['price'] && $product['price'] > 0): ?>
+        // 금액 계산 (kg를 톤으로 변환: /1000)
+        const piecePrice = Math.round((pieceWeight / 1000) * pricePerTon);
+        const totalPrice = Math.round((totalWeight / 1000) * pricePerTon);
+        
+        // 금액 표시
+        if (document.getElementById('piecePrice')) {
+            document.getElementById('piecePrice').textContent = piecePrice.toLocaleString() + ' 원';
+        }
+        document.getElementById('totalPrice').textContent = totalPrice.toLocaleString() + ' 원';
+        <?php endif; ?>
+    } else {
+        // 단위중량이 없는 경우 (H형강 등) - 톤 단위로 직접 입력
+        const totalWeight = quantity; // 수량을 톤으로 간주
+        
+        // 결과 표시
+        document.getElementById('totalWeight').textContent = totalWeight.toLocaleString() + ' TON';
+        
+        <?php if ($product['price'] && $product['price'] > 0): ?>
+        // 금액 계산 (톤 단위 직접 계산)
+        const totalPrice = Math.round(totalWeight * pricePerTon);
+        
+        // 금액 표시
+        document.getElementById('totalPrice').textContent = totalPrice.toLocaleString() + ' 원';
+        <?php endif; ?>
+    }
     
     // 견적문의 링크에 계산된 값 추가
     const quoteLink = document.getElementById('quoteLink');
-    const baseUrl = 'quote_write.php?product=<?php echo urlencode($product['product_name']); ?>&product_id=<?php echo $product['id']; ?>';
-    quoteLink.href = baseUrl + '&weight=' + totalWeight + '&length=' + length + '&quantity=' + quantity;
+    if (quoteLink) {
+        const baseUrl = 'quote_write.php?product=<?php echo urlencode($product['product_name']); ?>&product_id=<?php echo $product['id']; ?>';
+        quoteLink.href = baseUrl + '&weight=' + (unitWeight > 0 ? totalWeight : totalWeight * 1000) + '&length=' + length + '&quantity=' + quantity;
+    }
 }
 
 // 페이지 로드시 초기 계산

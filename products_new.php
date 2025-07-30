@@ -458,6 +458,60 @@ $products = $stmt->fetchAll();
     color: #333;
 }
 
+/* 상세내용 스타일 */
+.detailed-info {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.detailed-description {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.key-features-preview {
+    margin-top: 10px;
+}
+
+.feature-item {
+    display: block;
+    font-size: 13px;
+    color: #555;
+    margin: 4px 0;
+}
+
+/* 리스트뷰 상세내용 스타일 */
+.product-detailed-info {
+    margin-top: 12px;
+}
+
+.key-features-list {
+    margin-top: 12px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.key-features-list .feature-item {
+    display: block;
+    font-size: 14px;
+    color: #444;
+    margin: 6px 0;
+}
+
+.certifications-info {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #666;
+}
+
+.cert-label {
+    font-weight: 600;
+    color: #333;
+}
+
 .search-result {
     text-align: center;
     color: #666;
@@ -706,6 +760,21 @@ $products = $stmt->fetchAll();
                             <?php endif; ?>
                         <?php endif; ?>
                         <p class="description"><?php echo escape($product['description']); ?></p>
+                        <?php if (!empty($product['detailed_description']) && (isset($product['show_details']) ? $product['show_details'] : true)): ?>
+                        <div class="detailed-info">
+                            <p class="detailed-description"><?php echo nl2br(escape(mb_substr($product['detailed_description'], 0, 100))) . (mb_strlen($product['detailed_description']) > 100 ? '...' : ''); ?></p>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($product['key_features']) && (isset($product['show_details']) ? $product['show_details'] : true)): ?>
+                        <div class="key-features-preview">
+                            <?php 
+                            $features = array_slice(array_filter(array_map('trim', explode("\n", $product['key_features']))), 0, 2);
+                            foreach ($features as $feature): 
+                            ?>
+                            <span class="feature-item">• <?php echo escape($feature); ?></span>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
                         <span class="product-btn">견적문의</span>
                     </div>
                 </a>
@@ -762,6 +831,26 @@ $products = $stmt->fetchAll();
                             <?php endif; ?>
                         <?php endif; ?>
                         <p class="product-list-description"><?php echo escape($product['description']); ?></p>
+                        <?php if (!empty($product['detailed_description']) && (isset($product['show_details']) ? $product['show_details'] : true)): ?>
+                        <div class="product-detailed-info">
+                            <p class="detailed-description"><?php echo nl2br(escape(mb_substr($product['detailed_description'], 0, 200))) . (mb_strlen($product['detailed_description']) > 200 ? '...' : ''); ?></p>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($product['key_features']) && (isset($product['show_details']) ? $product['show_details'] : true)): ?>
+                        <div class="key-features-list">
+                            <?php 
+                            $features = array_slice(array_filter(array_map('trim', explode("\n", $product['key_features']))), 0, 3);
+                            foreach ($features as $feature): 
+                            ?>
+                            <span class="feature-item">• <?php echo escape($feature); ?></span>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($product['certifications']) && (isset($product['show_details']) ? $product['show_details'] : true)): ?>
+                        <div class="certifications-info">
+                            <span class="cert-label">인증:</span> <?php echo escape($product['certifications']); ?>
+                        </div>
+                        <?php endif; ?>
                         <div class="product-list-footer">
                             <span class="product-stock <?php echo $product['stock_status'] === 'out_of_stock' ? 'out-of-stock' : ''; ?>">
                                 <?php 

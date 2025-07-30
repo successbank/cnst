@@ -62,6 +62,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     
+    // 새로운 상세내용 필드들
+    $detailed_description = trim($_POST['detailed_description'] ?? '');
+    $key_features = trim($_POST['key_features'] ?? '');
+    $technical_specs = trim($_POST['technical_specs'] ?? '');
+    $applications = trim($_POST['applications'] ?? '');
+    $certifications = trim($_POST['certifications'] ?? '');
+    $brochure_url = trim($_POST['brochure_url'] ?? '');
+    $show_details = isset($_POST['show_details']) ? 1 : 0;
+    
     // 유효성 검사
     $errors = [];
     if (!$category_code) $errors[] = "카테고리를 선택해주세요.";
@@ -81,7 +90,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             base_length = ?, features = ?, dimensions = ?, weight = ?,
                             material = ?, manufacturer = ?, origin = ?,
-                            delivery_info = ?, is_featured = ?, is_active = ?
+                            delivery_info = ?, is_featured = ?, is_active = ?,
+                            detailed_description = ?, key_features = ?, technical_specs = ?,
+                            applications = ?, certifications = ?, brochure_url = ?,
+                            show_details = ?, details_updated_at = NOW()
                         WHERE id = ?
                     ");
                     $stmt->execute([
@@ -92,6 +104,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $base_length, $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
                         $delivery_info, $is_featured, $is_active,
+                        $detailed_description, $key_features, $technical_specs,
+                        $applications, $certifications, $brochure_url,
+                        $show_details,
                         $id
                     ]);
                 } else if ($has_base_length) {
@@ -102,7 +117,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             base_length = ?, features = ?, dimensions = ?, weight = ?,
                             material = ?, manufacturer = ?, origin = ?,
-                            delivery_info = ?, is_featured = ?, is_active = ?
+                            delivery_info = ?, is_featured = ?, is_active = ?,
+                            detailed_description = ?, key_features = ?, technical_specs = ?,
+                            applications = ?, certifications = ?, brochure_url = ?,
+                            show_details = ?, details_updated_at = NOW()
                         WHERE id = ?
                     ");
                     $stmt->execute([
@@ -112,6 +130,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $base_length, $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
                         $delivery_info, $is_featured, $is_active,
+                        $detailed_description, $key_features, $technical_specs,
+                        $applications, $certifications, $brochure_url,
+                        $show_details,
                         $id
                     ]);
                 } else if ($has_price_range) {
@@ -653,6 +674,55 @@ include 'admin_head.php';
         </div>
     </div>
     
+    <!-- 상세 내용 -->
+    <div class="form-section">
+        <h3 class="section-title">상세 내용</h3>
+        
+        <div class="form-group">
+            <label for="detailed_description">상세 설명</label>
+            <textarea id="detailed_description" name="detailed_description" rows="6"
+                      placeholder="제품에 대한 자세한 설명을 입력하세요"><?php echo htmlspecialchars($product['detailed_description'] ?? ''); ?></textarea>
+            <div class="help-text">제품 상세 페이지에 표시될 긴 설명입니다</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="key_features">주요 특징</label>
+            <textarea id="key_features" name="key_features" rows="4"
+                      placeholder="• 고강도 구조용강으로 제작&#10;• 우수한 내구성과 안정성&#10;• 다양한 규격 제공"><?php echo htmlspecialchars($product['key_features'] ?? ''); ?></textarea>
+            <div class="help-text">각 특징을 • 기호나 줄바꿈으로 구분하세요</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="technical_specs">기술 사양</label>
+            <textarea id="technical_specs" name="technical_specs" rows="4"
+                      placeholder="단면계수: XXX cm³&#10;단면2차모멘트: XXX cm⁴&#10;회전반경: XXX cm"><?php echo htmlspecialchars($product['technical_specs'] ?? ''); ?></textarea>
+            <div class="help-text">상세한 기술적 사양을 입력하세요</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="applications">사용 용도</label>
+            <textarea id="applications" name="applications" rows="4"
+                      placeholder="• 건축물의 기둥 및 보&#10;• 교량 구조물&#10;• 산업 시설 골조"><?php echo htmlspecialchars($product['applications'] ?? ''); ?></textarea>
+            <div class="help-text">제품의 주요 사용처나 용도를 입력하세요</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="certifications">관련 규격/인증</label>
+            <input type="text" id="certifications" name="certifications" 
+                   value="<?php echo htmlspecialchars($product['certifications'] ?? ''); ?>"
+                   placeholder="예: KS D 3503, JIS G 3192, ISO 9001">
+            <div class="help-text">관련 규격이나 인증을 쉼표로 구분하여 입력하세요</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="brochure_url">브로셔/카탈로그 URL</label>
+            <input type="url" id="brochure_url" name="brochure_url" 
+                   value="<?php echo htmlspecialchars($product['brochure_url'] ?? ''); ?>"
+                   placeholder="https://example.com/brochure.pdf">
+            <div class="help-text">제품 브로셔나 카탈로그 다운로드 링크</div>
+        </div>
+    </div>
+    
     <!-- 표시 설정 -->
     <div class="form-section">
         <h3 class="section-title">표시 설정</h3>
@@ -667,6 +737,12 @@ include 'admin_head.php';
             <input type="checkbox" id="is_active" name="is_active" value="1"
                    <?php echo ($product['is_active'] ?? 1) ? 'checked' : ''; ?>>
             <label for="is_active">제품 활성화</label>
+        </div>
+        
+        <div class="checkbox-group">
+            <input type="checkbox" id="show_details" name="show_details" value="1"
+                   <?php echo ($product['show_details'] ?? 1) ? 'checked' : ''; ?>>
+            <label for="show_details">상세내용 표시 (체크 해제 시 기본 정보만 표시)</label>
         </div>
     </div>
     
