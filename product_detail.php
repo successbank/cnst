@@ -1515,6 +1515,87 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
     </div>
 </div>
 
+<?php if (isset($product['show_details']) ? $product['show_details'] : true): ?>
+<?php if (!empty($product['detailed_description']) || !empty($product['key_features']) || !empty($product['technical_specs'])): ?>
+<!-- 상세 내용 컨테이너 -->
+<div style="max-width: 1200px; margin: 50px auto 0; padding: 0 20px;">
+    <?php if (!empty($product['detailed_description'])): ?>
+    <div class="product-detailed-section">
+        <h3>상세 설명</h3>
+        <div class="detailed-content">
+            <?php echo nl2br(escape($product['detailed_description'])); ?>
+        </div>
+    </div>
+    <?php endif; ?>
+    
+    <?php if (!empty($product['key_features'])): ?>
+    <div class="product-features-section">
+        <h3>주요 특징</h3>
+        <ul class="features-list">
+            <?php 
+            $features = array_filter(array_map('trim', explode("\n", $product['key_features'])));
+            foreach ($features as $feature): 
+            ?>
+            <li><?php echo escape($feature); ?></li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+    <?php endif; ?>
+    
+    <?php if (!empty($product['technical_specs'])): ?>
+    <div class="product-specs-section">
+        <h3>기술 사양</h3>
+        <div class="tech-specs-content">
+            <?php echo nl2br(escape($product['technical_specs'])); ?>
+        </div>
+    </div>
+    <?php endif; ?>
+    
+    <?php if (!empty($product['applications'])): ?>
+    <div class="product-applications-section">
+        <h3>사용 용도</h3>
+        <ul class="applications-list">
+            <?php 
+            $applications = array_filter(array_map('trim', explode("\n", $product['applications'])));
+            foreach ($applications as $application): 
+            ?>
+            <li><?php echo escape($application); ?></li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+    <?php endif; ?>
+    
+    <?php if (!empty($product['certifications'])): ?>
+    <div class="product-certifications-section">
+        <h3>관련 규격/인증</h3>
+        <div class="certifications-content">
+            <?php 
+            $certs = array_map('trim', explode(',', $product['certifications']));
+            foreach ($certs as $cert): 
+            ?>
+            <span class="cert-badge"><?php echo escape($cert); ?></span>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+    
+    <?php if (!empty($product['brochure_url'])): ?>
+    <div class="product-brochure-section">
+        <h3>제품 카탈로그</h3>
+        <a href="<?php echo escape($product['brochure_url']); ?>" target="_blank" class="brochure-link">
+            <svg width="20" height="20" fill="currentColor" style="margin-right: 8px;">
+                <path d="M11 1H3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7l-6-6z"/>
+                <path d="M11 1v6h6"/>
+                <path d="M13.5 10.5l-4 4-2-2"/>
+            </svg>
+            브로셔 다운로드
+        </a>
+    </div>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+<?php endif; ?>
+
 <!-- 관련 제품 -->
 <?php if (count($related_products) > 0): ?>
 <div class="related-products">
