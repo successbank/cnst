@@ -266,21 +266,6 @@ $products = $stmt->fetchAll();
     overflow: hidden;
 }
 
-.product-btn {
-    display: inline-block;
-    padding: 10px 24px;
-    background: var(--primary-blue);
-    color: white;
-    text-decoration: none;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.product-btn:hover {
-    background: #0F1F7A;
-}
 
 /* 리스트 뷰 스타일 */
 .products-list {
@@ -839,7 +824,6 @@ $products = $stmt->fetchAll();
                             <?php endif; ?>
                         <?php endif; ?>
                         <p class="description"><?php echo escape($product['description']); ?></p>
-                        <span class="product-btn">견적문의</span>
                     </div>
                 </a>
             <?php endforeach; ?>
@@ -932,7 +916,6 @@ $products = $stmt->fetchAll();
                                 }
                                 ?>
                             </span>
-                            <span class="product-btn">견적문의</span>
                         </div>
                     </div>
                 </a>
@@ -1029,131 +1012,12 @@ $products = $stmt->fetchAll();
     <?php endif; ?>
 </section>
 
-<!-- 견적문의 모달 -->
-<div id="quoteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 400px; width: 90%;">
-        <h3 style="margin-bottom: 20px; color: #333; font-size: 20px;">견적문의 추가</h3>
-        <p style="margin-bottom: 24px; color: #666; line-height: 1.6;">
-            <strong id="modalProductName" style="color: #1428A0;"></strong> 제품이 견적서에 담겼습니다.<br>
-            제품견적서 페이지로 이동하시겠습니까?
-        </p>
-        <div style="display: flex; gap: 12px; justify-content: flex-end;">
-            <button onclick="closeQuoteModal()" style="padding: 10px 24px; background: #f0f0f0; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">아니오</button>
-            <button onclick="goToQuote()" style="padding: 10px 24px; background: #1428A0; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">예</button>
-        </div>
-    </div>
-</div>
 
 <script>
-// 현재 선택된 제품 정보 저장
-let selectedProduct = null;
-
-// 견적문의 버튼 클릭 이벤트 처리
+// 페이지 로드 이벤트
 document.addEventListener('DOMContentLoaded', function() {
-    // 모든 견적문의 버튼에 이벤트 리스너 추가
-    const quoteButtons = document.querySelectorAll('.product-btn');
-    quoteButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // 제품 정보 가져오기
-            const productCard = this.closest('.product-card') || this.closest('.product-list-item');
-            const productLink = productCard.querySelector('a') || productCard;
-            const productId = productLink.href.match(/id=(\d+)/)[1];
-            const productName = productCard.querySelector('h3').textContent;
-            const productSpecs = productCard.querySelector('.specs, .product-list-specs').textContent.replace('규격: ', '');
-            
-            // 선택된 제품 정보 저장
-            selectedProduct = {
-                id: productId,
-                name: productName,
-                specifications: productSpecs
-            };
-            
-            // 견적 카트에 추가
-            addToQuoteCart(selectedProduct);
-            
-            // 모달에 제품명 표시
-            document.getElementById('modalProductName').textContent = productName;
-            
-            // 모달 표시
-            document.getElementById('quoteModal').style.display = 'block';
-        });
-    });
-    
-    // 링크 클릭 방지 (견적문의 버튼이 링크 안에 있을 때)
-    const productLinks = document.querySelectorAll('.product-card, .product-list-item');
-    productLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            if (e.target.classList.contains('product-btn') || e.target.closest('.product-btn')) {
-                e.preventDefault();
-            }
-        });
-    });
+    // 이미지 업로드 기능 초기화 등 다른 기능들을 위한 이벤트 리스너
 });
-
-// 견적 카트에 제품 추가
-function addToQuoteCart(product) {
-    // 세션 스토리지에서 기존 카트 가져오기
-    let quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
-    
-    // 중복 확인
-    const existingIndex = quoteCart.findIndex(item => item.id === product.id);
-    if (existingIndex === -1) {
-        // 새 제품 추가
-        quoteCart.push({
-            id: product.id,
-            name: product.name,
-            specifications: product.specifications,
-            quantity: 1,
-            addedAt: new Date().toISOString()
-        });
-    } else {
-        // 이미 있는 제품은 수량 증가
-        quoteCart[existingIndex].quantity += 1;
-    }
-    
-    // 세션 스토리지에 저장
-    sessionStorage.setItem('quoteCart', JSON.stringify(quoteCart));
-    
-    // 카트 카운트 업데이트
-    updateCartCount();
-}
-
-// 카트 카운트 업데이트
-function updateCartCount() {
-    const quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
-    const cartCount = quoteCart.length; // 아이템(건) 단위로 카운트
-    
-    // 상단 카트 아이콘의 카운트 업데이트
-    const cartCountElement = document.querySelector('.cart-count');
-    if (cartCountElement) {
-        cartCountElement.textContent = cartCount;
-        cartCountElement.style.display = cartCount > 0 ? 'block' : 'none';
-    }
-}
-
-// 모달 닫기
-function closeQuoteModal() {
-    document.getElementById('quoteModal').style.display = 'none';
-}
-
-// 제품견적서 페이지로 이동
-function goToQuote() {
-    // 마이페이지의 제품견적서로 이동
-    window.location.href = 'my_quote_cart.php';
-}
-
-// 모달 외부 클릭 시 닫기
-document.getElementById('quoteModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeQuoteModal();
-    }
-});
-
-// 페이지 로드 시 카트 카운트 업데이트
-updateCartCount();
 
 // 이미지 업로드 관련 함수들
 function triggerImageUpload(event, productId) {
