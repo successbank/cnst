@@ -314,6 +314,54 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
     color: #333;
 }
 
+/* 단가 범위 표시 스타일 */
+.price-range-box {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.price-range-item {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 6px;
+    background: white;
+    border: 1px solid #e0e0e0;
+}
+
+.price-range-item .price-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.price-range-item .price-value {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.price-range-item.min-price .price-value {
+    color: #28a745;
+}
+
+.price-range-item.base-price .price-value {
+    color: #333;
+}
+
+.price-range-item.max-price .price-value {
+    color: #dc3545;
+}
+
+.price-range-item small {
+    font-size: 12px;
+    font-weight: 400;
+    color: #666;
+}
 
 /* 기준단가 스타일 */
 .product-price-section {
@@ -1078,15 +1126,15 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                 // 기준길이 가져오기 (없으면 6m 기본값)
                 $base_length = isset($product['base_length']) ? $product['base_length'] : 6;
                 
-                // 최저단가 계산: min_price가 DB에 있으면 사용, 없으면 기준단가의 95%
+                // 최저단가 계산: min_price가 DB에 있으면 사용, 없으면 기준단가의 90%
                 $min_price_per_ton = isset($product['min_price']) && $product['min_price'] > 0 
                     ? $product['min_price'] 
-                    : $product['price'] * 0.95;
+                    : $product['price'] * 0.90;
                 
-                // 최대단가 계산: max_price가 DB에 있으면 사용, 없으면 기준단가의 105%
+                // 최대단가 계산: max_price가 DB에 있으면 사용, 없으면 기준단가의 110%
                 $max_price_per_ton = isset($product['max_price']) && $product['max_price'] > 0 
                     ? $product['max_price'] 
-                    : $product['price'] * 1.05;
+                    : $product['price'] * 1.10;
                 
                 // 단위중량이 있을 때만 계산 표시
                 if ($unit_weight && $unit_weight['unit_weight'] > 0): 
@@ -1300,9 +1348,36 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                     </div>
                     
                     <div class="calc-result">
+                        <?php 
+                        // 철근 기준단가
+                        $rebar_base_price = isset($rebar_spec['unit_price']) ? $rebar_spec['unit_price'] : 0;
+                        
+                        // 최저단가 계산: min_price가 DB에 있으면 사용, 없으면 기준단가의 90%
+                        $rebar_min_price = isset($product['min_price']) && $product['min_price'] > 0 
+                            ? $product['min_price'] 
+                            : $rebar_base_price * 0.90;
+                        
+                        // 최대단가 계산: max_price가 DB에 있으면 사용, 없으면 기준단가의 110%
+                        $rebar_max_price = isset($product['max_price']) && $product['max_price'] > 0 
+                            ? $product['max_price'] 
+                            : $rebar_base_price * 1.10;
+                        ?>
                         <div class="result-item">
-                            <span class="label">기준단가:</span>
-                            <span class="value" style="font-size: 18px; color: #666;" id="basePriceDisplay"><?php echo number_format(isset($rebar_spec['unit_price']) ? $rebar_spec['unit_price'] : 0); ?> 원/kg</span>
+                            <span class="label">단가범위:</span>
+                            <div class="price-range-box">
+                                <div class="price-range-item min-price">
+                                    <div class="price-label">최저단가</div>
+                                    <div class="price-value"><?php echo number_format($rebar_min_price); ?> <small>원/kg</small></div>
+                                </div>
+                                <div class="price-range-item base-price">
+                                    <div class="price-label">기준단가</div>
+                                    <div class="price-value" id="basePriceDisplay"><?php echo number_format($rebar_base_price); ?> <small>원/kg</small></div>
+                                </div>
+                                <div class="price-range-item max-price">
+                                    <div class="price-label">최대단가</div>
+                                    <div class="price-value"><?php echo number_format($rebar_max_price); ?> <small>원/kg</small></div>
+                                </div>
+                            </div>
                         </div>
                         <?php if ($is_rebar): ?>
                         <div class="result-item" id="finalPriceRow" style="display: none;">
