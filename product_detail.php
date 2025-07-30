@@ -1399,15 +1399,15 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                     
                     <div class="calc-result">
                         <?php 
-                        // H형강인 경우 단가 범위 계산
-                        if ($is_hbeam && $product['price'] && $product['price'] > 0) {
+                        // 철근을 제외한 모든 제품에 단가 범위 계산 (H형강 포함)
+                        if (!$is_rebar && $product['price'] && $product['price'] > 0) {
                             // 최저단가 계산: min_price가 DB에 있으면 사용, 없으면 기준단가의 90%
-                            $hbeam_min_price = isset($product['min_price']) && $product['min_price'] > 0 
+                            $min_price = isset($product['min_price']) && $product['min_price'] > 0 
                                 ? $product['min_price'] 
                                 : $product['price'] * 0.90;
                             
                             // 최대단가 계산: max_price가 DB에 있으면 사용, 없으면 기준단가의 110%
-                            $hbeam_max_price = isset($product['max_price']) && $product['max_price'] > 0 
+                            $max_price = isset($product['max_price']) && $product['max_price'] > 0 
                                 ? $product['max_price'] 
                                 : $product['price'] * 1.10;
                         ?>
@@ -1416,7 +1416,7 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                             <div class="price-range-box">
                                 <div class="price-range-item min-price">
                                     <div class="price-label">최저단가</div>
-                                    <div class="price-value"><?php echo number_format($hbeam_min_price); ?> <small>원/<?php echo escape($product['unit'] ?: 'TON'); ?></small></div>
+                                    <div class="price-value"><?php echo number_format($min_price); ?> <small>원/<?php echo escape($product['unit'] ?: 'TON'); ?></small></div>
                                 </div>
                                 <div class="price-range-item base-price">
                                     <div class="price-label">기준단가</div>
@@ -1424,7 +1424,7 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                                 </div>
                                 <div class="price-range-item max-price">
                                     <div class="price-label">최대단가</div>
-                                    <div class="price-value"><?php echo number_format($hbeam_max_price); ?> <small>원/<?php echo escape($product['unit'] ?: 'TON'); ?></small></div>
+                                    <div class="price-value"><?php echo number_format($max_price); ?> <small>원/<?php echo escape($product['unit'] ?: 'TON'); ?></small></div>
                                 </div>
                             </div>
                         </div>
