@@ -1,10 +1,14 @@
 <?php
+session_start();
 require_once 'db.php';
 require_once 'includes/rebar_unit_weights.php';
 $currentPage = 'products';
 $pageTitle = '제품소개';
 $additionalCSS = [];
 require_once 'head.php';
+
+// 관리자 권한 체크
+$is_admin = isset($_SESSION['admin_id']) && $_SESSION['admin_id'];
 
 // 파라미터 처리
 $category_filter = isset($_GET['category']) ? $_GET['category'] : 'all';
@@ -194,7 +198,7 @@ $products = $stmt->fetchAll();
 /* 타일 뷰 스타일 */
 .products-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 24px;
     max-width: 1200px;
     margin: 0 auto;
@@ -458,29 +462,6 @@ $products = $stmt->fetchAll();
     color: #333;
 }
 
-/* 상세내용 스타일 */
-.detailed-info {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #f0f0f0;
-}
-
-.detailed-description {
-    font-size: 13px;
-    color: #666;
-    line-height: 1.5;
-}
-
-.key-features-preview {
-    margin-top: 10px;
-}
-
-.feature-item {
-    display: block;
-    font-size: 13px;
-    color: #555;
-    margin: 4px 0;
-}
 
 /* 리스트뷰 상세내용 스타일 */
 .product-detailed-info {
@@ -630,6 +611,97 @@ $products = $stmt->fetchAll();
         font-size: 14px;
     }
 }
+
+/* 이미지 업로드 스타일 */
+.image-upload-wrapper {
+    position: relative;
+}
+
+.image-upload-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(20, 40, 160, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.image-upload-btn:hover {
+    background: rgba(20, 40, 160, 1);
+    transform: scale(1.1);
+}
+
+.image-delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.image-delete-btn:hover {
+    background: rgba(220, 53, 69, 1);
+    transform: scale(1.1);
+}
+
+.upload-input {
+    display: none;
+}
+
+.upload-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #333;
+    z-index: 15;
+}
+
+/* 리스트뷰 이미지 업로드 스타일 */
+.product-list-image .image-upload-btn {
+    bottom: 5px;
+    right: 5px;
+    width: 35px;
+    height: 35px;
+    font-size: 18px;
+}
+
+.product-list-image .image-delete-btn {
+    top: 5px;
+    right: 5px;
+    width: 25px;
+    height: 25px;
+    font-size: 14px;
+}
 </style>
 
 <section class="products-header">
@@ -716,9 +788,12 @@ $products = $stmt->fetchAll();
         <div class="products-grid">
             <?php foreach ($products as $product): ?>
                 <a href="product_detail.php?id=<?php echo $product['id']; ?>" class="product-card">
-                    <div class="product-image">
+                    <div class="product-image image-upload-wrapper" data-product-id="<?php echo $product['id']; ?>">
                         <?php if ($product['main_image']): ?>
                             <img src="<?php echo escape($product['main_image']); ?>" alt="<?php echo escape($product['product_name']); ?>">
+                            <?php if ($is_admin): ?>
+                                <button class="image-delete-btn" onclick="deleteProductImage(event, <?php echo $product['id']; ?>)">×</button>
+                            <?php endif; ?>
                         <?php else: ?>
                             <?php
                             // 카테고리별 아이콘
@@ -743,6 +818,10 @@ $products = $stmt->fetchAll();
                             ];
                             echo $icons[$product['category_code']] ?? '📦';
                             ?>
+                        <?php endif; ?>
+                        <?php if ($is_admin): ?>
+                            <button class="image-upload-btn" onclick="triggerImageUpload(event, <?php echo $product['id']; ?>)">+</button>
+                            <input type="file" class="upload-input" id="upload-<?php echo $product['id']; ?>" accept="image/*" onchange="uploadProductImage(event, <?php echo $product['id']; ?>)">
                         <?php endif; ?>
                     </div>
                     <div class="product-info">
@@ -760,21 +839,6 @@ $products = $stmt->fetchAll();
                             <?php endif; ?>
                         <?php endif; ?>
                         <p class="description"><?php echo escape($product['description']); ?></p>
-                        <?php if (!empty($product['detailed_description']) && (isset($product['show_details']) ? $product['show_details'] : true)): ?>
-                        <div class="detailed-info">
-                            <p class="detailed-description"><?php echo nl2br(escape(mb_substr($product['detailed_description'], 0, 100))) . (mb_strlen($product['detailed_description']) > 100 ? '...' : ''); ?></p>
-                        </div>
-                        <?php endif; ?>
-                        <?php if (!empty($product['key_features']) && (isset($product['show_details']) ? $product['show_details'] : true)): ?>
-                        <div class="key-features-preview">
-                            <?php 
-                            $features = array_slice(array_filter(array_map('trim', explode("\n", $product['key_features']))), 0, 2);
-                            foreach ($features as $feature): 
-                            ?>
-                            <span class="feature-item">• <?php echo escape($feature); ?></span>
-                            <?php endforeach; ?>
-                        </div>
-                        <?php endif; ?>
                         <span class="product-btn">견적문의</span>
                     </div>
                 </a>
@@ -785,9 +849,12 @@ $products = $stmt->fetchAll();
         <div class="products-list">
             <?php foreach ($products as $product): ?>
                 <a href="product_detail.php?id=<?php echo $product['id']; ?>" class="product-list-item">
-                    <div class="product-list-image">
+                    <div class="product-list-image image-upload-wrapper" data-product-id="<?php echo $product['id']; ?>">
                         <?php if ($product['main_image']): ?>
                             <img src="<?php echo escape($product['main_image']); ?>" alt="<?php echo escape($product['product_name']); ?>">
+                            <?php if ($is_admin): ?>
+                                <button class="image-delete-btn" onclick="deleteProductImage(event, <?php echo $product['id']; ?>)">×</button>
+                            <?php endif; ?>
                         <?php else: ?>
                             <?php
                             // 카테고리별 아이콘
@@ -812,6 +879,10 @@ $products = $stmt->fetchAll();
                             ];
                             echo $icons[$product['category_code']] ?? '📦';
                             ?>
+                        <?php endif; ?>
+                        <?php if ($is_admin): ?>
+                            <button class="image-upload-btn" onclick="triggerImageUpload(event, <?php echo $product['id']; ?>)">+</button>
+                            <input type="file" class="upload-input" id="upload-list-<?php echo $product['id']; ?>" accept="image/*" onchange="uploadProductImage(event, <?php echo $product['id']; ?>)">
                         <?php endif; ?>
                     </div>
                     <div class="product-list-content">
@@ -1083,6 +1154,113 @@ document.getElementById('quoteModal').addEventListener('click', function(e) {
 
 // 페이지 로드 시 카트 카운트 업데이트
 updateCartCount();
+
+// 이미지 업로드 관련 함수들
+function triggerImageUpload(event, productId) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // 리스트뷰인지 타일뷰인지 확인
+    const isListView = event.target.closest('.product-list-item') !== null;
+    const inputId = isListView ? `upload-list-${productId}` : `upload-${productId}`;
+    document.getElementById(inputId).click();
+}
+
+function uploadProductImage(event, productId) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // 파일 유효성 검사
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        alert('JPG, PNG, GIF, WebP 형식의 이미지만 업로드 가능합니다.');
+        return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+        alert('파일 크기는 5MB 이하여야 합니다.');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('product_id', productId);
+    formData.append('image', file);
+    
+    // 업로드 중 표시
+    const wrapper = document.querySelector(`.image-upload-wrapper[data-product-id="${productId}"]`);
+    const progressDiv = document.createElement('div');
+    progressDiv.className = 'upload-progress';
+    progressDiv.innerHTML = '업로드 중...';
+    wrapper.appendChild(progressDiv);
+    
+    // AJAX 업로드
+    fetch('admin/ajax/upload_product_image.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+    })
+    .then(text => {
+        console.log('Response text:', text);
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('JSON parse error:', e);
+            throw new Error('Invalid JSON response: ' + text);
+        }
+    })
+    .then(data => {
+        if (data.success) {
+            // 페이지 새로고침하여 이미지 표시
+            location.reload();
+        } else {
+            alert(data.message || '업로드 실패');
+            progressDiv.remove();
+        }
+    })
+    .catch(error => {
+        alert('업로드 중 오류가 발생했습니다.\n' + error.message);
+        progressDiv.remove();
+        console.error('Upload error:', error);
+    });
+}
+
+function deleteProductImage(event, productId) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (!confirm('이미지를 삭제하시겠습니까?')) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('product_id', productId);
+    
+    fetch('admin/ajax/delete_product_image.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || '삭제 실패');
+        }
+    })
+    .catch(error => {
+        alert('삭제 중 오류가 발생했습니다.');
+        console.error('Delete error:', error);
+    });
+}
 </script>
 
 <?php include 'tail.php'; ?>
