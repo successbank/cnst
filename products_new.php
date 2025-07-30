@@ -254,11 +254,53 @@ $products = $stmt->fetchAll();
     font-size: 14px;
     color: #999;
     line-height: 1.6;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* 단가 범위 스타일 */
+.price-range-mini {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.price-item-mini {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 11px;
+}
+
+.price-item-mini .label {
+    display: block;
+    color: #666;
+    margin-bottom: 2px;
+    font-size: 10px;
+}
+
+.price-item-mini .value {
+    font-weight: 700;
+    display: block;
+}
+
+.price-item-mini.min .value {
+    color: #28a745;
+}
+
+.price-item-mini.base .value {
+    color: #333;
+}
+
+.price-item-mini.max .value {
+    color: #dc3545;
 }
 
 
@@ -339,6 +381,45 @@ $products = $stmt->fetchAll();
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+/* 리스트뷰 단가범위 스타일 */
+.price-range-list {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.price-item-list {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #f8f9fa;
+    border-radius: 20px;
+    font-size: 13px;
+}
+
+.price-item-list .label {
+    color: #666;
+    font-size: 12px;
+}
+
+.price-item-list .value {
+    font-weight: 700;
+}
+
+.price-item-list.min .value {
+    color: #28a745;
+}
+
+.price-item-list.base .value {
+    color: #333;
+    font-size: 14px;
+}
+
+.price-item-list.max .value {
+    color: #dc3545;
 }
 
 .product-stock {
@@ -813,6 +894,30 @@ $products = $stmt->fetchAll();
                             <?php endif; ?>
                         <?php endif; ?>
                         <p class="description"><?php echo escape($product['description']); ?></p>
+                        <?php if ($product['price'] && $product['price'] > 0): ?>
+                        <?php 
+                        $min_price = isset($product['min_price']) && $product['min_price'] > 0 
+                            ? $product['min_price'] 
+                            : $product['price'] * 0.90;
+                        $max_price = isset($product['max_price']) && $product['max_price'] > 0 
+                            ? $product['max_price'] 
+                            : $product['price'] * 1.10;
+                        ?>
+                        <div class="price-range-mini">
+                            <div class="price-item-mini min">
+                                <span class="label">최저</span>
+                                <span class="value"><?php echo number_format($min_price); ?></span>
+                            </div>
+                            <div class="price-item-mini base">
+                                <span class="label">기준</span>
+                                <span class="value"><?php echo number_format($product['price']); ?></span>
+                            </div>
+                            <div class="price-item-mini max">
+                                <span class="label">최대</span>
+                                <span class="value"><?php echo number_format($max_price); ?></span>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </a>
             <?php endforeach; ?>
@@ -874,6 +979,30 @@ $products = $stmt->fetchAll();
                             <?php endif; ?>
                         <?php endif; ?>
                         <p class="product-list-description"><?php echo escape($product['description']); ?></p>
+                        <?php if ($product['price'] && $product['price'] > 0): ?>
+                        <?php 
+                        $min_price = isset($product['min_price']) && $product['min_price'] > 0 
+                            ? $product['min_price'] 
+                            : $product['price'] * 0.90;
+                        $max_price = isset($product['max_price']) && $product['max_price'] > 0 
+                            ? $product['max_price'] 
+                            : $product['price'] * 1.10;
+                        ?>
+                        <div class="price-range-list">
+                            <div class="price-item-list min">
+                                <span class="label">최저</span>
+                                <span class="value"><?php echo number_format($min_price); ?>원</span>
+                            </div>
+                            <div class="price-item-list base">
+                                <span class="label">기준</span>
+                                <span class="value"><?php echo number_format($product['price']); ?>원</span>
+                            </div>
+                            <div class="price-item-list max">
+                                <span class="label">최대</span>
+                                <span class="value"><?php echo number_format($max_price); ?>원</span>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                         <?php if (!empty($product['detailed_description']) && (isset($product['show_details']) ? $product['show_details'] : true)): ?>
                         <div class="product-detailed-info">
                             <p class="detailed-description"><?php echo nl2br(escape(mb_substr($product['detailed_description'], 0, 200))) . (mb_strlen($product['detailed_description']) > 200 ? '...' : ''); ?></p>

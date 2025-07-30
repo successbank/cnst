@@ -1302,8 +1302,8 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                     
                     <div class="calc-result">
                         <?php 
-                        // 철근 기준단가
-                        $rebar_base_price = isset($rebar_spec['unit_price']) ? $rebar_spec['unit_price'] : 0;
+                        // 철근 기준단가 - products 테이블의 price 사용
+                        $rebar_base_price = isset($product['price']) && $product['price'] > 0 ? $product['price'] : 0;
                         
                         // 최저단가 계산: min_price가 DB에 있으면 사용, 없으면 기준단가의 90%
                         $rebar_min_price = isset($product['min_price']) && $product['min_price'] > 0 
