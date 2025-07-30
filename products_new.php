@@ -249,11 +249,6 @@ $products = $stmt->fetchAll();
     margin-bottom: 8px;
 }
 
-.product-info .specs {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 16px;
-}
 
 .product-info .description {
     font-size: 14px;
@@ -331,11 +326,6 @@ $products = $stmt->fetchAll();
     margin: 0;
 }
 
-.product-list-specs {
-    font-size: 16px;
-    color: #666;
-    margin-bottom: 12px;
-}
 
 .product-list-description {
     font-size: 14px;
@@ -811,7 +801,6 @@ $products = $stmt->fetchAll();
                     </div>
                     <div class="product-info">
                         <h3><?php echo escape($product['product_name']); ?></h3>
-                        <p class="specs"><?php echo escape($product['specifications']); ?></p>
                         <?php if ($product['category_code'] === 'rebar'): ?>
                             <?php
                             // 이미 계산된 단중 사용
@@ -873,7 +862,6 @@ $products = $stmt->fetchAll();
                         <div class="product-list-header">
                             <h3 class="product-list-title"><?php echo escape($product['product_name']); ?></h3>
                         </div>
-                        <p class="product-list-specs">규격: <?php echo escape($product['specifications']); ?></p>
                         <?php if ($product['category_code'] === 'rebar'): ?>
                             <?php
                             // 이미 계산된 단중 사용

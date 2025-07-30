@@ -1609,6 +1609,21 @@ function loadLengthOptions() {
 
 // 길이 선택시 데이터 로드
 function loadRebarData() {
+    const lengthSelect = document.getElementById('lengthSelect');
+    const selectedOption = lengthSelect.options[lengthSelect.selectedIndex];
+    
+    if (selectedOption && selectedOption.value) {
+        const piecesPerTon = parseFloat(selectedOption.dataset.piecesPerTon) || 0;
+        const totalWeight = parseFloat(selectedOption.dataset.totalWeight) || 0;
+        
+        // 톤당본수나 통당중량이 없거나 0인 경우 전화문의 모달 표시
+        if (piecesPerTon === 0 || totalWeight === 0) {
+            document.getElementById('phoneInquiryModal').style.display = 'block';
+            lengthSelect.value = ''; // 선택 초기화
+            return;
+        }
+    }
+    
     calculatePrice();
 }
 
@@ -1754,6 +1769,40 @@ window.onload = function() {
     </div>
 </div>
 
+<!-- 전화문의 모달 -->
+<div id="phoneInquiryModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); max-width: 450px; width: 90%; text-align: center;">
+        <div style="margin-bottom: 20px;">
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+        </div>
+        <h3 style="margin-bottom: 16px; color: #333; font-size: 24px; font-weight: 700;">전화 문의 안내</h3>
+        <p style="margin-bottom: 24px; color: #666; line-height: 1.6; font-size: 16px;">
+            해당 제품의 상세 규격 정보가 필요하신 경우<br>
+            아래 번호로 문의해 주시기 바랍니다.
+        </p>
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+            <p style="font-size: 14px; color: #666; margin-bottom: 8px;">전화 문의</p>
+            <a href="tel:010-9820-0495" style="font-size: 28px; font-weight: 700; color: #1428A0; text-decoration: none; display: block;">
+                010-9820-0495
+            </a>
+        </div>
+        <p style="font-size: 14px; color: #888; margin-bottom: 24px;">
+            운영시간: 평일 09:00 - 18:00
+        </p>
+        <div style="display: flex; gap: 12px;">
+            <button onclick="closePhoneInquiryModal()" style="flex: 1; padding: 12px 24px; background: #f0f0f0; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">닫기</button>
+            <a href="tel:010-9820-0495" style="flex: 1; padding: 12px 24px; background: #1428A0; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+                전화 걸기
+            </a>
+        </div>
+    </div>
+</div>
+
 <script>
 // 견적 카트에 제품 추가
 function addToQuoteCart() {
@@ -1885,9 +1934,53 @@ document.getElementById('quoteModal').addEventListener('click', function(e) {
     }
 });
 
-// 페이지 로드 시 카트 카운트 업데이트
+// 전화문의 모달 닫기
+function closePhoneInquiryModal() {
+    document.getElementById('phoneInquiryModal').style.display = 'none';
+}
+
+// 전화문의 모달 외부 클릭 시 닫기
+document.getElementById('phoneInquiryModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePhoneInquiryModal();
+    }
+});
+
+// 페이지 로드 시 카트 카운트 업데이트 및 데이터 확인
 window.addEventListener('DOMContentLoaded', function() {
     updateCartCount();
+    
+    // 철근이 아닌 제품에서 단위중량 데이터 확인
+    <?php if (!$is_rebar_category && !$unit_weight): ?>
+    // 단위중량이 없는 경우 확인
+    const hasWeightCalculator = document.querySelector('.weight-calculator');
+    if (!hasWeightCalculator) {
+        // 계산기가 없는 경우는 정상 (단위중량이 필요없는 제품)
+    }
+    <?php endif; ?>
+    
+    // 철근 제품에서 길이별 데이터 확인
+    <?php if ($is_rebar_category && $rebar_lengths): ?>
+    // 데이터가 없는 길이 옵션 확인
+    const lengthSelect = document.getElementById('lengthSelect');
+    if (lengthSelect) {
+        let hasEmptyData = false;
+        const options = lengthSelect.options;
+        for (let i = 1; i < options.length; i++) { // 첫 번째 옵션은 "선택하세요"이므로 제외
+            const piecesPerTon = parseFloat(options[i].dataset.piecesPerTon) || 0;
+            const totalWeight = parseFloat(options[i].dataset.totalWeight) || 0;
+            if (piecesPerTon === 0 || totalWeight === 0) {
+                hasEmptyData = true;
+                break;
+            }
+        }
+        
+        // 데이터가 없는 옵션이 있으면 사용자에게 알림 (옵션 선택 시 모달 표시됨)
+        if (hasEmptyData) {
+            console.log('일부 길이 옵션에 데이터가 없습니다. 선택 시 전화문의 안내가 표시됩니다.');
+        }
+    }
+    <?php endif; ?>
 });
 
 <?php if ($is_rebar && $rebar_spec): ?>
