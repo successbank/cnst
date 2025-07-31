@@ -115,6 +115,19 @@ if (!$product) {
     exit;
 }
 
+// available_origins 파싱
+$available_origins = [];
+if (!empty($product['available_origins'])) {
+    $available_origins = json_decode($product['available_origins'], true);
+    if (!is_array($available_origins)) {
+        $available_origins = [];
+    }
+}
+// available_origins가 없으면 현재 origin을 사용
+if (empty($available_origins)) {
+    $available_origins = [$product['origin']];
+}
+
 // 같은 카테고리의 다른 제품 가져오기
 $stmt = $pdo->prepare("
     SELECT * FROM products 
@@ -1050,6 +1063,29 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
         font-size: 12px;
     }
 }
+
+/* 원산지 선택 스타일 */
+.origin-select {
+    padding: 8px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 15px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    min-width: 120px;
+}
+
+.origin-select:hover {
+    border-color: var(--primary-blue);
+}
+
+.origin-select:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(20, 40, 160, 0.1);
+}
 </style>
 
 <div class="product-detail">
@@ -1206,10 +1242,22 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                         <span class="spec-value"><?php echo number_format($product['min_order_qty']); ?> <?php echo escape($product['unit']); ?></span>
                     </div>
                     <?php endif; ?>
-                    <?php if (isset($product['origin']) && $product['origin']): ?>
+                    <?php if (!empty($available_origins)): ?>
                     <div class="spec-item">
                         <span class="spec-label">원산지</span>
-                        <span class="spec-value"><?php echo escape($product['origin']); ?></span>
+                        <span class="spec-value">
+                            <?php if (count($available_origins) > 1): ?>
+                            <select id="origin-select" name="origin" class="origin-select" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; background: white; cursor: pointer;">
+                                <?php foreach ($available_origins as $origin): ?>
+                                <option value="<?php echo escape($origin); ?>" <?php echo $origin === $product['origin'] ? 'selected' : ''; ?>>
+                                    <?php echo escape($origin); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <?php else: ?>
+                            <?php echo escape($available_origins[0]); ?>
+                            <?php endif; ?>
+                        </span>
                     </div>
                     <?php endif; ?>
                     <?php if (isset($product['manufacturer']) && $product['manufacturer']): ?>
@@ -2332,6 +2380,33 @@ document.getElementById('tonQuantity').addEventListener('keypress', function(e) 
     }
 });
 <?php endif; ?>
+
+// 원산지 선택 처리
+document.addEventListener('DOMContentLoaded', function() {
+    const originSelect = document.getElementById('origin-select');
+    if (originSelect) {
+        originSelect.addEventListener('change', function() {
+            const selectedOrigin = this.value;
+            console.log('선택된 원산지:', selectedOrigin);
+            
+            // 여기에 원산지 변경에 따른 추가 로직을 구현할 수 있습니다
+            // 예: 가격 업데이트, 재고 확인 등
+            
+            // 선택된 원산지를 세션 또는 로컬 스토리지에 저장
+            if (typeof(Storage) !== "undefined") {
+                sessionStorage.setItem('selected_origin_<?php echo $product_id; ?>', selectedOrigin);
+            }
+        });
+        
+        // 이전에 선택된 원산지가 있으면 복원
+        if (typeof(Storage) !== "undefined") {
+            const savedOrigin = sessionStorage.getItem('selected_origin_<?php echo $product_id; ?>');
+            if (savedOrigin && originSelect.querySelector(`option[value="${savedOrigin}"]`)) {
+                originSelect.value = savedOrigin;
+            }
+        }
+    }
+});
 </script>
 
 <?php include 'tail.php'; ?>

@@ -505,7 +505,30 @@ $origin_stats = $origin_stmt->fetchAll();
     cursor: pointer;
 }
 
-.origin-select,
+.origin-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-width: 300px;
+}
+
+.origin-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.origin-checkbox-label input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.origin-checkbox-label span {
+    cursor: pointer;
+}
+
 .stock-select {
     width: 150px;
     padding: 5px;
@@ -571,7 +594,7 @@ function loadProductsForOrigin(categoryCode) {
                 html += '<th width="50"><input type="checkbox" onchange="toggleAllProducts(this)"></th>';
                 html += '<th>제튈명</th>';
                 html += '<th>현재 원산지</th>';
-                html += '<th>변경할 원산지</th>';
+                html += '<th>사용 가능한 원산지 선택</th>';
                 html += '<th>현재 재고 상태</th>';
                 html += '<th>변경할 재고 상태</th>';
                 html += '</tr></thead>';
@@ -583,15 +606,28 @@ function loadProductsForOrigin(categoryCode) {
                     html += `<td>${product.product_name}</td>`;
                     html += `<td>${product.origin || '미지정'}</td>`;
                     html += '<td>';
-                    html += `<select name="product_origins[${product.id}]" class="origin-select">`;
-                    html += '<option value="">변경 안함</option>';
-                    html += '<option value="국산">국산</option>';
-                    html += '<option value="중국산">중국산</option>';
-                    html += '<option value="일본산">일본산</option>';
-                    html += '<option value="베트남산">베트남산</option>';
-                    html += '<option value="바레인산">바레인산</option>';
-                    html += '<option value="수입산">수입산</option>';
-                    html += '</select>';
+                    html += '<div class="origin-checkboxes">';
+                    
+                    // 현재 사용 가능한 원산지 목록 파싱
+                    let availableOrigins = [];
+                    try {
+                        if (product.available_origins) {
+                            availableOrigins = JSON.parse(product.available_origins);
+                        }
+                    } catch(e) {
+                        availableOrigins = [];
+                    }
+                    
+                    const origins = ['국산', '중국산', '일본산', '베트남산', '바레인산', '수입산'];
+                    origins.forEach(origin => {
+                        const isChecked = availableOrigins.includes(origin) ? 'checked' : '';
+                        html += '<label class="origin-checkbox-label">';
+                        html += `<input type="checkbox" name="product_origins[${product.id}][]" value="${origin}" ${isChecked}>`;
+                        html += `<span>${origin}</span>`;
+                        html += '</label>';
+                    });
+                    
+                    html += '</div>';
                     html += '</td>';
                     html += '<td>';
                     const stockTypeText = {
@@ -662,15 +698,15 @@ function validateProductForm() {
     let hasChangeSelected = false;
     checkedBoxes.forEach(checkbox => {
         const productId = checkbox.value;
-        const originSelect = document.querySelector(`select[name="product_origins[${productId}]"]`);
+        const originCheckboxes = document.querySelectorAll(`input[name="product_origins[${productId}][]"]:checked`);
         const stockSelect = document.querySelector(`select[name="product_stock_types[${productId}]"]`);
-        if ((originSelect && originSelect.value) || (stockSelect && stockSelect.value)) {
+        if (originCheckboxes.length > 0 || (stockSelect && stockSelect.value)) {
             hasChangeSelected = true;
         }
     });
     
     if (!hasChangeSelected) {
-        alert('선택한 제품 중 최소 하나는 변경할 항목을 선택해주세요.');
+        alert('선택한 제함 중 최소 하나는 변경할 항목을 선택해주세요.');
         return false;
     }
     

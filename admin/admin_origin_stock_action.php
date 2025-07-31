@@ -56,10 +56,18 @@ try {
                 $updates = [];
                 $params = [];
                 
-                // 원산지 변경
+                // 복수 원산지 변경
                 if (isset($product_origins[$product_id]) && !empty($product_origins[$product_id])) {
-                    $updates[] = "origin = ?";
-                    $params[] = $product_origins[$product_id];
+                    $selected_origins = $product_origins[$product_id];
+                    $available_origins_json = json_encode($selected_origins, JSON_UNESCAPED_UNICODE);
+                    $updates[] = "available_origins = ?";
+                    $params[] = $available_origins_json;
+                    
+                    // 첫 번째 원산지를 기본 원산지로 설정
+                    if (!empty($selected_origins)) {
+                        $updates[] = "origin = ?";
+                        $params[] = $selected_origins[0];
+                    }
                 }
                 
                 // 재고 상태 변경

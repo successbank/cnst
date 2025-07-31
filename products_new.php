@@ -84,6 +84,15 @@ $sql = "SELECT p.*, pc.category_name
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $products = $stmt->fetchAll();
+
+// 모든 제품에 available_origins_array 파싱
+foreach ($products as &$product) {
+    if (!empty($product['available_origins'])) {
+        $product['available_origins_array'] = json_decode($product['available_origins'], true);
+    } else {
+        $product['available_origins_array'] = [$product['origin']];
+    }
+}
 ?>
 
 <style>
@@ -559,6 +568,30 @@ $products = $stmt->fetchAll();
     color: var(--primary-blue);
 }
 
+/* 원산지 정보 스타일 */
+.origin-info {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #f0f0f0;
+    font-size: 13px;
+    color: #666;
+}
+
+.origin-info-label {
+    font-weight: 600;
+    color: #333;
+}
+
+.origin-info-text {
+    color: #555;
+}
+
+/* 리스트뷰에서의 원산지 정보 스타일 */
+.product-list-item .origin-info {
+    margin-top: 12px;
+    font-size: 14px;
+}
+
 /* 페이지네이션 스타일 */
 .pagination-wrapper {
     display: flex;
@@ -830,6 +863,13 @@ $products = $stmt->fetchAll();
             
             // 규격 숫자 추출 (D10 -> 10)
             $product['spec_number'] = $spec ? intval(substr($spec, 1)) : 999;
+            
+            // available_origins 파싱 추가
+            if (!empty($product['available_origins'])) {
+                $product['available_origins_array'] = json_decode($product['available_origins'], true);
+            } else {
+                $product['available_origins_array'] = [$product['origin']];
+            }
         }
         
         // 규격 번호로 정렬
@@ -916,6 +956,12 @@ $products = $stmt->fetchAll();
                                 <span class="label">최대</span>
                                 <span class="value"><?php echo number_format($max_price); ?></span>
                             </div>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (isset($product['available_origins_array']) && !empty($product['available_origins_array'])): ?>
+                        <div class="origin-info">
+                            <span class="origin-info-label">원산지: </span>
+                            <span class="origin-info-text"><?php echo implode(', ', array_map('escape', $product['available_origins_array'])); ?></span>
                         </div>
                         <?php endif; ?>
                     </div>
@@ -1021,6 +1067,12 @@ $products = $stmt->fetchAll();
                         <?php if (!empty($product['certifications']) && (isset($product['show_details']) ? $product['show_details'] : true)): ?>
                         <div class="certifications-info">
                             <span class="cert-label">인증:</span> <?php echo escape($product['certifications']); ?>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (isset($product['available_origins_array']) && !empty($product['available_origins_array'])): ?>
+                        <div class="origin-info">
+                            <span class="origin-info-label">원산지: </span>
+                            <span class="origin-info-text"><?php echo implode(', ', array_map('escape', $product['available_origins_array'])); ?></span>
                         </div>
                         <?php endif; ?>
                         <div class="product-list-footer">
@@ -1133,7 +1185,7 @@ $products = $stmt->fetchAll();
 <script>
 // 페이지 로드 이벤트
 document.addEventListener('DOMContentLoaded', function() {
-    // 이미지 업로드 기능 초기화 등 다른 기능들을 위한 이벤트 리스너
+    // 원산지 관련 기능 제거됨 - 상세 페이지에서 선택 가능
 });
 
 // 이미지 업로드 관련 함수들

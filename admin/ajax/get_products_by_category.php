@@ -14,7 +14,7 @@ if (empty($category)) {
 try {
     // 해당 카테고리의 모든 활성 제품 가져오기
     $stmt = $pdo->prepare("
-        SELECT id, product_name, origin, stock_type, specifications
+        SELECT id, product_name, origin, available_origins, stock_type, specifications
         FROM products 
         WHERE category_code = ? AND is_active = 1
         ORDER BY product_name
