@@ -1,147 +1,121 @@
 <?php
-require_once 'admin_check.php';
+session_start();
 require_once '../db.php';
 
-// POST 요청만 허용
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: admin_product_groups.php');
+// 관리자 로그인 확인
+if (!isset($_SESSION['admin_id'])) {
+    header('Location: login.php');
     exit;
 }
 
-$action = $_POST['action'] ?? '';
-$category_code = $_POST['category_code'] ?? '';
-
-if (empty($action)) {
-    $_SESSION['error'] = '필수 파라미터가 누락되었습니다.';
+// POST 요청만 허용
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $_SESSION['error'] = '잘못된 접근입니다.';
     header('Location: admin_origin_stock.php');
     exit;
 }
 
-try {
-    switch ($action) {
-        case 'update_origin':
-            $new_origin = $_POST['new_origin'] ?? '';
-            if (empty($new_origin)) {
-                throw new Exception('원산지를 선택해주세요.');
-            }
-            
-            // 카테고리의 모든 제품 원산지 업데이트
-            $stmt = $pdo->prepare("
-                UPDATE products 
-                SET origin = ?, 
-                    updated_at = NOW() 
-                WHERE category_code = ? 
-                AND is_active = 1
-            ");
-            $stmt->execute([$new_origin, $category_code]);
-            
-            $affected = $stmt->rowCount();
-            $_SESSION['success'] = "{$affected}개 제품의 원산지를 '{$new_origin}'(으)로 변경했습니다.";
-            break;
-            
-        case 'update_products_origin_stock':
-            $product_ids = $_POST['product_ids'] ?? [];
-            $product_origins = $_POST['product_origins'] ?? [];
-            $product_stock_types = $_POST['product_stock_types'] ?? [];
-            
-            if (empty($product_ids)) {
-                throw new Exception('변경할 제품을 선택해주세요.');
-            }
-            
-            $origin_updated = 0;
-            $stock_updated = 0;
-            
-            // 선택된 각 제품의 원산지와 재고 상태 업데이트
-            foreach ($product_ids as $product_id) {
-                $updates = [];
-                $params = [];
-                
-                // 복수 원산지 변경
-                if (isset($product_origins[$product_id]) && !empty($product_origins[$product_id])) {
-                    $selected_origins = $product_origins[$product_id];
-                    $available_origins_json = json_encode($selected_origins, JSON_UNESCAPED_UNICODE);
-                    $updates[] = "available_origins = ?";
-                    $params[] = $available_origins_json;
-                    
-                    // 첫 번째 원산지를 기본 원산지로 설정
-                    if (!empty($selected_origins)) {
-                        $updates[] = "origin = ?";
-                        $params[] = $selected_origins[0];
-                    }
-                }
-                
-                // 재고 상태 변경
-                if (isset($product_stock_types[$product_id]) && !empty($product_stock_types[$product_id])) {
-                    $updates[] = "stock_type = ?";
-                    $params[] = $product_stock_types[$product_id];
-                }
-                
-                if (!empty($updates)) {
-                    $updates[] = "updated_at = NOW()";
-                    $params[] = $product_id;
-                    
-                    $sql = "UPDATE products SET " . implode(", ", $updates) . " WHERE id = ? AND is_active = 1";
-                    $stmt = $pdo->prepare($sql);
-                    $stmt->execute($params);
-                    
-                    if ($stmt->rowCount() > 0) {
-                        if (isset($product_origins[$product_id]) && !empty($product_origins[$product_id])) {
-                            $origin_updated++;
-                        }
-                        if (isset($product_stock_types[$product_id]) && !empty($product_stock_types[$product_id])) {
-                            $stock_updated++;
-                        }
-                    }
-                }
-            }
-            
-            $messages = [];
-            if ($origin_updated > 0) {
-                $messages[] = "{$origin_updated}개 제품의 원산지";
-            }
-            if ($stock_updated > 0) {
-                $messages[] = "{$stock_updated}개 제품의 재고 상태";
-            }
-            
-            if (!empty($messages)) {
-                $_SESSION['success'] = implode(", ", $messages) . "를 변경했습니다.";
-            } else {
-                $_SESSION['error'] = "변경된 제품이 없습니다. 변경할 항목을 선택해주세요.";
-            }
-            break;
-            
-        case 'update_stock_type':
-            $new_stock_type = $_POST['new_stock_type'] ?? '';
-            if (empty($new_stock_type)) {
-                throw new Exception('재고 상태를 선택해주세요.');
-            }
-            
-            // 카테고리의 모든 제품 재고 상태 업데이트
-            $stmt = $pdo->prepare("
-                UPDATE products 
-                SET stock_type = ?, 
-                    updated_at = NOW() 
-                WHERE category_code = ? 
-                AND is_active = 1
-            ");
-            $stmt->execute([$new_stock_type, $category_code]);
-            
-            $affected = $stmt->rowCount();
-            $stock_type_name = [
-                'normal' => '일반',
-                'long_term' => '장기재고',
-                'used' => '중고'
-            ];
-            $_SESSION['success'] = "{$affected}개 제품의 재고 상태를 '{$stock_type_name[$new_stock_type]}'(으)로 변경했습니다.";
-            break;
-            
-        default:
-            throw new Exception('유효하지 않은 작업입니다.');
+$action = $_POST['action'] ?? '';
+
+if ($action === 'update_products_origin_stock') {
+    $category_code = $_POST['category_code'] ?? '';
+    $product_ids = $_POST['product_ids'] ?? [];
+    $product_origins = $_POST['product_origins'] ?? [];
+    $product_stock_types = $_POST['product_stock_types'] ?? [];
+    
+    if (empty($product_ids)) {
+        $_SESSION['error'] = '선택된 제품이 없습니다.';
+        header('Location: admin_origin_stock.php');
+        exit;
     }
     
-} catch (Exception $e) {
-    $_SESSION['error'] = $e->getMessage();
+    try {
+        $pdo->beginTransaction();
+        
+        $updated_count = 0;
+        
+        foreach ($product_ids as $product_id) {
+            // 원산지 업데이트
+            $origins = $product_origins[$product_id] ?? [];
+            if (!empty($origins)) {
+                $origins_json = json_encode($origins, JSON_UNESCAPED_UNICODE);
+                $stmt = $pdo->prepare("
+                    UPDATE products 
+                    SET available_origins = ?, 
+                        origin = ?,
+                        updated_at = NOW() 
+                    WHERE id = ?
+                ");
+                $stmt->execute([$origins_json, $origins[0], $product_id]);
+            }
+            
+            // 재고 상태 업데이트
+            $stock_types = $product_stock_types[$product_id] ?? [];
+            if (!empty($stock_types)) {
+                $stock_types_json = json_encode($stock_types, JSON_UNESCAPED_UNICODE);
+            } else {
+                $stock_types_json = '["일반재고"]';
+            }
+            
+            $stmt = $pdo->prepare("
+                UPDATE products 
+                SET stock_types = ?,
+                    updated_at = NOW() 
+                WHERE id = ?
+            ");
+            $stmt->execute([$stock_types_json, $product_id]);
+            
+            $updated_count++;
+        }
+        
+        $pdo->commit();
+        
+        $_SESSION['success'] = "{$updated_count}개 제품의 원산지 및 재고 상태가 업데이트되었습니다.";
+        
+    } catch (Exception $e) {
+        $pdo->rollback();
+        $_SESSION['error'] = '업데이트 중 오류가 발생했습니다: ' . $e->getMessage();
+    }
+    
+} elseif ($action === 'update_stock_type') {
+    // 일괄 재고 상태 변경 (기존 코드 호환)
+    $category_code = $_POST['category_code'] ?? '';
+    $new_stock_type = $_POST['new_stock_type'] ?? '';
+    
+    if (!$category_code || !$new_stock_type) {
+        $_SESSION['error'] = '필수 정보가 누락되었습니다.';
+        header('Location: admin_origin_stock.php');
+        exit;
+    }
+    
+    try {
+        // stock_type 값을 stock_types JSON으로 변환
+        $stock_types_mapping = [
+            'normal' => '["일반재고"]',
+            'long_term' => '["장기재고"]',
+            'used' => '["중고"]'
+        ];
+        
+        $stock_types_json = $stock_types_mapping[$new_stock_type] ?? '["일반재고"]';
+        
+        $stmt = $pdo->prepare("
+            UPDATE products 
+            SET stock_type = ?,
+                stock_types = ?,
+                updated_at = NOW() 
+            WHERE category_code = ?
+        ");
+        $stmt->execute([$new_stock_type, $stock_types_json, $category_code]);
+        
+        $affected = $stmt->rowCount();
+        
+        $_SESSION['success'] = "{$affected}개 제품의 재고 상태가 일괄 변경되었습니다.";
+        
+    } catch (Exception $e) {
+        $_SESSION['error'] = '업데이트 중 오류가 발생했습니다: ' . $e->getMessage();
+    }
 }
 
 header('Location: admin_origin_stock.php');
 exit;
+?>

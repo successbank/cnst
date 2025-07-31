@@ -128,6 +128,19 @@ if (empty($available_origins)) {
     $available_origins = [$product['origin']];
 }
 
+// stock_types 파싱
+$stock_types = [];
+if (!empty($product['stock_types'])) {
+    $stock_types = json_decode($product['stock_types'], true);
+    if (!is_array($stock_types)) {
+        $stock_types = [];
+    }
+}
+// stock_types가 없으면 기본값 사용
+if (empty($stock_types)) {
+    $stock_types = ['일반재고'];
+}
+
 // 같은 카테고리의 다른 제품 가져오기
 $stmt = $pdo->prepare("
     SELECT * FROM products 
@@ -1086,6 +1099,38 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
     border-color: var(--primary-blue);
     box-shadow: 0 0 0 3px rgba(20, 40, 160, 0.1);
 }
+
+/* 재고 상태 선택 스타일 */
+.stock-type-select {
+    padding: 6px 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    min-width: 100px;
+}
+
+.stock-type-select:hover {
+    border-color: var(--primary-blue);
+}
+
+.stock-type-select:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(20, 40, 160, 0.1);
+}
+
+/* 재고 상태별 색상 표시 */
+.stock-type-select option[value="장기재고"] {
+    color: #ff6b35;
+}
+
+.stock-type-select option[value="중고"] {
+    color: #6c757d;
+}
 </style>
 
 <div class="product-detail">
@@ -1148,13 +1193,19 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                 </div>
                 <div class="meta-item">
                     <strong>재고상태:</strong> 
-                    <?php 
-                    switch($product['stock_status']) {
-                        case 'in_stock': echo '<span style="color: #28a745;">재고 있음</span>'; break;
-                        case 'out_of_stock': echo '<span style="color: #dc3545;">재고 없음</span>'; break;
-                        case 'on_order': echo '<span style="color: #ffc107;">주문 가능</span>'; break;
-                    }
-                    ?>
+                    <?php if (count($stock_types) > 1): ?>
+                    <select id="stock-type-select" name="stock_type" class="stock-type-select">
+                        <?php foreach ($stock_types as $stock_type): ?>
+                        <option value="<?php echo escape($stock_type); ?>">
+                            <?php echo escape($stock_type); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php else: ?>
+                    <span style="color: #333;">
+                        <?php echo escape($stock_types[0]); ?>
+                    </span>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -2403,6 +2454,44 @@ document.addEventListener('DOMContentLoaded', function() {
             const savedOrigin = sessionStorage.getItem('selected_origin_<?php echo $product_id; ?>');
             if (savedOrigin && originSelect.querySelector(`option[value="${savedOrigin}"]`)) {
                 originSelect.value = savedOrigin;
+            }
+        }
+    }
+    
+    // 재고 상태 선택 처리
+    const stockTypeSelect = document.getElementById('stock-type-select');
+    if (stockTypeSelect) {
+        stockTypeSelect.addEventListener('change', function() {
+            const selectedStockType = this.value;
+            console.log('선택된 재고 상태:', selectedStockType);
+            
+            // 재고 상태에 따른 시각적 피드백
+            if (selectedStockType === '장기재고') {
+                this.style.color = '#ff6b35';
+            } else if (selectedStockType === '중고') {
+                this.style.color = '#6c757d';
+            } else {
+                this.style.color = '#333';
+            }
+            
+            // 선택된 재고 상태를 세션 또는 로컬 스토리지에 저장
+            if (typeof(Storage) !== "undefined") {
+                sessionStorage.setItem('selected_stock_type_<?php echo $product_id; ?>', selectedStockType);
+            }
+        });
+        
+        // 이전에 선택된 재고 상태가 있으면 복원
+        if (typeof(Storage) !== "undefined") {
+            const savedStockType = sessionStorage.getItem('selected_stock_type_<?php echo $product_id; ?>');
+            if (savedStockType && stockTypeSelect.querySelector(`option[value="${savedStockType}"]`)) {
+                stockTypeSelect.value = savedStockType;
+                
+                // 저장된 재고 상태에 따른 색상 적용
+                if (savedStockType === '장기재고') {
+                    stockTypeSelect.style.color = '#ff6b35';
+                } else if (savedStockType === '중고') {
+                    stockTypeSelect.style.color = '#6c757d';
+                }
             }
         }
     }

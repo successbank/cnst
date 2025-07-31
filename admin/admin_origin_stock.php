@@ -529,11 +529,27 @@ $origin_stats = $origin_stmt->fetchAll();
     cursor: pointer;
 }
 
-.stock-select {
-    width: 150px;
-    padding: 5px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+.stock-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.stock-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.stock-checkbox-label input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.stock-checkbox-label span {
+    cursor: pointer;
 }
 
 .form-actions {
@@ -592,11 +608,11 @@ function loadProductsForOrigin(categoryCode) {
                 let html = '<table class="product-select-table">';
                 html += '<thead><tr>';
                 html += '<th width="50"><input type="checkbox" onchange="toggleAllProducts(this)"></th>';
-                html += '<th>제튈명</th>';
+                html += '<th>제품명</th>';
                 html += '<th>현재 원산지</th>';
                 html += '<th>사용 가능한 원산지 선택</th>';
                 html += '<th>현재 재고 상태</th>';
-                html += '<th>변경할 재고 상태</th>';
+                html += '<th>사용 가능한 재고 상태 선택</th>';
                 html += '</tr></thead>';
                 html += '<tbody>';
                 
@@ -629,21 +645,32 @@ function loadProductsForOrigin(categoryCode) {
                     
                     html += '</div>';
                     html += '</td>';
+                    
+                    // 현재 재고 상태 표시
                     html += '<td>';
-                    const stockTypeText = {
-                        'normal': '일반',
-                        'long_term': '장기재고',
-                        'used': '중고'
-                    };
-                    html += stockTypeText[product.stock_type] || '일반';
+                    let currentStockTypes = [];
+                    try {
+                        if (product.stock_types) {
+                            currentStockTypes = JSON.parse(product.stock_types);
+                        }
+                    } catch(e) {
+                        currentStockTypes = ['일반재고'];
+                    }
+                    html += currentStockTypes.join(', ') || '일반재고';
                     html += '</td>';
+                    
+                    // 재고 상태 선택 체크박스
                     html += '<td>';
-                    html += `<select name="product_stock_types[${product.id}]" class="stock-select">`;
-                    html += '<option value="">변경 안함</option>';
-                    html += '<option value="normal">일반 (노출 없음)</option>';
-                    html += '<option value="long_term">장기재고</option>';
-                    html += '<option value="used">중고</option>';
-                    html += '</select>';
+                    html += '<div class="stock-checkboxes">';
+                    const stockTypes = ['일반재고', '장기재고', '중고'];
+                    stockTypes.forEach(stockType => {
+                        const isChecked = currentStockTypes.includes(stockType) ? 'checked' : '';
+                        html += '<label class="stock-checkbox-label">';
+                        html += `<input type="checkbox" name="product_stock_types[${product.id}][]" value="${stockType}" ${isChecked}>`;
+                        html += `<span>${stockType}</span>`;
+                        html += '</label>';
+                    });
+                    html += '</div>';
                     html += '</td>';
                     html += '</tr>';
                 });
