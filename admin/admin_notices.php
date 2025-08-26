@@ -15,7 +15,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && ($action === 'write' || $action === 
     if($title && $content) {
         try {
             if($action === 'write') {
-                $stmt = $pdo->prepare("INSERT INTO board_notice (title, content, is_important, writer, created_at) VALUES (?, ?, ?, 'admin', NOW())");
+                $stmt = $pdo->prepare("INSERT INTO board_notice (title, content, is_important, writer, password, created_at) VALUES (?, ?, ?, 'admin', '', NOW())");
                 $stmt->execute([$title, $content, $is_important]);
                 header('Location: admin_notices.php?msg=created');
                 exit;

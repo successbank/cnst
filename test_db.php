@@ -2,7 +2,7 @@
 echo "Testing database connection...\n";
 
 $hosts = [
-    "project1_mysql" => "Docker hostname",
+    "project5_mysql" => "Docker hostname",
     "172.18.0.3" => "Direct IP",
     "mysql" => "Service name",
     "127.0.0.1" => "Localhost"
@@ -17,7 +17,7 @@ foreach ($hosts as $host => $desc) {
         fclose($socket);
         
         try {
-            $dsn = "mysql:host=$host;port=3306;dbname=project1_db;charset=utf8mb4";
+            $dsn = "mysql:host=$host;port=3306;dbname=project5_db;charset=utf8mb4";
             $pdo = new PDO($dsn, "root", "rootpassword");
             echo "  ✓ PDO connection successful\n";
             

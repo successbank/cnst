@@ -253,7 +253,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && ($action === 'write' || $action === 
     if($title && $content) {
         try {
             if($action === 'write') {
-                $stmt = $pdo->prepare("INSERT INTO board_news (title, content, source, source_url, writer, created_at) VALUES (?, ?, ?, ?, 'admin', NOW())");
+                $stmt = $pdo->prepare("INSERT INTO board_news (title, content, source, source_url, writer, password, created_at) VALUES (?, ?, ?, ?, 'admin', '', NOW())");
                 $stmt->execute([$title, $content, $source, $source_url]);
                 header('Location: admin_news.php?msg=created');
                 exit;

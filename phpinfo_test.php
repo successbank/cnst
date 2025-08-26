@@ -11,18 +11,18 @@ if (extension_loaded('pdo')) {
 // MySQL 연결 테스트
 echo "<h2>MySQL 연결 테스트</h2>";
 try {
-    $dsn = "mysql:host=project1_mysql;port=3306;charset=utf8mb4";
+    $dsn = "mysql:host=project5_mysql;port=3306;charset=utf8mb4";
     $pdo = new PDO($dsn, 'root', 'manpass!@#4');
     echo "MySQL 서버 연결: 성공<br>";
     
     // 데이터베이스 생성
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS project1_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    $pdo->exec("CREATE DATABASE IF NOT EXISTS project5_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     echo "데이터베이스 생성/확인: 성공<br>";
     
     // 데이터베이스 연결
-    $dsn = "mysql:host=project1_mysql;port=3306;dbname=project1_db;charset=utf8mb4";
+    $dsn = "mysql:host=project5_mysql;port=3306;dbname=project5_db;charset=utf8mb4";
     $pdo = new PDO($dsn, 'root', 'manpass!@#4');
-    echo "project1_db 연결: 성공<br>";
+    echo "project5_db 연결: 성공<br>";
     
 } catch (PDOException $e) {
     echo "오류: " . $e->getMessage() . "<br>";
