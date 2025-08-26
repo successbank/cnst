@@ -27,39 +27,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'member_id' => isLoggedIn() ? $_SESSION['member_id'] : null
     ];
     
-    // 파일 업로드 처리
-    if ($board->allowsUpload() && !empty($_FILES['attachment']['name'])) {
+    // 다중 파일 업로드 처리
+    if ($board->allowsUpload() && !empty($_FILES['attachment']['name'][0])) {
         $uploadDir = 'uploads/' . $boardType . '/';
+        $uploadedFiles = [];
         
-        // 디버깅 정보
-        $uploadError = $_FILES['attachment']['error'];
-        $fileSize = $_FILES['attachment']['size'];
-        $fileName = $_FILES['attachment']['name'];
-        $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        // 파일 배열 재구성
+        $fileCount = count($_FILES['attachment']['name']);
+        for ($i = 0; $i < $fileCount; $i++) {
+            if ($_FILES['attachment']['error'][$i] === UPLOAD_ERR_OK) {
+                $file = [
+                    'name' => $_FILES['attachment']['name'][$i],
+                    'type' => $_FILES['attachment']['type'][$i],
+                    'tmp_name' => $_FILES['attachment']['tmp_name'][$i],
+                    'error' => $_FILES['attachment']['error'][$i],
+                    'size' => $_FILES['attachment']['size'][$i]
+                ];
+                
+                $uploadedFile = uploadFile($file, $uploadDir);
+                if ($uploadedFile) {
+                    $uploadedFiles[] = $uploadedFile;
+                }
+            }
+        }
         
-        // 업로드 에러 체크
-        if ($uploadError !== UPLOAD_ERR_OK) {
-            switch ($uploadError) {
-                case UPLOAD_ERR_INI_SIZE:
-                case UPLOAD_ERR_FORM_SIZE:
-                    $error = '파일 크기가 너무 큽니다. (최대 10MB)';
-                    break;
-                case UPLOAD_ERR_PARTIAL:
-                    $error = '파일이 부분적으로만 업로드되었습니다.';
-                    break;
-                case UPLOAD_ERR_NO_FILE:
-                    $error = '파일이 업로드되지 않았습니다.';
-                    break;
-                default:
-                    $error = '파일 업로드 중 오류가 발생했습니다.';
-            }
-        } else {
-            $uploadedFile = uploadFile($_FILES['attachment'], $uploadDir);
-            if ($uploadedFile) {
-                $data['attachment'] = $uploadedFile;
-            } else {
-                $error = '파일 업로드에 실패했습니다. 파일 형식: ' . $fileExt . ', 크기: ' . number_format($fileSize) . ' bytes';
-            }
+        if (!empty($uploadedFiles)) {
+            // 파일명들을 JSON으로 저장
+            $data['attachment'] = json_encode($uploadedFiles);
         }
     }
     
@@ -459,8 +453,9 @@ include 'head.php';
             <?php if ($board->allowsUpload()): ?>
             <div class="form-group">
                 <label for="attachment">첨부파일</label>
-                <input type="file" id="attachment" name="attachment" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx">
-                <small>최대 10MB, 허용 확장자: jpg, png, pdf, doc, docx, xls, xlsx</small>
+                <input type="file" id="attachment" name="attachment[]" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx">
+                <small>최대 10MB (파일당), 허용 확장자: jpg, png, pdf, doc, docx, xls, xlsx. 여러 파일을 선택할 수 있습니다.</small>
+                <div id="file-list" style="margin-top: 10px;"></div>
             </div>
             <?php endif; ?>
             
@@ -523,6 +518,44 @@ const productCategory = urlParams.get('product');
 if (productCategory && document.getElementById('product_category')) {
     document.getElementById('product_category').value = productCategory;
 }
+
+// 파일 선택 시 목록 표시
+document.getElementById('attachment')?.addEventListener('change', function(e) {
+    const fileList = document.getElementById('file-list');
+    fileList.innerHTML = '';
+    
+    if (this.files.length > 0) {
+        const ul = document.createElement('ul');
+        ul.style.listStyle = 'none';
+        ul.style.padding = '0';
+        ul.style.margin = '10px 0';
+        
+        for (let i = 0; i < this.files.length; i++) {
+            const li = document.createElement('li');
+            li.style.padding = '8px 12px';
+            li.style.backgroundColor = '#f8f9fa';
+            li.style.marginBottom = '5px';
+            li.style.borderRadius = '4px';
+            li.style.fontSize = '14px';
+            li.style.border = '1px solid #e5e5e7';
+            
+            const file = this.files[i];
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            li.innerHTML = `📎 ${file.name} <span style="color: #666; font-size: 13px;">(${fileSize}MB)</span>`;
+            
+            ul.appendChild(li);
+        }
+        
+        fileList.appendChild(ul);
+        
+        const info = document.createElement('p');
+        info.style.fontSize = '14px';
+        info.style.color = '#666';
+        info.style.marginTop = '10px';
+        info.textContent = `총 ${this.files.length}개 파일 선택됨`;
+        fileList.appendChild(info);
+    }
+});
 </script>
 
 <?php include 'tail.php'; ?>

@@ -126,6 +126,14 @@ if (!function_exists('uploadFile')) {
         return false;
     }
     
+    // 절대 경로로 변환
+    if (!preg_match('/^\//', $uploadDir)) {
+        $uploadDir = rtrim(dirname(__FILE__), '/') . '/' . $uploadDir;
+    }
+    
+    // 디렉토리 경로 정리
+    $uploadDir = rtrim($uploadDir, '/') . '/';
+    
     $fileName = time() . '_' . basename($file['name']);
     $targetPath = $uploadDir . $fileName;
     
@@ -150,6 +158,11 @@ if (!function_exists('uploadFile')) {
         return $fileName;
     } else {
         error_log("Failed to move uploaded file from " . $file['tmp_name'] . " to " . $targetPath);
+        error_log("Upload directory: " . $uploadDir);
+        error_log("Target path: " . $targetPath);
+        error_log("Is upload dir writable: " . (is_writable($uploadDir) ? 'yes' : 'no'));
+        error_log("Upload dir exists: " . (is_dir($uploadDir) ? 'yes' : 'no'));
+        error_log("Current working directory: " . getcwd());
     }
     
     return false;

@@ -118,6 +118,23 @@ $additionalStyles = '
     border-top: 1px solid #E5E5E7;
 }
 
+.info-section {
+    background: white;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+}
+
+.info-section h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #E5E5E7;
+}
+
 .content-box {
     background: #F8F9FA;
     padding: 20px;
@@ -125,6 +142,39 @@ $additionalStyles = '
     white-space: pre-wrap;
     word-break: break-word;
     line-height: 1.6;
+}
+
+.attachment-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #E8F5E9;
+    color: #2E7D32;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.attachment-link:hover {
+    background: #C8E6C9;
+}
+
+.file-info {
+    margin-left: 16px;
+    font-size: 14px;
+    color: #666;
+}
+
+.file-info a {
+    color: #1428A0;
+    text-decoration: none;
+}
+
+.file-info a:hover {
+    text-decoration: underline;
 }
 
 .status-form {
@@ -304,12 +354,39 @@ require_once 'admin_head.php';
             </div>
             
             <?php if ($consignment['attachment']): ?>
-            <div class="content-section">
+            <div class="info-section">
                 <h3>첨부파일</h3>
-                <div class="info-value">
-                    <a href="../<?php echo htmlspecialchars($consignment['attachment']); ?>" 
-                       download><?php echo basename($consignment['attachment']); ?></a>
-                </div>
+                <?php
+                // JSON 형식인지 확인
+                $attachments = json_decode($consignment['attachment'], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($attachments)) {
+                    // 다중 파일
+                    foreach ($attachments as $attachment) {
+                        ?>
+                        <div style="margin-bottom: 10px;">
+                            <a href="/download.php?type=consignment&file=<?php echo rawurlencode($attachment); ?>" 
+                               class="attachment-link">
+                                📎 <?php echo htmlspecialchars($attachment); ?>
+                            </a>
+                            <span class="file-info">
+                                (이미지 보기: <a href="/view_image.php?type=consignment&file=<?php echo rawurlencode($attachment); ?>" target="_blank">새 창에서 열기</a>)
+                            </span>
+                        </div>
+                        <?php
+                    }
+                } else {
+                    // 단일 파일 (기존 데이터와의 호환성)
+                    ?>
+                    <a href="/download.php?type=consignment&file=<?php echo rawurlencode($consignment['attachment']); ?>" 
+                       class="attachment-link">
+                        📎 <?php echo htmlspecialchars($consignment['attachment']); ?>
+                    </a>
+                    <span class="file-info">
+                        (이미지 보기: <a href="/view_image.php?type=consignment&file=<?php echo rawurlencode($consignment['attachment']); ?>" target="_blank">새 창에서 열기</a>)
+                    </span>
+                    <?php
+                }
+                ?>
             </div>
             <?php endif; ?>
             

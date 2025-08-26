@@ -263,6 +263,21 @@ try {
             background: #C8E6C9;
         }
         
+        .file-info {
+            margin-left: 16px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .file-info a {
+            color: #1428A0;
+            text-decoration: none;
+        }
+        
+        .file-info a:hover {
+            text-decoration: underline;
+        }
+        
         .status-badge {
             display: inline-block;
             padding: 6px 16px;
@@ -539,10 +554,37 @@ try {
                 <?php if ($quote['attachment']): ?>
                 <div class="info-section">
                     <h3>첨부파일</h3>
-                    <a href="../uploads/quote/<?php echo urlencode($quote['attachment']); ?>" 
-                       class="attachment-link" download>
-                        📎 <?php echo htmlspecialchars($quote['attachment']); ?>
-                    </a>
+                    <?php
+                    // JSON 형식인지 확인
+                    $attachments = json_decode($quote['attachment'], true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($attachments)) {
+                        // 다중 파일
+                        foreach ($attachments as $attachment) {
+                            ?>
+                            <div style="margin-bottom: 10px;">
+                                <a href="/download.php?type=quote&file=<?php echo rawurlencode($attachment); ?>" 
+                                   class="attachment-link">
+                                    📎 <?php echo htmlspecialchars($attachment); ?>
+                                </a>
+                                <span class="file-info">
+                                    (이미지 보기: <a href="/view_image.php?type=quote&file=<?php echo rawurlencode($attachment); ?>" target="_blank">새 창에서 열기</a>)
+                                </span>
+                            </div>
+                            <?php
+                        }
+                    } else {
+                        // 단일 파일 (기존 데이터와의 호환성)
+                        ?>
+                        <a href="/download.php?type=quote&file=<?php echo rawurlencode($quote['attachment']); ?>" 
+                           class="attachment-link">
+                            📎 <?php echo htmlspecialchars($quote['attachment']); ?>
+                        </a>
+                        <span class="file-info">
+                            (이미지 보기: <a href="/view_image.php?type=quote&file=<?php echo rawurlencode($quote['attachment']); ?>" target="_blank">새 창에서 열기</a>)
+                        </span>
+                        <?php
+                    }
+                    ?>
                 </div>
                 <?php endif; ?>
                 

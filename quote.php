@@ -383,7 +383,14 @@ $pagination = $result['pagination'];
                             <a href="board_view.php?type=quote&id=<?php echo $post['id']; ?>">
                                 🔒 <?php echo escape($post['title']); ?>
                                 <?php if ($post['attachment']): ?>
-                                    <span class="file-icon">📎</span>
+                                    <?php
+                                    $attachments = json_decode($post['attachment'], true);
+                                    if (json_last_error() === JSON_ERROR_NONE && is_array($attachments)) {
+                                        echo '<span class="file-icon">📎' . count($attachments) . '</span>';
+                                    } else {
+                                        echo '<span class="file-icon">📎</span>';
+                                    }
+                                    ?>
                                 <?php endif; ?>
                             </a>
                         </td>

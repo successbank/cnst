@@ -259,12 +259,35 @@ include 'head.php';
                 <?php if ($post['attachment']): ?>
                 <div class="post-attachment">
                     <h5>첨부파일</h5>
-                    <a href="uploads/<?php echo $boardType; ?>/<?php echo $post['attachment']; ?>" download class="attachment-link">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/>
-                        </svg>
-                        <?php echo $post['attachment']; ?>
-                    </a>
+                    <?php
+                    // JSON 형식인지 확인
+                    $attachments = json_decode($post['attachment'], true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($attachments)) {
+                        // 다중 파일
+                        foreach ($attachments as $attachment) {
+                            ?>
+                            <div style="margin-bottom: 10px;">
+                                <a href="/download.php?type=<?php echo $boardType; ?>&file=<?php echo rawurlencode($attachment); ?>" class="attachment-link">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/>
+                                    </svg>
+                                    <?php echo htmlspecialchars($attachment); ?>
+                                </a>
+                            </div>
+                            <?php
+                        }
+                    } else {
+                        // 단일 파일 (기존 데이터와의 호환성)
+                        ?>
+                        <a href="/download.php?type=<?php echo $boardType; ?>&file=<?php echo rawurlencode($post['attachment']); ?>" class="attachment-link">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/>
+                            </svg>
+                            <?php echo htmlspecialchars($post['attachment']); ?>
+                        </a>
+                        <?php
+                    }
+                    ?>
                 </div>
                 <?php endif; ?>
                 
