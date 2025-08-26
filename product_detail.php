@@ -72,13 +72,12 @@ if ($is_rebar) {
     if ($spec_name) {
         $stmt = $pdo->prepare("
             SELECT rs.*, 
-                   COALESCE(rp.unit_price, 0) as unit_price 
+                   COALESCE(rp.price, 0) as unit_price 
             FROM rebar_specifications rs
-            LEFT JOIN rebar_prices rp ON rs.id = rp.spec_id 
+            LEFT JOIN rebar_prices rp ON rs.spec_name = rp.spec_name 
                 AND rp.is_active = TRUE
-                AND rp.effective_date <= CURDATE()
-                AND (rp.expiry_date IS NULL OR rp.expiry_date >= CURDATE())
-            WHERE rs.spec_name = ? AND rs.is_active = TRUE
+                AND rp.price_date <= CURDATE()
+            WHERE rs.spec_name = ?
         ");
         $stmt->execute([$spec_name]);
         $rebar_spec = $stmt->fetch();
@@ -203,20 +202,16 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
         $stmt = $pdo->prepare("
             SELECT 
                 rm.id AS material_id,
-                rm.material_code,
                 rm.material_name,
-                rm.additional_price,
-                COALESCE(rp.unit_price, 0) AS base_price,
-                (COALESCE(rp.unit_price, 0) + COALESCE(rm.additional_price, 0)) AS total_price
+                COALESCE(rp.price, 0) AS base_price,
+                COALESCE(rp.price, 0) AS total_price
             FROM rebar_materials rm
-            LEFT JOIN rebar_prices rp ON rp.spec_id = ? 
+            LEFT JOIN rebar_prices rp ON rp.spec_name = ? 
                 AND rp.is_active = TRUE 
-                AND rp.effective_date <= CURDATE()
-                AND (rp.expiry_date IS NULL OR rp.expiry_date >= CURDATE())
-            WHERE rm.is_active = TRUE
-            ORDER BY rm.display_order
+                AND rp.price_date <= CURDATE()
+            ORDER BY rm.id
         ");
-        $stmt->execute([$rebar_specifications['id']]);
+        $stmt->execute([$spec_name]);
         while ($row = $stmt->fetch()) {
             $rebar_prices_by_material[$row['material_id']] = $row;
         }

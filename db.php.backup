@@ -17,7 +17,7 @@ if (!defined('DB_HOST')) {
     }
     
     define('DB_PORT', '3306');
-    define('DB_NAME', 'project5_db');
+    define('DB_NAME', 'project1_db');
     define('DB_USER', 'root');
     define('DB_PASS', 'rootpassword');
 }
