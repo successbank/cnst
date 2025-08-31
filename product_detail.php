@@ -301,6 +301,75 @@ if ($product_id) {
         border-bottom: none;
     }
     
+    /* 제품 상세보기 섹션 스타일 */
+    .product-detail-info-section {
+        margin: 40px 0;
+        background: #f8f9fa;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    
+    .section-header {
+        background: #4a90e2;
+        color: white;
+        padding: 15px 20px;
+        font-size: 18px;
+        font-weight: 600;
+    }
+    
+    .section-header h2 {
+        margin: 0;
+        font-size: 20px;
+    }
+    
+    .detail-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0;
+        background: white;
+    }
+    
+    .info-item {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        border-bottom: 1px solid #e0e0e0;
+        border-right: 1px solid #e0e0e0;
+    }
+    
+    .info-item:nth-child(2n) {
+        border-right: none;
+    }
+    
+    .info-item:nth-last-child(-n+2) {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        background: #f0f0f0;
+        padding: 12px 15px;
+        font-weight: 600;
+        font-size: 14px;
+        color: #333;
+        border-right: 1px solid #e0e0e0;
+    }
+    
+    .info-value {
+        padding: 12px 15px;
+        font-size: 14px;
+        color: #666;
+        background: white;
+    }
+    
+    .info-value a {
+        color: #4a90e2;
+        text-decoration: none;
+    }
+    
+    .info-value a:hover {
+        text-decoration: underline;
+    }
+    
     @media (max-width: 768px) {
         .product-info-grid {
             grid-template-columns: 1fr;
@@ -312,6 +381,18 @@ if ($product_id) {
         
         .calc-form-row {
             grid-template-columns: 1fr;
+        }
+        
+        .detail-info-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .info-item {
+            border-right: none;
+        }
+        
+        .info-item:nth-child(2n) {
+            border-right: none;
         }
     }
     </style>
@@ -478,6 +559,72 @@ if ($product_id) {
                 </div>
             </div>
         </div>
+        
+        <!-- 제품 상세보기 섹션 -->
+        <?php if ($product['category_code'] === 'square-pipe'): ?>
+        <div class="product-detail-info-section">
+            <div class="section-header">
+                <h2>제품 상세보기</h2>
+            </div>
+            <div class="detail-info-grid">
+                <div class="info-item">
+                    <div class="info-label">주식회사 충남스틸</div>
+                    <div class="info-value">구조용 강관 전문 공급업체</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">고객센터</div>
+                    <div class="info-value">041-123-4567</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">영업시간</div>
+                    <div class="info-value">평일 09:00 - 18:00</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">바로가기</div>
+                    <div class="info-value">
+                        <a href="/products_new.php?category=square-pipe">사각파이프 전체보기</a> | 
+                        <a href="/contact.php">견적문의</a>
+                    </div>
+                </div>
+                <?php if (!empty($product['features'])): ?>
+                <div class="info-item">
+                    <div class="info-label">제품 용도</div>
+                    <div class="info-value"><?php echo htmlspecialchars($product['features']); ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($product['quality_cert'])): ?>
+                <div class="info-item">
+                    <div class="info-label">품질 인증</div>
+                    <div class="info-value"><?php echo htmlspecialchars($product['quality_cert']); ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($product['material'])): ?>
+                <div class="info-item">
+                    <div class="info-label">재료</div>
+                    <div class="info-value"><?php echo htmlspecialchars($product['material']); ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($product['manufacturer'])): ?>
+                <div class="info-item">
+                    <div class="info-label">제조사</div>
+                    <div class="info-value"><?php echo htmlspecialchars($product['manufacturer']); ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($product['product_features'])): ?>
+                <div class="info-item">
+                    <div class="info-label">특징</div>
+                    <div class="info-value"><?php echo htmlspecialchars($product['product_features']); ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($product['delivery_info'])): ?>
+                <div class="info-item">
+                    <div class="info-label">배송 정보</div>
+                    <div class="info-value"><?php echo nl2br(htmlspecialchars($product['delivery_info'])); ?></div>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
     
     <?php if ($product['has_calculator']): ?>

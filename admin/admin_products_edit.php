@@ -71,6 +71,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $brochure_url = trim($_POST['brochure_url'] ?? '');
     $show_details = isset($_POST['show_details']) ? 1 : 0;
     
+    // 제품 상세보기용 필드들
+    $quality_cert = trim($_POST['quality_cert'] ?? '');
+    $product_features = trim($_POST['product_features'] ?? '');
+    
     // 유효성 검사
     $errors = [];
     if (!$category_code) $errors[] = "카테고리를 선택해주세요.";
@@ -93,7 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             delivery_info = ?, is_featured = ?, is_active = ?,
                             detailed_description = ?, key_features = ?, technical_specs = ?,
                             applications = ?, certifications = ?, brochure_url = ?,
-                            show_details = ?, details_updated_at = NOW()
+                            show_details = ?, quality_cert = ?, product_features = ?, 
+                            details_updated_at = NOW()
                         WHERE id = ?
                     ");
                     $stmt->execute([
@@ -106,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $delivery_info, $is_featured, $is_active,
                         $detailed_description, $key_features, $technical_specs,
                         $applications, $certifications, $brochure_url,
-                        $show_details,
+                        $show_details, $quality_cert, $product_features,
                         $id
                     ]);
                 } else if ($has_base_length) {
@@ -120,7 +125,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             delivery_info = ?, is_featured = ?, is_active = ?,
                             detailed_description = ?, key_features = ?, technical_specs = ?,
                             applications = ?, certifications = ?, brochure_url = ?,
-                            show_details = ?, details_updated_at = NOW()
+                            show_details = ?, quality_cert = ?, product_features = ?, 
+                            details_updated_at = NOW()
                         WHERE id = ?
                     ");
                     $stmt->execute([
@@ -132,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $delivery_info, $is_featured, $is_active,
                         $detailed_description, $key_features, $technical_specs,
                         $applications, $certifications, $brochure_url,
-                        $show_details,
+                        $show_details, $quality_cert, $product_features,
                         $id
                     ]);
                 } else if ($has_price_range) {
@@ -686,6 +692,26 @@ include 'admin_head.php';
             <label for="delivery_info">배송 정보</label>
             <textarea id="delivery_info" name="delivery_info" rows="3"
                       placeholder="배송 관련 안내사항을 입력하세요"><?php echo htmlspecialchars($product['delivery_info'] ?? ''); ?></textarea>
+        </div>
+    </div>
+    
+    <!-- 제품 상세보기 정보 (사각파이프용) -->
+    <div class="form-section">
+        <h3 class="section-title">제품 상세보기 정보 (사각파이프 전용)</h3>
+        
+        <div class="form-group">
+            <label for="quality_cert">품질 인증</label>
+            <input type="text" id="quality_cert" name="quality_cert" 
+                   value="<?php echo htmlspecialchars($product['quality_cert'] ?? ''); ?>"
+                   placeholder="예: KS D 3568 규격 인증">
+            <div class="help-text">제품 상세보기 섹션에 표시될 품질 인증 정보</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="product_features">제품 특징</label>
+            <textarea id="product_features" name="product_features" rows="3"
+                      placeholder="예: 고강도, 경량화, 우수한 내구성"><?php echo htmlspecialchars($product['product_features'] ?? ''); ?></textarea>
+            <div class="help-text">제품 상세보기 섹션에 표시될 특징 (쉼표로 구분)</div>
         </div>
     </div>
     

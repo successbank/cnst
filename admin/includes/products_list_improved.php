@@ -9,7 +9,7 @@ $where = ["1=1"];
 $params = [];
 
 if ($search) {
-    $where[] = "(p.product_name LIKE ? OR p.specifications LIKE ? OR p.description LIKE ?)";
+    $where[] = "(p.product_name LIKE ? OR p.specification LIKE ? OR p.description LIKE ?)";
     $params[] = "%$search%";
     $params[] = "%$search%";
     $params[] = "%$search%";
@@ -33,7 +33,7 @@ $stmt = $pdo->prepare("
            uw.unit_weight
     FROM products p
     JOIN product_categories pc ON p.category_code = pc.category_code
-    LEFT JOIN unit_weights uw ON p.specifications = uw.specification
+    LEFT JOIN unit_weights uw ON p.specification = uw.specification
     WHERE $whereClause 
     ORDER BY p.id DESC 
     LIMIT $perPage OFFSET $offset
@@ -479,11 +479,11 @@ a, button, .btn, .category-tab {
                     </td>
                     <td style="text-align: center;"><?php echo $rowNumber--; ?></td>
                     <td>
-                        <strong><?php echo htmlspecialchars($product['product_name']); ?></strong>
+                        <strong><?php echo htmlspecialchars($product['product_name'] ?? ''); ?></strong>
                     </td>
-                    <td><?php echo htmlspecialchars($product['specifications']); ?></td>
+                    <td><?php echo htmlspecialchars($product['specification'] ?? ''); ?></td>
                     <td>
-                        <span class="badge badge-info"><?php echo htmlspecialchars($product['category_name']); ?></span>
+                        <span class="badge badge-info"><?php echo htmlspecialchars($product['category_name'] ?? ''); ?></span>
                     </td>
                     <td class="hide-mobile">
                         <?php if ($product['unit_weight']): ?>
