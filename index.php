@@ -44,11 +44,11 @@ $banners = $stmt->fetchAll();
         
         <?php if (count($banners) > 1): ?>
         <!-- 캐러셀 컨트롤 -->
-        <button class="carousel-control carousel-prev" onclick="changeSlide(-1)">
-            <i class="fas fa-chevron-left"></i>
+        <button class="carousel-control carousel-prev" onclick="changeSlide(-1)" aria-label="이전 배너">
+            <i class="fas fa-angle-left"></i>
         </button>
-        <button class="carousel-control carousel-next" onclick="changeSlide(1)">
-            <i class="fas fa-chevron-right"></i>
+        <button class="carousel-control carousel-next" onclick="changeSlide(1)" aria-label="다음 배너">
+            <i class="fas fa-angle-right"></i>
         </button>
         
         <!-- 캐러셀 인디케이터 -->
@@ -142,20 +142,30 @@ $banners = $stmt->fetchAll();
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(0,0,0,0.5);
-    color: white;
+    background: rgba(255,255,255,0.9);
+    color: #333;
     border: none;
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    font-size: 20px;
+    font-size: 24px;
     cursor: pointer;
     transition: all 0.3s;
     z-index: 3;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .carousel-control:hover {
-    background: rgba(0,0,0,0.7);
+    background: rgba(255,255,255,1);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.carousel-control:active {
+    transform: translateY(-50%) scale(0.95);
 }
 
 .carousel-prev {
@@ -208,7 +218,15 @@ $banners = $stmt->fetchAll();
     .carousel-control {
         width: 40px;
         height: 40px;
-        font-size: 16px;
+        font-size: 20px;
+    }
+    
+    .carousel-prev {
+        left: 10px;
+    }
+    
+    .carousel-next {
+        right: 10px;
     }
 }
 </style>

@@ -28,6 +28,8 @@ if(file_exists('includes/settings.php')) {
     
     <!-- CSS -->
     <link rel="stylesheet" href="css/samsung-style.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <?php if(isset($additionalCSS)): ?>
         <?php foreach($additionalCSS as $css): ?>
             <link rel="stylesheet" href="<?php echo $css; ?>">
