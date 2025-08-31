@@ -4,41 +4,6 @@
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $category_filter = isset($_GET['category']) ? trim($_GET['category']) : '';
 
-// 일괄 처리
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $current_tab === 'products') {
-    $selected_ids = $_POST['selected'] ?? [];
-    
-    if (!empty($selected_ids)) {
-        $ids_placeholder = str_repeat('?,', count($selected_ids) - 1) . '?';
-        
-        try {
-            switch ($_POST['action']) {
-                case 'delete':
-                    $stmt = $pdo->prepare("DELETE FROM products WHERE id IN ($ids_placeholder)");
-                    $stmt->execute($selected_ids);
-                    $message = "bulk_deleted";
-                    break;
-                    
-                case 'activate':
-                    $stmt = $pdo->prepare("UPDATE products SET is_active = 1 WHERE id IN ($ids_placeholder)");
-                    $stmt->execute($selected_ids);
-                    $message = "bulk_activated";
-                    break;
-                    
-                case 'deactivate':
-                    $stmt = $pdo->prepare("UPDATE products SET is_active = 0 WHERE id IN ($ids_placeholder)");
-                    $stmt->execute($selected_ids);
-                    $message = "bulk_deactivated";
-                    break;
-            }
-            header("Location: admin_products_integrated.php?tab=products&message=$message");
-            exit;
-        } catch(PDOException $e) {
-            $error = "일괄 처리 중 오류가 발생했습니다.";
-        }
-    }
-}
-
 // 제품 목록 쿼리
 $where = ["1=1"];
 $params = [];
