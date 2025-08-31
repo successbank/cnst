@@ -613,12 +613,13 @@ $currentFile = basename($_SERVER['PHP_SELF']);
                 
                 <!-- 시스템 관리 드롭다운 -->
                 <div class="nav-dropdown" id="systemDropdown">
-                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_statistics.php', 'admin_site.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('systemDropdown'); return false;">
+                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_statistics.php', 'admin_site.php', 'admin_banners.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('systemDropdown'); return false;">
                         시스템 관리
                     </a>
                     <div class="nav-dropdown-menu">
                         <a href="admin_statistics.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_statistics.php' ? 'active' : ''; ?>">접속통계</a>
                         <a href="admin_site.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_site.php' ? 'active' : ''; ?>">사이트 관리</a>
+                        <a href="admin_banners.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_banners.php' ? 'active' : ''; ?>">배너 관리</a>
                     </div>
                 </div>
                 <a href="../index.php" class="nav-item" target="_blank">사이트 보기</a>

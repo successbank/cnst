@@ -2,9 +2,272 @@
 $currentPage = '';
 $pageTitle = '홈';
 include 'head.php';
+require_once 'db.php';
+
+// 활성화된 배너 가져오기
+$stmt = $pdo->query("SELECT * FROM banners WHERE is_active = 1 ORDER BY display_order ASC, id DESC");
+$banners = $stmt->fetchAll();
 ?>
 
-<!-- 메인 비주얼 -->
+<!-- 메인 비주얼 캐러셀 -->
+<?php if (!empty($banners)): ?>
+<section class="banner-carousel">
+    <div class="carousel-container">
+        <div class="carousel-track" id="carouselTrack">
+            <?php foreach ($banners as $index => $banner): ?>
+            <div class="carousel-slide <?php echo $index === 0 ? 'active' : ''; ?>">
+                <?php if ($banner['link_url']): ?>
+                <a href="<?php echo escape($banner['link_url']); ?>" target="<?php echo escape($banner['link_target']); ?>">
+                <?php endif; ?>
+                    <div class="slide-image">
+                        <?php if ($banner['image_path']): ?>
+                        <img src="uploads/banners/<?php echo escape($banner['image_path']); ?>" 
+                             alt="<?php echo escape($banner['title']); ?>">
+                        <?php else: ?>
+                        <div class="slide-placeholder"></div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="slide-content">
+                        <div class="section-container">
+                            <h2><?php echo escape($banner['title']); ?></h2>
+                            <?php if ($banner['subtitle']): ?>
+                            <p><?php echo nl2br(escape($banner['subtitle'])); ?></p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php if ($banner['link_url']): ?>
+                </a>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        
+        <?php if (count($banners) > 1): ?>
+        <!-- 캐러셀 컨트롤 -->
+        <button class="carousel-control carousel-prev" onclick="changeSlide(-1)">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="carousel-control carousel-next" onclick="changeSlide(1)">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+        
+        <!-- 캐러셀 인디케이터 -->
+        <div class="carousel-indicators">
+            <?php foreach ($banners as $index => $banner): ?>
+            <button class="carousel-indicator <?php echo $index === 0 ? 'active' : ''; ?>" 
+                    onclick="goToSlide(<?php echo $index; ?>)"></button>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+</section>
+
+<style>
+.banner-carousel {
+    position: relative;
+    overflow: hidden;
+    background: #f5f5f5;
+}
+
+.carousel-container {
+    position: relative;
+    width: 100%;
+    height: 600px;
+}
+
+.carousel-track {
+    position: relative;
+    height: 100%;
+}
+
+.carousel-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.carousel-slide.active {
+    opacity: 1;
+}
+
+.slide-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.slide-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.slide-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.slide-content {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    text-align: center;
+    color: white;
+    z-index: 2;
+}
+
+.slide-content h2 {
+    font-size: 48px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.slide-content p {
+    font-size: 20px;
+    line-height: 1.6;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.carousel-control {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    z-index: 3;
+}
+
+.carousel-control:hover {
+    background: rgba(0,0,0,0.7);
+}
+
+.carousel-prev {
+    left: 20px;
+}
+
+.carousel-next {
+    right: 20px;
+}
+
+.carousel-indicators {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 3;
+}
+
+.carousel-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.carousel-indicator.active {
+    background: white;
+    width: 30px;
+    border-radius: 6px;
+}
+
+@media (max-width: 768px) {
+    .carousel-container {
+        height: 400px;
+    }
+    
+    .slide-content h2 {
+        font-size: 32px;
+    }
+    
+    .slide-content p {
+        font-size: 16px;
+    }
+    
+    .carousel-control {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+}
+</style>
+
+<script>
+let currentSlide = 0;
+const slides = document.querySelectorAll('.carousel-slide');
+const indicators = document.querySelectorAll('.carousel-indicator');
+const totalSlides = slides.length;
+
+// 자동 슬라이드
+let slideInterval;
+
+function startAutoSlide() {
+    if (totalSlides > 1) {
+        slideInterval = setInterval(() => {
+            changeSlide(1);
+        }, 5000);
+    }
+}
+
+function stopAutoSlide() {
+    clearInterval(slideInterval);
+}
+
+function updateSlide() {
+    slides.forEach((slide, index) => {
+        slide.classList.toggle('active', index === currentSlide);
+    });
+    
+    indicators.forEach((indicator, index) => {
+        indicator.classList.toggle('active', index === currentSlide);
+    });
+}
+
+function changeSlide(direction) {
+    currentSlide = (currentSlide + direction + totalSlides) % totalSlides;
+    updateSlide();
+    
+    // 자동 슬라이드 재시작
+    stopAutoSlide();
+    startAutoSlide();
+}
+
+function goToSlide(index) {
+    currentSlide = index;
+    updateSlide();
+    
+    // 자동 슬라이드 재시작
+    stopAutoSlide();
+    startAutoSlide();
+}
+
+// 페이지 로드 시 자동 슬라이드 시작
+startAutoSlide();
+</script>
+
+<?php else: ?>
+<!-- 배너가 없을 때 기본 히어로 섹션 -->
 <section class="hero-section">
     <div class="section-container">
         <div class="hero-content">
@@ -17,6 +280,7 @@ include 'head.php';
         </div>
     </div>
 </section>
+<?php endif; ?>
 
 <!-- 주요 제품 -->
 <section class="section">
