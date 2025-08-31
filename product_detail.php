@@ -275,6 +275,17 @@ if ($product_id) {
         margin-bottom: 15px;
     }
     
+    .calc-result-price {
+        font-size: 24px;
+        font-weight: 600;
+        color: #28a745;
+        margin: 15px 0;
+        padding: 15px;
+        background: #f0fff4;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
     .calc-steps {
         font-size: 14px;
         color: #666;
@@ -529,8 +540,16 @@ if ($product_id) {
             ];
         }
         
+        // 견적금액 계산 (kg당 1,000원)
+        const pricePerKg = 1000;
+        const totalPrice = calculatedWeight * pricePerKg;
+        
+        // 계산 과정에 견적금액 추가
+        calculationSteps.push(`견적금액: ${calculatedWeight.toFixed(1)}kg × ${pricePerKg.toLocaleString()}원/kg = ${totalPrice.toLocaleString()}원`);
+        
         // 결과 표시
         document.getElementById('calcResultValue').textContent = calculatedWeight.toFixed(1) + ' kg';
+        document.getElementById('calcResultPrice').textContent = '견적금액: ' + totalPrice.toLocaleString() + '원';
         
         // 계산 과정 표시
         const stepsHtml = calculationSteps.map(step => 
