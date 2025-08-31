@@ -962,10 +962,17 @@ foreach ($products as &$product) {
         <div class="products-grid">
             <?php foreach ($products as $product): ?>
                 <?php 
-                // 규격별 제품인 경우 계산기 페이지로 직접 이동
-                $product_link = $product['parent_product_id'] ? 
-                    'product_detail.php?category=' . $product['category_code'] . '&spec=' . urlencode($product['specification']) :
-                    'product_detail.php?id=' . $product['id'];
+                // 규격별 제품인 경우 처리
+                if ($product['parent_product_id']) {
+                    // 계산기가 있는 제품은 모두 개별 상세 페이지로
+                    if ($product['has_calculator']) {
+                        $product_link = 'product_detail.php?id=' . $product['id'];
+                    } else {
+                        $product_link = 'product_detail.php?category=' . $product['category_code'] . '&spec=' . urlencode($product['specification']);
+                    }
+                } else {
+                    $product_link = 'product_detail.php?id=' . $product['id'];
+                }
                 ?>
                 <a href="<?php echo $product_link; ?>" class="product-card <?php echo ($product['parent_product_id'] || $product['category_code'] === 'rebar') ? 'spec-product' : ''; ?>">
                     <div class="product-image image-upload-wrapper" data-product-id="<?php echo $product['id']; ?>">
@@ -1068,7 +1075,20 @@ foreach ($products as &$product) {
         <!-- 리스트 뷰 -->
         <div class="products-list">
             <?php foreach ($products as $product): ?>
-                <a href="product_detail.php?id=<?php echo $product['id']; ?>" class="product-list-item <?php echo $product['category_code'] === 'rebar' ? 'spec-product' : ''; ?>">
+                <?php 
+                // 규격별 제품인 경우 처리
+                if ($product['parent_product_id']) {
+                    // 계산기가 있는 제품은 모두 개별 상세 페이지로
+                    if ($product['has_calculator']) {
+                        $product_link = 'product_detail.php?id=' . $product['id'];
+                    } else {
+                        $product_link = 'product_detail.php?category=' . $product['category_code'] . '&spec=' . urlencode($product['specification']);
+                    }
+                } else {
+                    $product_link = 'product_detail.php?id=' . $product['id'];
+                }
+                ?>
+                <a href="<?php echo $product_link; ?>" class="product-list-item <?php echo $product['category_code'] === 'rebar' ? 'spec-product' : ''; ?>">
                     <div class="product-list-image image-upload-wrapper" data-product-id="<?php echo $product['id']; ?>">
                         <?php if ($product['main_image']): ?>
                             <img src="<?php echo escape($product['main_image']); ?>" alt="<?php echo escape($product['product_name']); ?>">
