@@ -1,98 +1,118 @@
 <?php
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 require_once '../db.php';
-require_once '../includes/SteelCalculator.php';
 
-$response = ['success' => false];
+// CORS 설정
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST');
+header('Access-Control-Allow-Headers: Content-Type');
+
+$response = ['success' => false, 'data' => null, 'error' => null];
 
 try {
-    $category = $_GET['category'] ?? '';
-    $spec_id = $_GET['spec_id'] ?? null;
-    $length = floatval($_GET['length'] ?? 0);
-    $quantity = intval($_GET['quantity'] ?? 1);
+    // POST 데이터 가져오기
+    $input = json_decode(file_get_contents('php://input'), true);
     
-    if (!$category || !$spec_id || $length <= 0) {
+    // 파라미터 검증
+    $category_code = $input['category'] ?? '';
+    $specification = $input['specification'] ?? '';
+    $material = $input['material'] ?? '';
+    $length = floatval($input['length'] ?? 0);
+    $quantity = intval($input['quantity'] ?? 0);
+    
+    if (empty($category_code) || empty($specification) || $quantity <= 0) {
         throw new Exception('필수 파라미터가 누락되었습니다.');
     }
     
-    // 규격 정보 조회
+    // 제품 정보 조회
     $stmt = $pdo->prepare("
         SELECT 
-            ps.*,
-            p.category_code,
-            pp.unit_price,
-            pp.price_type
-        FROM product_specifications ps
-        JOIN products p ON ps.product_id = p.id
-        LEFT JOIN product_prices pp ON ps.id = pp.spec_id 
-            AND pp.is_active = 1
-            AND (pp.effective_date <= CURDATE() OR pp.effective_date IS NULL)
-            AND (pp.expiry_date >= CURDATE() OR pp.expiry_date IS NULL)
-        WHERE ps.id = ? AND ps.is_active = 1
+            product_name,
+            calculation_type,
+            unit_weight_data
+        FROM products 
+        WHERE category_code = ? AND has_calculator = 1
+        LIMIT 1
     ");
+    $stmt->execute([$category_code]);
+    $product = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    $stmt->execute([$spec_id]);
-    $spec = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$spec) {
-        throw new Exception('규격 정보를 찾을 수 없습니다.');
+    if (!$product) {
+        throw new Exception('해당 제품을 찾을 수 없습니다.');
     }
     
-    $calculator = new SteelCalculator($pdo);
+    // 단위중량 가져오기
+    $unit_weight_data = json_decode($product['unit_weight_data'], true);
+    $unit_weight = 0;
     
-    // 규격 정보를 배열로 구성
-    $specifications = [
-        'unit_weight' => $spec['unit_weight'],
-        'height' => $spec['height'],
-        'width' => $spec['width'],
-        'thickness' => $spec['thickness'],
-        'web_thickness' => $spec['web_thickness'],
-        'flange_thickness' => $spec['flange_thickness'],
-        'outer_diameter' => $spec['outer_diameter'],
-        'diameter' => $spec['outer_diameter'], // 환봉용
-        'width1' => $spec['width'],
-        'width2' => $spec['height'] ?? $spec['width']
-    ];
+    if (isset($unit_weight_data[$specification])) {
+        if (!empty($material) && isset($unit_weight_data[$specification][$material])) {
+            $unit_weight = $unit_weight_data[$specification][$material];
+        } else {
+            $unit_weight = reset($unit_weight_data[$specification]);
+        }
+    } else {
+        throw new Exception('해당 규격의 단위중량을 찾을 수 없습니다.');
+    }
     
     // 중량 계산
-    $weight = $calculator->calculateWeight($category, $specifications, $length, $quantity);
+    $calculated_weight = 0;
+    $calculation_steps = [];
     
-    $response['success'] = true;
-    $response['weight'] = round($weight, 2);
-    
-    // 가격 계산 (가격 정보가 있는 경우)
-    if (!empty($spec['unit_price']) && !empty($spec['price_type'])) {
-        $price = $calculator->calculatePrice($weight, $spec['unit_price'], $spec['price_type']);
-        $response['price'] = round($price, 0);
-        $response['price_type'] = $spec['price_type'];
+    if ($product['calculation_type'] === 'linear') {
+        // 선형 제품: 단위중량 × 길이 × 수량
+        if ($length <= 0) {
+            throw new Exception('선형 제품은 길이가 필요합니다.');
+        }
+        
+        $weight_per_piece = $unit_weight * $length;
+        $calculated_weight = $weight_per_piece * $quantity;
+        
+        $calculation_steps = [
+            "단위중량: {$unit_weight} kg/m",
+            "1본 중량: {$unit_weight} × {$length}m = " . round($weight_per_piece, 2) . " kg",
+            "총 중량: " . round($weight_per_piece, 2) . " × {$quantity}본 = " . round($calculated_weight, 1) . " kg"
+        ];
+    } else {
+        // 판재 제품: 단위중량(장) × 수량
+        $calculated_weight = $unit_weight * $quantity;
+        
+        $calculation_steps = [
+            "단위중량(장): {$unit_weight} kg",
+            "총 중량: {$unit_weight} × {$quantity}장 = " . round($calculated_weight, 1) . " kg"
+        ];
     }
     
-    // 계산 이력 저장
-    $stmt = $pdo->prepare("
-        INSERT INTO calculation_history 
-        (session_id, product_id, spec_id, input_data, calculated_weight, calculated_price, user_ip)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+    // 계산 로그 저장 (옵션)
+    $user_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $log_stmt = $pdo->prepare("
+        INSERT INTO calculation_logs 
+        (product_id, category_code, specification, material, length, quantity, calculated_weight, user_ip)
+        VALUES (
+            (SELECT id FROM products WHERE category_code = ? LIMIT 1),
+            ?, ?, ?, ?, ?, ?, ?
+        )
     ");
+    $log_stmt->execute([
+        $category_code, $category_code, $specification, $material, 
+        $length, $quantity, $calculated_weight, $user_ip
+    ]);
     
-    $inputData = json_encode([
-        'category' => $category,
+    $response['success'] = true;
+    $response['data'] = [
+        'product_name' => $product['product_name'],
+        'specification' => $specification,
+        'material' => $material,
         'length' => $length,
-        'quantity' => $quantity
-    ]);
-    
-    $stmt->execute([
-        session_id(),
-        $spec['product_id'],
-        $spec_id,
-        $inputData,
-        $weight,
-        $response['price'] ?? null,
-        $_SERVER['REMOTE_ADDR'] ?? null
-    ]);
+        'quantity' => $quantity,
+        'unit_weight' => $unit_weight,
+        'calculated_weight' => round($calculated_weight, 1),
+        'calculation_steps' => $calculation_steps
+    ];
     
 } catch (Exception $e) {
     $response['error'] = $e->getMessage();
 }
 
-echo json_encode($response);
+echo json_encode($response, JSON_UNESCAPED_UNICODE);
 ?>

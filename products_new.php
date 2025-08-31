@@ -53,9 +53,30 @@ if ($category_filter !== 'all') {
 $where_clause = "p.is_active = 1";
 $params = [];
 
+// 부모 제품이 by_specification 모드인지 확인
+$show_specifications = false;
 if ($category_filter !== 'all') {
-    $where_clause .= " AND p.category_code = ?";
-    $params[] = $category_filter;
+    $check_stmt = $pdo->prepare("
+        SELECT display_mode FROM products 
+        WHERE category_code = ? AND parent_product_id IS NULL 
+        LIMIT 1
+    ");
+    $check_stmt->execute([$category_filter]);
+    $parent_display_mode = $check_stmt->fetchColumn();
+    
+    if ($parent_display_mode === 'by_specification') {
+        // 규격별 제품 표시 모드
+        $where_clause .= " AND p.category_code = ? AND p.parent_product_id IS NOT NULL";
+        $params[] = $category_filter;
+        $show_specifications = true;
+    } else {
+        // 일반 제품 표시 모드
+        $where_clause .= " AND p.category_code = ? AND p.parent_product_id IS NULL";
+        $params[] = $category_filter;
+    }
+} else {
+    // 전체 카테고리일 때는 parent_product_id가 NULL인 것만
+    $where_clause .= " AND p.parent_product_id IS NULL";
 }
 
 if ($search !== '') {
@@ -674,6 +695,35 @@ foreach ($products as &$product) {
     color: white;
 }
 
+/* 규격별 제품 카드 스타일 */
+.product-card.spec-product {
+    border: 2px solid #2196F3;
+    background: #f0f7ff;
+}
+
+.product-card.spec-product:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(33, 150, 243, 0.2);
+}
+
+.product-card.spec-product .product-info {
+    background: white;
+}
+
+.product-card.spec-product h3 {
+    color: #1976D2;
+    font-size: 18px;
+}
+
+.calculator-link {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #e3f2fd;
+    border-radius: 16px;
+    font-size: 12px;
+    margin-top: 8px;
+}
+
 /* 모바일 반응형 */
 @media (max-width: 768px) {
     .search-form {
@@ -883,7 +933,13 @@ foreach ($products as &$product) {
         <!-- 타일 뷰 -->
         <div class="products-grid">
             <?php foreach ($products as $product): ?>
-                <a href="product_detail.php?id=<?php echo $product['id']; ?>" class="product-card">
+                <?php 
+                // 규격별 제품인 경우 계산기 페이지로 직접 이동
+                $product_link = $product['parent_product_id'] ? 
+                    'product_detail.php?category=' . $product['category_code'] . '&spec=' . urlencode($product['specification']) :
+                    'product_detail.php?id=' . $product['id'];
+                ?>
+                <a href="<?php echo $product_link; ?>" class="product-card <?php echo $product['parent_product_id'] ? 'spec-product' : ''; ?>">
                     <div class="product-image image-upload-wrapper" data-product-id="<?php echo $product['id']; ?>">
                         <?php if ($product['main_image']): ?>
                             <img src="<?php echo escape($product['main_image']); ?>" alt="<?php echo escape($product['product_name']); ?>">
@@ -922,7 +978,14 @@ foreach ($products as &$product) {
                     </div>
                     <div class="product-info">
                         <h3><?php echo escape($product['product_name']); ?></h3>
-                        <?php if ($product['category_code'] === 'rebar'): ?>
+                        <?php if ($product['parent_product_id'] && $product['specification_weight']): ?>
+                            <p class="unit-weight" style="color: #2196F3; font-weight: 600; font-size: 14px; margin: 8px 0;">
+                                단위중량: <?php echo $product['specification_weight']; ?>kg/m
+                            </p>
+                            <p class="calculator-link" style="color: #666; font-size: 13px;">
+                                📊 중량 계산하기
+                            </p>
+                        <?php elseif ($product['category_code'] === 'rebar'): ?>
                             <?php
                             // 이미 계산된 단중 사용
                             $unitWeight = isset($product['unit_weight']) ? $product['unit_weight'] : getRebarUnitWeightFromProductName($product['product_name']);

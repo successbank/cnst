@@ -30,7 +30,9 @@ $icons = [
     'ks-pipe' => '🔧',
     'bs-pipe' => '🔧',
     'rebar' => '🔩',
-    'threaded-rebar' => '🔧'
+    'threaded-rebar' => '🔧',
+    'metal-lath' => '🔲',
+    'stainless' => '✨'
 ];
 
 // 카테고리 목록 가져오기
@@ -38,13 +40,19 @@ $categories = [];
 $stmt = $pdo->query("SELECT * FROM product_categories WHERE is_active = 1 ORDER BY display_order ASC");
 $all_categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 각 카테고리별 제품 수 계산
+// 각 카테고리별 제품 수 및 계산기 여부 확인
 foreach ($all_categories as $category) {
     $count_stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE category_code = ? AND is_active = 1");
     $count_stmt->execute([$category['category_code']]);
     $product_count = $count_stmt->fetchColumn();
     
+    // 계산기 여부 확인
+    $calc_stmt = $pdo->prepare("SELECT has_calculator FROM products WHERE category_code = ? AND has_calculator = 1 LIMIT 1");
+    $calc_stmt->execute([$category['category_code']]);
+    $has_calculator = $calc_stmt->fetchColumn() ? true : false;
+    
     $category['product_count'] = $product_count;
+    $category['has_calculator'] = $has_calculator;
     $category['click_count'] = isset($category['click_count']) ? $category['click_count'] : 0;
     $categories[] = $category;
 }
@@ -167,19 +175,19 @@ $top_3_categories = array_slice(array_column($categories_by_clicks, 'category_co
     font-weight: 600;
 }
 
-/* 철근 카테고리 특별 스타일 */
-.category-card[href*="rebar_quote"] {
+/* 계산기가 있는 카테고리 특별 스타일 */
+.category-card.has-calculator {
     background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
     color: white;
 }
 
-.category-card[href*="rebar_quote"] .category-name,
-.category-card[href*="rebar_quote"] .category-count,
-.category-card[href*="rebar_quote"] .category-description {
+.category-card.has-calculator .category-name,
+.category-card.has-calculator .category-count,
+.category-card.has-calculator .category-description {
     color: white;
 }
 
-.category-card[href*="rebar_quote"]:hover {
+.category-card.has-calculator:hover {
     transform: translateY(-6px);
     box-shadow: 0 12px 32px rgba(33, 150, 243, 0.3);
 }
@@ -221,20 +229,26 @@ $top_3_categories = array_slice(array_column($categories_by_clicks, 'category_co
             $isFeatured = in_array($category['category_code'], $top_3_categories);
             ?>
             <?php 
-            // 철근 카테고리는 특별한 견적 페이지로 이동
-            $categoryLink = $isEmpty ? '#' : 
-                ($category['category_code'] == 'rebar' ? 'http://211.248.112.67:1112/products_new.php?category=rebar&view=tile&search=' : 
-                'products_new.php?category=' . $category['category_code'] . '&view=tile');
+            // 카테고리별 링크 설정
+            if ($isEmpty) {
+                $categoryLink = '#';
+            } elseif ($category['has_calculator']) {
+                // 계산기가 있는 제품은 계산기 페이지로
+                $categoryLink = 'product_detail.php?category=' . $category['category_code'];
+            } else {
+                // 계산기가 없는 제품은 제품 목록 페이지로
+                $categoryLink = 'products_new.php?category=' . $category['category_code'] . '&view=tile';
+            }
             ?>
             <a href="<?php echo $categoryLink; ?>" 
-               class="category-card <?php echo $isEmpty ? 'empty' : ''; ?> <?php echo $isFeatured ? 'featured' : ''; ?>"
+               class="category-card <?php echo $isEmpty ? 'empty' : ''; ?> <?php echo $isFeatured ? 'featured' : ''; ?> <?php echo $category['has_calculator'] ? 'has-calculator' : ''; ?>"
                <?php echo $isEmpty ? 'onclick="return false;"' : ''; ?>>
                 <span class="category-icon">
                     <?php echo isset($icons[$category['category_code']]) ? $icons[$category['category_code']] : '📦'; ?>
                 </span>
                 <h3 class="category-name"><?php echo htmlspecialchars($category['category_name']); ?></h3>
-                <?php if ($category['category_code'] == 'rebar'): ?>
-                    <p class="category-count" style="color: #ff6b6b; font-weight: 600;">📊 견적 계산기</p>
+                <?php if ($category['has_calculator']): ?>
+                    <p class="category-count" style="color: #ff6b6b; font-weight: 600;">📊 중량 계산기</p>
                 <?php else: ?>
                     <p class="category-count">제품 <?php echo $category['product_count']; ?>개</p>
                 <?php endif; ?>
