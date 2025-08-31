@@ -51,7 +51,7 @@ if(file_exists('includes/settings.php')) {
                 <!-- Navigation -->
                 <nav class="main-nav">
                     <ul>
-                        <li><a href="products.php" class="<?php echo $currentPage == 'products' ? 'active' : ''; ?>">판매제품</a></li>
+                        <li><a href="products_new.php" class="<?php echo $currentPage == 'products' ? 'active' : ''; ?>">판매제품</a></li>
                         <li><a href="about.php" class="<?php echo $currentPage == 'about' ? 'active' : ''; ?>">회사소개</a></li>
                         <li><a href="http://211.248.112.67:1112/ebook/mobile/index.html#p=1" target="_blank" ; ?>단중표</a></li>
                         <li><a href="consignment.php" class="<?php echo $currentPage == 'consignment' ? 'active' : ''; ?>">중계판매</a></li>
