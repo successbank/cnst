@@ -591,20 +591,25 @@ foreach ($products as &$product) {
 
 /* 원산지 정보 스타일 */
 .origin-info {
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px solid #f0f0f0;
-    font-size: 13px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #e8e8e8;
+    font-size: 14px;
     color: #666;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .origin-info-label {
     font-weight: 600;
     color: #333;
+    font-size: 13px;
 }
 
 .origin-info-text {
     color: #555;
+    font-size: 13px;
 }
 
 /* 리스트뷰에서의 원산지 정보 스타일 */
@@ -698,7 +703,8 @@ foreach ($products as &$product) {
 /* 규격별 제품 카드 스타일 */
 .product-card.spec-product {
     border: 2px solid #2196F3;
-    background: #f0f7ff;
+    background: white;
+    position: relative;
 }
 
 .product-card.spec-product:hover {
@@ -708,11 +714,18 @@ foreach ($products as &$product) {
 
 .product-card.spec-product .product-info {
     background: white;
+    position: relative;
 }
 
 .product-card.spec-product h3 {
     color: #1976D2;
     font-size: 18px;
+}
+
+/* spec-product 카드의 + 버튼 위치 조정 */
+.product-card.spec-product .image-upload-btn {
+    bottom: 20px;
+    right: 20px;
 }
 
 .calculator-link {
@@ -722,6 +735,20 @@ foreach ($products as &$product) {
     border-radius: 16px;
     font-size: 12px;
     margin-top: 8px;
+}
+
+/* 리스트뷰 spec-product 스타일 */
+.product-list-item.spec-product {
+    border: 2px solid #2196F3;
+    background: white;
+}
+
+.product-list-item.spec-product:hover {
+    box-shadow: 0 8px 24px rgba(33, 150, 243, 0.2);
+}
+
+.product-list-item.spec-product .product-list-title {
+    color: #1976D2;
 }
 
 /* 모바일 반응형 */
@@ -758,27 +785,28 @@ foreach ($products as &$product) {
 
 .image-upload-btn {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background: rgba(20, 40, 160, 0.9);
+    bottom: 16px;
+    right: 16px;
+    background: #4285f4;
     color: white;
     border: none;
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    font-size: 24px;
+    box-shadow: 0 2px 12px rgba(66, 133, 244, 0.3);
     transition: all 0.3s ease;
     z-index: 10;
 }
 
 .image-upload-btn:hover {
-    background: rgba(20, 40, 160, 1);
-    transform: scale(1.1);
+    background: #3367d6;
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(66, 133, 244, 0.4);
 }
 
 .image-delete-btn {
@@ -939,7 +967,7 @@ foreach ($products as &$product) {
                     'product_detail.php?category=' . $product['category_code'] . '&spec=' . urlencode($product['specification']) :
                     'product_detail.php?id=' . $product['id'];
                 ?>
-                <a href="<?php echo $product_link; ?>" class="product-card <?php echo $product['parent_product_id'] ? 'spec-product' : ''; ?>">
+                <a href="<?php echo $product_link; ?>" class="product-card <?php echo ($product['parent_product_id'] || $product['category_code'] === 'rebar') ? 'spec-product' : ''; ?>">
                     <div class="product-image image-upload-wrapper" data-product-id="<?php echo $product['id']; ?>">
                         <?php if ($product['main_image']): ?>
                             <img src="<?php echo escape($product['main_image']); ?>" alt="<?php echo escape($product['product_name']); ?>">
@@ -991,13 +1019,18 @@ foreach ($products as &$product) {
                             $unitWeight = isset($product['unit_weight']) ? $product['unit_weight'] : getRebarUnitWeightFromProductName($product['product_name']);
                             if ($unitWeight):
                             ?>
-                            <p class="unit-weight" style="color: #F57C00; font-weight: 600; font-size: 14px;">
+                            <p class="unit-weight" style="color: #2196F3; font-weight: 600; font-size: 14px;">
                                 단위중량: <?php echo $unitWeight; ?>kg/m
+                            </p>
+                            <p class="calculator-link" style="color: #666; font-size: 13px;">
+                                📊 중량 계산하기
                             </p>
                             <?php endif; ?>
                         <?php endif; ?>
+                        <?php if ($product['category_code'] !== 'rebar'): ?>
                         <p class="description"><?php echo escape($product['description']); ?></p>
-                        <?php if ($product['price'] && $product['price'] > 0): ?>
+                        <?php endif; ?>
+                        <?php if ($product['price'] && $product['price'] > 0 && $product['category_code'] !== 'rebar'): ?>
                         <?php 
                         $min_price = isset($product['min_price']) && $product['min_price'] > 0 
                             ? $product['min_price'] 
@@ -1035,7 +1068,7 @@ foreach ($products as &$product) {
         <!-- 리스트 뷰 -->
         <div class="products-list">
             <?php foreach ($products as $product): ?>
-                <a href="product_detail.php?id=<?php echo $product['id']; ?>" class="product-list-item">
+                <a href="product_detail.php?id=<?php echo $product['id']; ?>" class="product-list-item <?php echo $product['category_code'] === 'rebar' ? 'spec-product' : ''; ?>">
                     <div class="product-list-image image-upload-wrapper" data-product-id="<?php echo $product['id']; ?>">
                         <?php if ($product['main_image']): ?>
                             <img src="<?php echo escape($product['main_image']); ?>" alt="<?php echo escape($product['product_name']); ?>">
@@ -1082,13 +1115,15 @@ foreach ($products as &$product) {
                             $unitWeight = isset($product['unit_weight']) ? $product['unit_weight'] : getRebarUnitWeightFromProductName($product['product_name']);
                             if ($unitWeight):
                             ?>
-                            <p class="unit-weight" style="color: #F57C00; font-weight: 600; font-size: 14px; margin: 5px 0;">
+                            <p class="unit-weight" style="color: #2196F3; font-weight: 600; font-size: 14px; margin: 5px 0;">
                                 단위중량: <?php echo $unitWeight; ?>kg/m
                             </p>
                             <?php endif; ?>
                         <?php endif; ?>
+                        <?php if ($product['category_code'] !== 'rebar'): ?>
                         <p class="product-list-description"><?php echo escape($product['description']); ?></p>
-                        <?php if ($product['price'] && $product['price'] > 0): ?>
+                        <?php endif; ?>
+                        <?php if ($product['price'] && $product['price'] > 0 && $product['category_code'] !== 'rebar'): ?>
                         <?php 
                         $min_price = isset($product['min_price']) && $product['min_price'] > 0 
                             ? $product['min_price'] 
@@ -1168,7 +1203,7 @@ foreach ($products as &$product) {
             ?>
             <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;">
                 <h4 style="color: #1428A0; font-size: 20px; margin-bottom: 10px;"><?php echo $spec['spec_name']; ?></h4>
-                <p style="color: #F57C00; font-weight: 600; font-size: 16px;"><?php echo $spec['unit_weight']; ?>kg/m</p>
+                <p style="color: #2196F3; font-weight: 600; font-size: 16px;"><?php echo $spec['unit_weight']; ?>kg/m</p>
             </div>
             <?php endforeach; ?>
         </div>
