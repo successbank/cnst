@@ -8,6 +8,16 @@
     --border-color: #E5E5E7;
     --bg-light: #F8F9FA;
     --white: #FFFFFF;
+    
+    /* Semantic colors */
+    --success-bg: #d4edda;
+    --success-text: #155724;
+    --success-color: #28a745;
+    --success-light-bg: #f0fff4;
+    --danger-bg: #f8d7da;
+    --danger-text: #721c24;
+    --warning-bg: #fff3cd;
+    --warning-text: #856404;
 }
 
 /* Reset & Base */

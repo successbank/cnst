@@ -524,7 +524,7 @@ include 'admin_head.php';
         ?>
         <a href="?category=<?php echo $category['category_code']; ?>" 
            class="category-tab <?php echo $category_filter === $category['category_code'] ? 'active' : ''; ?>">
-            <?php echo htmlspecialchars($category['category_name']); ?> (<?php echo $count; ?>)
+            <?php echo htmlspecialchars($category['category_name'] ?? ''); ?> (<?php echo $count; ?>)
         </a>
     <?php endforeach; ?>
 </div>
@@ -532,8 +532,8 @@ include 'admin_head.php';
 <form method="GET" action="" class="filters">
     <div class="search-box">
         <input type="text" name="search" placeholder="제품명, 규격, 설명으로 검색..." 
-               value="<?php echo htmlspecialchars($search); ?>">
-        <input type="hidden" name="category" value="<?php echo htmlspecialchars($category_filter); ?>">
+               value="<?php echo htmlspecialchars($search ?? ''); ?>">
+        <input type="hidden" name="category" value="<?php echo htmlspecialchars($category_filter ?? ''); ?>">
         <button type="submit">검색</button>
     </div>
 </form>
@@ -579,7 +579,7 @@ include 'admin_head.php';
             <td>
                 <div class="product-image">
                     <?php if ($product['main_image']): ?>
-                        <img src="<?php echo htmlspecialchars($product['main_image']); ?>" 
+                        <img src="<?php echo htmlspecialchars($product['main_image'] ?? ''); ?>" 
                              style="width: 100%; height: 100%; object-fit: cover;">
                     <?php else: ?>
                         📦
@@ -587,11 +587,11 @@ include 'admin_head.php';
                 </div>
             </td>
             <td>
-                <div class="product-name"><?php echo htmlspecialchars($product['product_name']); ?></div>
-                <div class="product-specs"><?php echo htmlspecialchars($product['specifications']); ?></div>
+                <div class="product-name"><?php echo htmlspecialchars($product['product_name'] ?? ''); ?></div>
+                <div class="product-specs"><?php echo htmlspecialchars($product['specifications'] ?? ''); ?></div>
             </td>
             <td>
-                <span class="category-badge"><?php echo htmlspecialchars($product['category_name']); ?></span>
+                <span class="category-badge"><?php echo htmlspecialchars($product['category_name'] ?? ''); ?></span>
             </td>
             <td>
                 <span class="stock-status <?php echo $product['stock_status']; ?>">

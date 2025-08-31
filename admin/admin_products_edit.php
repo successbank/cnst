@@ -75,6 +75,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $quality_cert = trim($_POST['quality_cert'] ?? '');
     $product_features = trim($_POST['product_features'] ?? '');
     
+    // 원산지 선택 처리
+    $available_origins = $_POST['available_origins'] ?? [];
+    $available_origins_json = json_encode($available_origins, JSON_UNESCAPED_UNICODE);
+    
     // 유효성 검사
     $errors = [];
     if (!$category_code) $errors[] = "카테고리를 선택해주세요.";
@@ -94,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             base_length = ?, features = ?, dimensions = ?, weight = ?,
                             material = ?, manufacturer = ?, origin = ?,
-                            delivery_info = ?, is_featured = ?, is_active = ?,
+                            available_origins = ?, delivery_info = ?, is_featured = ?, is_active = ?,
                             detailed_description = ?, key_features = ?, technical_specs = ?,
                             applications = ?, certifications = ?, brochure_url = ?,
                             show_details = ?, quality_cert = ?, product_features = ?, 
@@ -108,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $delivery_info, $is_featured, $is_active,
+                        $available_origins_json, $delivery_info, $is_featured, $is_active,
                         $detailed_description, $key_features, $technical_specs,
                         $applications, $certifications, $brochure_url,
                         $show_details, $quality_cert, $product_features,
@@ -122,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             base_length = ?, features = ?, dimensions = ?, weight = ?,
                             material = ?, manufacturer = ?, origin = ?,
-                            delivery_info = ?, is_featured = ?, is_active = ?,
+                            available_origins = ?, delivery_info = ?, is_featured = ?, is_active = ?,
                             detailed_description = ?, key_features = ?, technical_specs = ?,
                             applications = ?, certifications = ?, brochure_url = ?,
                             show_details = ?, quality_cert = ?, product_features = ?, 
@@ -135,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $delivery_info, $is_featured, $is_active,
+                        $available_origins_json, $delivery_info, $is_featured, $is_active,
                         $detailed_description, $key_features, $technical_specs,
                         $applications, $certifications, $brochure_url,
                         $show_details, $quality_cert, $product_features,
@@ -160,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $delivery_info, $is_featured, $is_active,
+                        $available_origins_json, $delivery_info, $is_featured, $is_active,
                         $id
                     ]);
                 } else {
@@ -180,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $delivery_info, $is_featured, $is_active,
+                        $available_origins_json, $delivery_info, $is_featured, $is_active,
                         $id
                     ]);
                 }
@@ -292,6 +296,28 @@ include 'admin_head.php';
     font-size: 28px;
     font-weight: 700;
     color: #333;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.btn-view {
+    padding: 10px 20px;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btn-view:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
 }
 
 .btn-back {
@@ -515,11 +541,95 @@ include 'admin_head.php';
     font-size: 14px;
     color: #666;
 }
+
+/* 이미지 미리보기 스타일 */
+.image-preview-container {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.image-preview-container h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.image-preview-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.image-preview-item {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: move;
+    transition: all 0.3s ease;
+}
+
+.image-preview-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+.image-preview-item.drag-over {
+    border-color: #007bff;
+    background: #e3f2fd;
+}
+
+.image-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-preview-item .delete-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.image-preview-item .delete-btn:hover {
+    background: #dc3545;
+    transform: scale(1.1);
+}
+
+.preview-help-text {
+    font-size: 12px;
+    color: #6c757d;
+    line-height: 1.5;
+}
 </style>
 
 <div class="form-header">
     <h2><?php echo $id > 0 ? '제품 수정' : '새 제품 추가'; ?></h2>
-    <a href="admin_products.php" class="btn-back">목록으로</a>
+    <div class="header-buttons">
+        <?php if ($id > 0): ?>
+        <a href="../product_detail.php?id=<?php echo $id; ?>" target="_blank" class="btn-view">제품보기</a>
+        <?php endif; ?>
+        <a href="admin_products.php" class="btn-back">목록으로</a>
+    </div>
 </div>
 
 <?php if (!empty($errors)): ?>
@@ -598,6 +708,16 @@ include 'admin_head.php';
                     <div class="progress-fill"></div>
                 </div>
                 <p class="progress-text">업로드 중...</p>
+            </div>
+            
+            <!-- 이미지 미리보기 영역 -->
+            <div id="imagePreviewContainer" class="image-preview-container" style="display: none;">
+                <h4>업로드된 이미지 (드래그하여 순서 변경 가능)</h4>
+                <div id="imagePreviewList" class="image-preview-list"></div>
+                <div class="preview-help-text">
+                    • 이미지를 드래그하여 순서를 변경할 수 있습니다<br>
+                    • X 버튼을 클릭하여 이미지를 삭제할 수 있습니다
+                </div>
             </div>
         </div>
     </div>
@@ -757,10 +877,45 @@ include 'admin_head.php';
             </div>
             
             <div class="form-group">
-                <label for="origin">원산지</label>
+                <label for="origin">기본 원산지</label>
                 <input type="text" id="origin" name="origin" 
                        value="<?php echo htmlspecialchars($product['origin'] ?? ''); ?>"
                        placeholder="예: 대한민국">
+                <div class="help-text">제품의 기본 원산지 정보입니다</div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>판매 가능 원산지</label>
+            <div class="checkbox-group" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                <?php
+                // 가능한 원산지 목록
+                $origin_options = [
+                    "국산", "중국산", "일본산", "베트남산", 
+                    "바레이산", "수입산", "쟁가재고", "중고"
+                ];
+                
+                // 현재 선택된 원산지 (JSON 디코드)
+                $selected_origins = [];
+                if (!empty($product['available_origins'])) {
+                    $selected_origins = json_decode($product['available_origins'], true) ?: [];
+                }
+                
+                foreach ($origin_options as $origin): 
+                ?>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" name="available_origins[]" value="<?php echo $origin; ?>"
+                           <?php echo in_array($origin, $selected_origins) ? 'checked' : ''; ?>
+                           style="margin-right: 5px;">
+                    <span><?php echo $origin; ?></span>
+                </label>
+                <?php endforeach; ?>
+            </div>
+            <div class="help-text" style="margin-top: 10px;">
+                <label style="cursor: pointer;">
+                    <input type="checkbox" id="select-all-origins" style="margin-right: 5px;">
+                    모두 선택
+                </label>
             </div>
         </div>
         
@@ -994,6 +1149,26 @@ document.getElementById('specifications').addEventListener('blur', function() {
 // 페이지 로드 시 버튼 상태 설정
 window.addEventListener('DOMContentLoaded', function() {
     toggleApplyPriceButton();
+    
+    // 원산지 모두 선택 기능
+    const selectAllCheckbox = document.getElementById('select-all-origins');
+    const originCheckboxes = document.querySelectorAll('input[name="available_origins[]"]');
+    
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            originCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+    }
+    
+    // 개별 체크박스 변경 시 모두 선택 상태 업데이트
+    originCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const allChecked = Array.from(originCheckboxes).every(cb => cb.checked);
+            selectAllCheckbox.checked = allChecked;
+        });
+    });
 });
 
 // 페이지 로드 시 철근 제품인 경우 단가 확인
@@ -1096,6 +1271,16 @@ const descriptionTextarea = document.getElementById('description');
 const uploadProgress = document.getElementById('uploadProgress');
 const progressFill = document.querySelector('.progress-fill');
 const progressText = document.querySelector('.progress-text');
+const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+const imagePreviewList = document.getElementById('imagePreviewList');
+
+// 이미지 경로 배열
+let imagePaths = [];
+
+// 페이지 로드 시 기존 이미지 경로 파싱
+window.addEventListener('DOMContentLoaded', () => {
+    parseExistingImages();
+});
 
 // 클릭하여 파일 선택
 dropZone.addEventListener('click', () => {
@@ -1162,15 +1347,14 @@ async function uploadImages(files) {
             const result = await response.json();
             
             if (result.success) {
-                // textarea에 이미지 경로 추가
-                const currentText = descriptionTextarea.value;
-                const newImagePath = result.url;
+                // 이미지 경로 배열에 추가
+                imagePaths.push(result.url);
                 
-                if (currentText) {
-                    descriptionTextarea.value = currentText + '\n' + newImagePath;
-                } else {
-                    descriptionTextarea.value = newImagePath;
-                }
+                // 미리보기 업데이트
+                updateImagePreview();
+                
+                // textarea 업데이트
+                updateDescriptionTextarea();
                 
                 uploadedCount++;
                 
@@ -1203,6 +1387,174 @@ async function uploadImages(files) {
     
     // 입력 초기화
     imageInput.value = '';
+}
+
+// 기존 이미지 경로 파싱
+function parseExistingImages() {
+    const text = descriptionTextarea.value;
+    if (!text) return;
+    
+    // 줄바꿈으로 분리하고 이미지 확장자를 가진 경로만 필터링
+    const lines = text.split('\n');
+    const imageExtensions = /\.(jpg|jpeg|png|gif|webp)$/i;
+    
+    imagePaths = lines.filter(line => {
+        const trimmedLine = line.trim();
+        return trimmedLine && imageExtensions.test(trimmedLine);
+    });
+    
+    // 이미지가 있으면 미리보기 표시
+    if (imagePaths.length > 0) {
+        updateImagePreview();
+    }
+    
+    // 나머지 텍스트는 유지
+    const nonImageLines = lines.filter(line => {
+        const trimmedLine = line.trim();
+        return trimmedLine && !imageExtensions.test(trimmedLine);
+    });
+    
+    // textarea에 이미지가 아닌 텍스트만 표시
+    const nonImageText = nonImageLines.join('\n');
+    if (nonImageText !== text) {
+        descriptionTextarea.value = nonImageText;
+        updateDescriptionTextarea();
+    }
+}
+
+// 이미지 미리보기 업데이트
+function updateImagePreview() {
+    if (imagePaths.length === 0) {
+        imagePreviewContainer.style.display = 'none';
+        return;
+    }
+    
+    imagePreviewContainer.style.display = 'block';
+    imagePreviewList.innerHTML = '';
+    
+    imagePaths.forEach((path, index) => {
+        const item = document.createElement('div');
+        item.className = 'image-preview-item';
+        item.draggable = true;
+        item.dataset.index = index;
+        
+        const img = document.createElement('img');
+        img.src = path;
+        img.alt = `이미지 ${index + 1}`;
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.innerHTML = '×';
+        deleteBtn.onclick = () => removeImage(index);
+        
+        item.appendChild(img);
+        item.appendChild(deleteBtn);
+        
+        // 드래그 이벤트 추가
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragenter', handleDragEnter);
+        item.addEventListener('dragleave', handleDragLeave);
+        
+        imagePreviewList.appendChild(item);
+    });
+}
+
+// 이미지 제거
+function removeImage(index) {
+    imagePaths.splice(index, 1);
+    updateImagePreview();
+    updateDescriptionTextarea();
+}
+
+// textarea 업데이트
+function updateDescriptionTextarea() {
+    const text = descriptionTextarea.value;
+    const lines = text.split('\n');
+    const imageExtensions = /\.(jpg|jpeg|png|gif|webp)$/i;
+    
+    // 이미지가 아닌 텍스트만 추출
+    const nonImageLines = lines.filter(line => {
+        const trimmedLine = line.trim();
+        return trimmedLine && !imageExtensions.test(trimmedLine);
+    });
+    
+    // 텍스트와 이미지 경로 합치기
+    let finalText = nonImageLines.join('\n');
+    if (imagePaths.length > 0) {
+        if (finalText) {
+            finalText += '\n';
+        }
+        finalText += imagePaths.join('\n');
+    }
+    
+    descriptionTextarea.value = finalText;
+}
+
+// 드래그 앤 드롭 핸들러
+let draggedElement = null;
+let draggedIndex = null;
+
+function handleDragStart(e) {
+    draggedElement = this;
+    draggedIndex = parseInt(this.dataset.index);
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    
+    // 모든 drag-over 클래스 제거
+    document.querySelectorAll('.image-preview-item').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragEnter(e) {
+    if (this !== draggedElement) {
+        this.classList.add('drag-over');
+    }
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+    
+    if (draggedElement !== this) {
+        const dropIndex = parseInt(this.dataset.index);
+        
+        // 배열에서 아이템 이동
+        const draggedPath = imagePaths[draggedIndex];
+        imagePaths.splice(draggedIndex, 1);
+        
+        if (draggedIndex < dropIndex) {
+            imagePaths.splice(dropIndex - 1, 0, draggedPath);
+        } else {
+            imagePaths.splice(dropIndex, 0, draggedPath);
+        }
+        
+        // 미리보기와 textarea 업데이트
+        updateImagePreview();
+        updateDescriptionTextarea();
+    }
+    
+    return false;
 }
 </script>
 

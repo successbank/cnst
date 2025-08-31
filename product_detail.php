@@ -56,42 +56,68 @@ if ($product_id) {
     ?>
     
     <style>
+    /* Product Detail Page Styles - Using Samsung Style Variables */
+    .product-header-section {
+        background: linear-gradient(135deg, #E8F0FE 0%, #F8F9FA 100%);
+        padding: 60px 0;
+        text-align: center;
+        position: relative;
+    }
+    
+    .product-header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+    
+    .product-category {
+        color: var(--primary-blue);
+        font-size: 18px;
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+    
+    .product-title {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+    
+    .product-subtitle {
+        font-size: 18px;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+    }
+    
+    .admin-actions {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+    }
+    
     .product-detail-container {
         max-width: 1200px;
         margin: 40px auto;
         padding: 20px;
     }
     
-    .product-detail-header {
-        background: white;
+    .product-info-section {
+        background: var(--white);
         padding: 30px;
         border-radius: 12px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         margin-bottom: 30px;
     }
     
-    .product-category {
-        color: #1428A0;
-        font-size: 16px;
-        margin-bottom: 10px;
-    }
-    
-    .product-title {
-        font-size: 32px;
-        font-weight: 700;
-        color: #333;
-        margin-bottom: 20px;
-    }
-    
     .product-info-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 30px;
-        margin-top: 30px;
     }
     
     .product-image-section {
-        background: #f8f9fa;
+        background: var(--bg-light);
         border-radius: 12px;
         padding: 20px;
         text-align: center;
@@ -109,7 +135,7 @@ if ($product_id) {
     
     .no-image {
         font-size: 120px;
-        color: #ddd;
+        color: var(--border-color);
     }
     
     .product-details-section {
@@ -119,7 +145,7 @@ if ($product_id) {
     .detail-item {
         margin-bottom: 20px;
         padding-bottom: 20px;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--border-color);
     }
     
     .detail-item:last-child {
@@ -128,18 +154,18 @@ if ($product_id) {
     
     .detail-label {
         font-weight: 600;
-        color: #666;
+        color: var(--text-secondary);
         margin-bottom: 8px;
         font-size: 14px;
     }
     
     .detail-value {
         font-size: 18px;
-        color: #333;
+        color: var(--text-primary);
     }
     
     .unit-weight-highlight {
-        color: #1428A0;
+        color: var(--primary-blue);
         font-weight: 700;
         font-size: 24px;
     }
@@ -147,8 +173,8 @@ if ($product_id) {
     .calculator-link-btn {
         display: inline-block;
         padding: 15px 30px;
-        background: #1428A0;
-        color: white;
+        background: var(--primary-blue);
+        color: var(--white);
         border-radius: 8px;
         text-decoration: none;
         font-weight: 600;
@@ -157,7 +183,7 @@ if ($product_id) {
     }
     
     .calculator-link-btn:hover {
-        background: #0F1F7A;
+        background: var(--secondary-blue);
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(20, 40, 160, 0.3);
     }
@@ -171,18 +197,18 @@ if ($product_id) {
     }
     
     .stock-status.in-stock {
-        background: #d4edda;
-        color: #155724;
+        background: var(--success-bg);
+        color: var(--success-text);
     }
     
     .stock-status.out-of-stock {
-        background: #f8d7da;
-        color: #721c24;
+        background: var(--danger-bg);
+        color: var(--danger-text);
     }
     
     .stock-status.on-order {
-        background: #fff3cd;
-        color: #856404;
+        background: var(--warning-bg);
+        color: var(--warning-text);
     }
     
     .origin-badges {
@@ -194,15 +220,37 @@ if ($product_id) {
     
     .origin-badge {
         padding: 4px 12px;
-        background: #e8f0ff;
+        background: var(--light-blue);
         border-radius: 16px;
         font-size: 14px;
-        color: #1428A0;
+        color: var(--primary-blue);
+    }
+    
+    .origin-select {
+        width: 100%;
+        max-width: 250px;
+        padding: 10px 12px;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 15px;
+        background-color: var(--white);
+        cursor: pointer;
+        transition: border-color 0.3s ease;
+    }
+    
+    .origin-select:focus {
+        outline: none;
+        border-color: var(--primary-blue);
+        box-shadow: 0 0 0 3px rgba(20, 40, 160, 0.1);
+    }
+    
+    .origin-select:hover {
+        border-color: var(--primary-blue);
     }
     
     /* 실시간 계산기 스타일 */
     .calculator-section {
-        background: #f8f9fa;
+        background: var(--bg-light);
         border-radius: 12px;
         padding: 20px;
         margin-top: 20px;
@@ -211,7 +259,7 @@ if ($product_id) {
     .calculator-title {
         font-size: 20px;
         font-weight: 600;
-        color: #333;
+        color: var(--text-primary);
         margin-bottom: 20px;
     }
     
@@ -230,13 +278,13 @@ if ($product_id) {
     .calc-form-group label {
         font-size: 14px;
         font-weight: 600;
-        color: #666;
+        color: var(--text-secondary);
         margin-bottom: 8px;
     }
     
     .calc-control {
         padding: 10px 12px;
-        border: 2px solid #e0e0e0;
+        border: 2px solid var(--border-color);
         border-radius: 8px;
         font-size: 15px;
         transition: border-color 0.3s;
@@ -244,11 +292,11 @@ if ($product_id) {
     
     .calc-control:focus {
         outline: none;
-        border-color: #1428A0;
+        border-color: var(--primary-blue);
     }
     
     .calc-result {
-        background: white;
+        background: var(--white);
         border-radius: 8px;
         padding: 20px;
         margin-top: 20px;
@@ -264,37 +312,37 @@ if ($product_id) {
     .calc-result-header {
         font-size: 16px;
         font-weight: 600;
-        color: #666;
+        color: var(--text-secondary);
         margin-bottom: 10px;
     }
     
     .calc-result-value {
         font-size: 32px;
         font-weight: 700;
-        color: #1428A0;
+        color: var(--primary-blue);
         margin-bottom: 15px;
     }
     
     .calc-result-price {
         font-size: 24px;
         font-weight: 600;
-        color: #28a745;
+        color: var(--success-color);
         margin: 15px 0;
         padding: 15px;
-        background: #f0fff4;
+        background: var(--success-light-bg);
         border-radius: 8px;
         text-align: center;
     }
     
     .calc-steps {
         font-size: 14px;
-        color: #666;
+        color: var(--text-secondary);
         line-height: 1.6;
     }
     
     .calc-step {
         padding: 5px 0;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--border-color);
     }
     
     .calc-step:last-child {
@@ -304,15 +352,15 @@ if ($product_id) {
     /* 제품 상세보기 섹션 스타일 */
     .product-detail-info-section {
         margin: 40px 0;
-        background: #f8f9fa;
+        background: var(--bg-light);
         border-radius: 8px;
         overflow: hidden;
         box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     }
     
     .section-header {
-        background: #4a90e2;
-        color: white;
+        background: var(--primary-blue);
+        color: var(--white);
         padding: 15px 20px;
         font-size: 18px;
         font-weight: 600;
@@ -327,14 +375,14 @@ if ($product_id) {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 0;
-        background: white;
+        background: var(--white);
     }
     
     .info-item {
         display: grid;
         grid-template-columns: 140px 1fr;
-        border-bottom: 1px solid #e0e0e0;
-        border-right: 1px solid #e0e0e0;
+        border-bottom: 1px solid var(--border-color);
+        border-right: 1px solid var(--border-color);
     }
     
     .info-item:nth-child(2n) {
@@ -346,23 +394,23 @@ if ($product_id) {
     }
     
     .info-label {
-        background: #f0f0f0;
+        background: var(--bg-light);
         padding: 12px 15px;
         font-weight: 600;
         font-size: 14px;
-        color: #333;
-        border-right: 1px solid #e0e0e0;
+        color: var(--text-primary);
+        border-right: 1px solid var(--border-color);
     }
     
     .info-value {
         padding: 12px 15px;
         font-size: 14px;
-        color: #666;
-        background: white;
+        color: var(--text-secondary);
+        background: var(--white);
     }
     
     .info-value a {
-        color: #4a90e2;
+        color: var(--primary-blue);
         text-decoration: none;
     }
     
@@ -383,33 +431,24 @@ if ($product_id) {
     /* 관리자 수정 버튼 스타일 */
     .admin-edit-btn {
         display: inline-block;
-        background-color: #1428A0;
-        color: white !important;
+        background-color: var(--white);
+        color: var(--primary-blue) !important;
         padding: 10px 20px;
         text-decoration: none;
-        border-radius: 5px;
+        border-radius: 28px;
         font-size: 14px;
         font-weight: 600;
-        transition: background-color 0.3s ease;
-        margin-top: 15px;
+        transition: all 0.3s ease;
+        border: 2px solid var(--primary-blue);
     }
     
     .admin-edit-btn:hover {
-        background-color: #0F1F7A;
-        color: white !important;
+        background-color: var(--primary-blue);
+        color: var(--white) !important;
         text-decoration: none;
+        border-color: var(--primary-blue);
     }
     
-    .product-header-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        flex-wrap: wrap;
-    }
-    
-    .product-title-section {
-        flex: 1;
-    }
     
     @media (max-width: 768px) {
         .product-info-grid {
@@ -451,21 +490,24 @@ if ($product_id) {
     }
     </style>
     
+    <!-- Product Header Section -->
+    <section class="product-header-section">
+        <div class="product-header-content">
+            <div class="product-category"><?php echo htmlspecialchars($product['category_name']); ?></div>
+            <h1 class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></h1>
+            <p class="product-subtitle">충남스틸이 공급하는 고품질 <?php echo htmlspecialchars($product['category_name']); ?> 제품입니다</p>
+        </div>
+        <?php if ($is_admin): ?>
+        <div class="admin-actions">
+            <a href="/admin/admin_products_edit.php?id=<?php echo $product_id; ?>" 
+               class="admin-edit-btn">제품 수정</a>
+        </div>
+        <?php endif; ?>
+    </section>
+    
+    <!-- Product Detail Container -->
     <div class="product-detail-container">
-        <div class="product-detail-header">
-            <div class="product-header-top">
-                <div class="product-title-section">
-                    <div class="product-category"><?php echo htmlspecialchars($product['category_name']); ?></div>
-                    <h1 class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></h1>
-                </div>
-                <?php if ($is_admin): ?>
-                <div class="admin-actions">
-                    <a href="/admin/admin_products_edit.php?id=<?php echo $product_id; ?>" 
-                       class="admin-edit-btn">제품 수정</a>
-                </div>
-                <?php endif; ?>
-            </div>
-            
+        <div class="product-info-section">
             <div class="product-info-grid">
                 <div class="product-image-section">
                     <?php if ($product['main_image']): ?>
@@ -516,16 +558,23 @@ if ($product_id) {
                     
                     <?php if (!empty($product['available_origins'])): ?>
                     <div class="detail-item">
-                        <div class="detail-label">원산지</div>
+                        <div class="detail-label">원산지 선택</div>
                         <div class="detail-value">
-                            <div class="origin-badges">
-                                <?php 
-                                $origins = json_decode($product['available_origins'], true) ?: [];
-                                foreach ($origins as $origin): 
-                                ?>
-                                    <span class="origin-badge"><?php echo htmlspecialchars($origin); ?></span>
+                            <?php 
+                            $origins = json_decode($product['available_origins'], true) ?: [];
+                            if (count($origins) > 0): 
+                            ?>
+                            <select id="origin-select" class="origin-select">
+                                <option value="">원산지를 선택하세요</option>
+                                <?php foreach ($origins as $origin): ?>
+                                <option value="<?php echo htmlspecialchars($origin); ?>">
+                                    <?php echo htmlspecialchars($origin); ?>
+                                </option>
                                 <?php endforeach; ?>
-                            </div>
+                            </select>
+                            <?php else: ?>
+                            <span style="color: #999;">원산지 정보가 없습니다</span>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -703,6 +752,7 @@ if ($product_id) {
                 </div>
                 <?php endif; ?>
             </div>
+        </div>
         </div>
     </div>
     
