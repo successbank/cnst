@@ -1,0 +1,66 @@
+-- product_categories 테이블 생성
+CREATE TABLE IF NOT EXISTS product_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    category_code VARCHAR(50) NOT NULL UNIQUE,
+    category_name VARCHAR(100) NOT NULL,
+    display_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    click_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- products 테이블 생성
+CREATE TABLE IF NOT EXISTS products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    category_code VARCHAR(50) NOT NULL,
+    product_name VARCHAR(200) NOT NULL,
+    product_code VARCHAR(100) UNIQUE,
+    specifications TEXT,
+    description TEXT,
+    price DECIMAL(12,2),
+    unit VARCHAR(50),
+    min_order_qty INT DEFAULT 1,
+    stock_status ENUM('in_stock', 'out_of_stock', 'on_order') DEFAULT 'in_stock',
+    main_image VARCHAR(500),
+    detail_images TEXT,
+    features TEXT,
+    dimensions TEXT,
+    weight VARCHAR(100),
+    material VARCHAR(200),
+    manufacturer VARCHAR(200),
+    origin VARCHAR(100),
+    delivery_info TEXT,
+    is_featured BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    view_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_code) REFERENCES product_categories(category_code)
+);
+
+-- 카테고리 데이터 삽입
+INSERT IGNORE INTO product_categories (category_code, category_name, display_order) VALUES
+('rebar', '철근', 1),
+('h-beam', 'H형강', 2),
+('steel-plate', '철강(강판)', 3),
+('metal-lath', '메탈라스', 4),
+('light-h-beam', '경량H형강', 5),
+('i-beam', 'I형강', 6),
+('angle', 'ㄱ형강(앵글)', 7),
+('channel', 'ㄷ형강(찬넬)', 8),
+('round-bar', '환봉', 9),
+('flat-bar', '평철', 10),
+('c-beam', 'C형강', 11),
+('deck-plate', '테크플레이트', 12),
+('square-pipe', '사각파이프', 13),
+('round-pipe', '원형파이프', 14),
+('rail', '레일', 15),
+('sheet-pile', '강널말뚝', 16),
+('stainless', '스테인레스', 17);
+
+-- 샘플 제품 데이터
+INSERT IGNORE INTO products (category_code, product_name, specifications, description, unit) VALUES
+('rebar', '철근(특판) D10', 'D10 × 8m', '콘크리트 구조물의 인장 보강재로 사용되는 고강도 이형철근입니다.', 'TON'),
+('rebar', '철근(특판) D13', 'D13 × 8m', '콘크리트 구조물의 인장 보강재로 사용되는 고강도 이형철근입니다.', 'TON'),
+('h-beam', 'H형강 100×100', '100×100×6×8', '건축 구조물의 기둥과 보에 사용되는 대표적인 구조용 강재입니다.', 'TON'),
+('h-beam', 'H형강 200×200', '200×200×8×12', '건축 구조물의 기둥과 보에 사용되는 대표적인 구조용 강재입니다.', 'TON');
