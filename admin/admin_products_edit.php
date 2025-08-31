@@ -450,6 +450,71 @@ include 'admin_head.php';
     color: #6c757d;
     margin-top: 5px;
 }
+
+/* 이미지 드래그 앤 드롭 스타일 */
+.image-drop-zone {
+    margin-top: 15px;
+    border: 2px dashed #007bff;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.image-drop-zone:hover {
+    background: #e9ecef;
+    border-color: #0056b3;
+}
+
+.image-drop-zone.drag-over {
+    background: #e3f2fd;
+    border-color: #2196f3;
+    border-style: solid;
+}
+
+.drop-zone-content {
+    pointer-events: none;
+}
+
+.upload-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.upload-info {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* 업로드 진행 상태 */
+.upload-progress {
+    margin-top: 15px;
+}
+
+.progress-bar {
+    height: 20px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #007bff;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+}
 </style>
 
 <div class="form-header">
@@ -516,6 +581,24 @@ include 'admin_head.php';
             <label for="description">제품 설명</label>
             <textarea id="description" name="description" rows="4"
                       placeholder="제품에 대한 상세한 설명을 입력하세요"><?php echo htmlspecialchars($product['description'] ?? ''); ?></textarea>
+            
+            <!-- 이미지 업로드 영역 -->
+            <div id="imageDropZone" class="image-drop-zone">
+                <div class="drop-zone-content">
+                    <i class="upload-icon">📷</i>
+                    <p>이미지를 드래그 & 드롭하거나 클릭하여 업로드</p>
+                    <p class="upload-info">JPG, PNG, GIF, WEBP (최대 5MB)</p>
+                </div>
+                <input type="file" id="imageInput" accept="image/*" style="display: none;" multiple>
+            </div>
+            
+            <!-- 업로드 진행 상태 -->
+            <div id="uploadProgress" class="upload-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <p class="progress-text">업로드 중...</p>
+            </div>
         </div>
     </div>
     
@@ -695,9 +778,9 @@ include 'admin_head.php';
         </div>
     </div>
     
-    <!-- 제품 상세보기 정보 (사각파이프용) -->
+    <!-- 제품 상세보기 정보 -->
     <div class="form-section">
-        <h3 class="section-title">제품 상세보기 정보 (사각파이프 전용)</h3>
+        <h3 class="section-title">제품 상세보기 정보</h3>
         
         <div class="form-group">
             <label for="quality_cert">품질 인증</label>
@@ -1005,6 +1088,122 @@ document.querySelector('form').addEventListener('submit', function(e) {
         submitBtn.textContent = '<?php echo $id > 0 ? '수정하기' : '등록하기'; ?>';
     });
 });
+
+// 이미지 드래그 앤 드롭 기능
+const dropZone = document.getElementById('imageDropZone');
+const imageInput = document.getElementById('imageInput');
+const descriptionTextarea = document.getElementById('description');
+const uploadProgress = document.getElementById('uploadProgress');
+const progressFill = document.querySelector('.progress-fill');
+const progressText = document.querySelector('.progress-text');
+
+// 클릭하여 파일 선택
+dropZone.addEventListener('click', () => {
+    imageInput.click();
+});
+
+// 파일 선택 시
+imageInput.addEventListener('change', (e) => {
+    handleFiles(e.target.files);
+});
+
+// 드래그 오버
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+});
+
+// 드래그 떠남
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('drag-over');
+});
+
+// 드롭
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+});
+
+// 파일 처리
+function handleFiles(files) {
+    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length === 0) {
+        alert('이미지 파일만 업로드 가능합니다.');
+        return;
+    }
+    
+    // 순차적으로 업로드
+    uploadImages(imageFiles);
+}
+
+// 이미지 업로드
+async function uploadImages(files) {
+    let uploadedCount = 0;
+    const totalFiles = files.length;
+    
+    // 진행 상태 표시
+    uploadProgress.style.display = 'block';
+    progressFill.style.width = '0%';
+    progressText.textContent = `업로드 중... (0/${totalFiles})`;
+    
+    for (const file of files) {
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('type', 'products');
+            
+            const response = await fetch('upload_image.php', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // textarea에 이미지 경로 추가
+                const currentText = descriptionTextarea.value;
+                const newImagePath = result.url;
+                
+                if (currentText) {
+                    descriptionTextarea.value = currentText + '\n' + newImagePath;
+                } else {
+                    descriptionTextarea.value = newImagePath;
+                }
+                
+                uploadedCount++;
+                
+                // 진행률 업데이트
+                const progress = (uploadedCount / totalFiles) * 100;
+                progressFill.style.width = progress + '%';
+                progressText.textContent = `업로드 중... (${uploadedCount}/${totalFiles})`;
+            } else {
+                alert(`업로드 실패: ${file.name} - ${result.message || '알 수 없는 오류'}`);
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert(`업로드 중 오류 발생: ${file.name}`);
+        }
+    }
+    
+    // 완료 메시지
+    if (uploadedCount > 0) {
+        progressText.textContent = `✓ ${uploadedCount}개 이미지 업로드 완료`;
+        progressFill.style.background = '#28a745';
+        
+        // 3초 후 숨기기
+        setTimeout(() => {
+            uploadProgress.style.display = 'none';
+            progressFill.style.background = '#007bff';
+        }, 3000);
+    } else {
+        uploadProgress.style.display = 'none';
+    }
+    
+    // 입력 초기화
+    imageInput.value = '';
+}
 </script>
 
 <?php include 'admin_tail.php'; ?>

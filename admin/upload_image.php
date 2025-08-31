@@ -1,7 +1,10 @@
 <?php
-// 오류 표시 끄기 (JSON 응답을 위해)
-error_reporting(0);
-ini_set('display_errors', 0);
+session_start();
+require_once '../db.php';
+require_once 'admin_check.php';
+
+// JSON 응답 헤더 설정
+header('Content-Type: application/json');
 
 // 세션 체크
 require_once 'admin_check.php';
@@ -9,9 +12,17 @@ require_once 'admin_check.php';
 // JSON 응답 헤더
 header('Content-Type: application/json');
 
+// 업로드 타입 확인 (products 또는 notices)
+$uploadType = $_POST['type'] ?? 'notices';
+
 // 업로드 디렉토리 설정
-$uploadDir = '../uploads/notices/';
-$uploadUrl = '/uploads/notices/';
+if ($uploadType === 'products') {
+    $uploadDir = '../uploads/products/';
+    $uploadUrl = '/uploads/products/';
+} else {
+    $uploadDir = '../uploads/notices/';
+    $uploadUrl = '/uploads/notices/';
+}
 
 // 디렉토리가 없으면 생성
 if (!file_exists($uploadDir)) {
@@ -30,9 +41,9 @@ if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
 $file = $_FILES['image'];
 
 // 파일 타입 확인
-$allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+$allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 if (!in_array($file['type'], $allowedTypes)) {
-    echo json_encode(['success' => false, 'message' => '허용되지 않는 파일 형식입니다.']);
+    echo json_encode(['success' => false, 'message' => '허용되지 않는 파일 형식입니다. JPG, PNG, GIF, WEBP만 가능합니다.']);
     exit;
 }
 

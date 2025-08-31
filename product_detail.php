@@ -370,6 +370,47 @@ if ($product_id) {
         text-decoration: underline;
     }
     
+    /* 전체 너비 아이템 (제품 설명용) */
+    .info-item.full-width {
+        grid-column: 1 / -1;
+        border-right: none;
+    }
+    
+    .info-item.full-width:last-child {
+        border-bottom: none;
+    }
+    
+    /* 관리자 수정 버튼 스타일 */
+    .admin-edit-btn {
+        display: inline-block;
+        background-color: #1428A0;
+        color: white !important;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background-color 0.3s ease;
+        margin-top: 15px;
+    }
+    
+    .admin-edit-btn:hover {
+        background-color: #0F1F7A;
+        color: white !important;
+        text-decoration: none;
+    }
+    
+    .product-header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+    
+    .product-title-section {
+        flex: 1;
+    }
+    
     @media (max-width: 768px) {
         .product-info-grid {
             grid-template-columns: 1fr;
@@ -377,6 +418,19 @@ if ($product_id) {
         
         .product-title {
             font-size: 24px;
+        }
+        
+        .product-header-top {
+            flex-direction: column;
+        }
+        
+        .admin-actions {
+            margin-top: 10px;
+        }
+        
+        .admin-edit-btn {
+            font-size: 13px;
+            padding: 8px 16px;
         }
         
         .calc-form-row {
@@ -399,8 +453,18 @@ if ($product_id) {
     
     <div class="product-detail-container">
         <div class="product-detail-header">
-            <div class="product-category"><?php echo htmlspecialchars($product['category_name']); ?></div>
-            <h1 class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></h1>
+            <div class="product-header-top">
+                <div class="product-title-section">
+                    <div class="product-category"><?php echo htmlspecialchars($product['category_name']); ?></div>
+                    <h1 class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></h1>
+                </div>
+                <?php if ($is_admin): ?>
+                <div class="admin-actions">
+                    <a href="/admin/admin_products_edit.php?id=<?php echo $product_id; ?>" 
+                       class="admin-edit-btn">제품 수정</a>
+                </div>
+                <?php endif; ?>
+            </div>
             
             <div class="product-info-grid">
                 <div class="product-image-section">
@@ -496,13 +560,6 @@ if ($product_id) {
                         </div>
                     </div>
                     
-                    <?php if ($product['description']): ?>
-                    <div class="detail-item">
-                        <div class="detail-label">제품 설명</div>
-                        <div class="detail-value"><?php echo nl2br(htmlspecialchars($product['description'])); ?></div>
-                    </div>
-                    <?php endif; ?>
-                    
                     <?php if ($product['has_calculator']): ?>
                     <!-- 실시간 중량 계산기 섹션 -->
                     <div class="calculator-section">
@@ -561,7 +618,6 @@ if ($product_id) {
         </div>
         
         <!-- 제품 상세보기 섹션 -->
-        <?php if ($product['category_code'] === 'square-pipe'): ?>
         <div class="product-detail-info-section">
             <div class="section-header">
                 <h2>제품 상세보기</h2>
@@ -582,7 +638,7 @@ if ($product_id) {
                 <div class="info-item">
                     <div class="info-label">바로가기</div>
                     <div class="info-value">
-                        <a href="/products_new.php?category=square-pipe">사각파이프 전체보기</a> | 
+                        <a href="/products_new.php?category=<?php echo htmlspecialchars($product['category_code']); ?>"><?php echo htmlspecialchars($product['category_name']); ?> 전체보기</a> | 
                         <a href="/contact.php">견적문의</a>
                     </div>
                 </div>
@@ -622,9 +678,32 @@ if ($product_id) {
                     <div class="info-value"><?php echo nl2br(htmlspecialchars($product['delivery_info'])); ?></div>
                 </div>
                 <?php endif; ?>
+                <?php if (!empty($product['description'])): ?>
+                <div class="info-item full-width">
+                    <div class="info-label">제품 설명</div>
+                    <div class="info-value">
+                        <?php
+                        // 설명을 줄 단위로 분리
+                        $lines = explode("\n", $product['description']);
+                        foreach ($lines as $line) {
+                            $line = trim($line);
+                            if (empty($line)) continue;
+                            
+                            // 이미지 파일 확장자 패턴
+                            if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $line)) {
+                                // 이미지 경로인 경우
+                                echo '<img src="' . htmlspecialchars($line) . '" alt="제품 이미지" style="max-width: 100%; height: auto; margin: 10px 0;">';
+                            } else {
+                                // 일반 텍스트인 경우
+                                echo nl2br(htmlspecialchars($line)) . '<br>';
+                            }
+                        }
+                        ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
-        <?php endif; ?>
     </div>
     
     <?php if ($product['has_calculator']): ?>
