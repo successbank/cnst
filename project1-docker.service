@@ -1,0 +1,17 @@
+[Unit]
+Description=Docker Compose Project1 Application
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=successbank
+WorkingDirectory=/home/successbank/projects/docker/project1
+ExecStart=/usr/bin/docker compose up -d
+ExecStop=/usr/bin/docker compose down
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target
