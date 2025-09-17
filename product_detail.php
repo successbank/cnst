@@ -187,30 +187,6 @@ if ($product_id) {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(20, 40, 160, 0.3);
     }
-    
-    .stock-status {
-        display: inline-block;
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 600;
-    }
-    
-    .stock-status.in-stock {
-        background: var(--success-bg);
-        color: var(--success-text);
-    }
-    
-    .stock-status.out-of-stock {
-        background: var(--danger-bg);
-        color: var(--danger-text);
-    }
-    
-    .stock-status.on-order {
-        background: var(--warning-bg);
-        color: var(--warning-text);
-    }
-    
     .origin-badges {
         display: flex;
         gap: 8px;
@@ -566,8 +542,9 @@ if ($product_id) {
                             ?>
                             <select id="origin-select" class="origin-select">
                                 <option value="">원산지를 선택하세요</option>
-                                <?php foreach ($origins as $origin): ?>
-                                <option value="<?php echo htmlspecialchars($origin); ?>">
+                                <?php foreach ($origins as $index => $origin): ?>
+                                <option value="<?php echo htmlspecialchars($origin); ?>"
+                                        <?php echo ($index === 0) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($origin); ?>
                                 </option>
                                 <?php endforeach; ?>
@@ -579,35 +556,6 @@ if ($product_id) {
                     </div>
                     <?php endif; ?>
                     
-                    <div class="detail-item">
-                        <div class="detail-label">재고 상태</div>
-                        <div class="detail-value">
-                            <?php
-                            $stock_status_class = '';
-                            $stock_status_text = '';
-                            switch($product['stock_status']) {
-                                case 'in_stock':
-                                    $stock_status_class = 'in-stock';
-                                    $stock_status_text = '재고 있음';
-                                    break;
-                                case 'out_of_stock':
-                                    $stock_status_class = 'out-of-stock';
-                                    $stock_status_text = '재고 없음';
-                                    break;
-                                case 'on_order':
-                                    $stock_status_class = 'on-order';
-                                    $stock_status_text = '주문 가능';
-                                    break;
-                                default:
-                                    $stock_status_class = 'on-order';
-                                    $stock_status_text = '문의 필요';
-                            }
-                            ?>
-                            <span class="stock-status <?php echo $stock_status_class; ?>">
-                                <?php echo $stock_status_text; ?>
-                            </span>
-                        </div>
-                    </div>
                     
                     <?php if ($product['has_calculator']): ?>
                     <!-- 실시간 중량 계산기 섹션 -->

@@ -449,6 +449,72 @@ $origin_stats = $origin_stmt->fetchAll();
     font-size: 12px;
 }
 
+/* 드래그 앤 드롭 원산지 스타일 */
+.origin-sortable {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-height: 40px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f8f9fa;
+}
+
+.origin-item {
+    background: #1565C0;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: move;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+}
+
+.origin-item.ghost {
+    opacity: 0.5;
+}
+
+.origin-item-remove {
+    cursor: pointer;
+    margin-left: 4px;
+    font-weight: bold;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.origin-item-remove:hover {
+    color: #ffcdd2;
+}
+
+.origin-available {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.origin-add {
+    background: #e0e0e0;
+    color: #333;
+    padding: 4px 10px;
+    border-radius: 16px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.origin-add:hover {
+    background: #d0d0d0;
+    transform: translateY(-1px);
+}
+
+.origin-container {
+    min-width: 300px;
+}
+
 @media (max-width: 768px) {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -588,6 +654,9 @@ $origin_stats = $origin_stmt->fetchAll();
 
 </style>
 
+<!-- SortableJS for drag and drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
 <script>
 function loadProductsForOrigin(categoryCode) {
     if (!categoryCode) {
@@ -622,7 +691,7 @@ function loadProductsForOrigin(categoryCode) {
                     html += `<td>${product.product_name}</td>`;
                     html += `<td>${product.origin || '미지정'}</td>`;
                     html += '<td>';
-                    html += '<div class="origin-checkboxes">';
+                    html += '<div class="origin-container">';
                     
                     // 현재 사용 가능한 원산지 목록 파싱
                     let availableOrigins = [];
@@ -634,14 +703,28 @@ function loadProductsForOrigin(categoryCode) {
                         availableOrigins = [];
                     }
                     
-                    const origins = ['국산', '중국산', '일본산', '베트남산', '바레인산', '수입산'];
-                    origins.forEach(origin => {
-                        const isChecked = availableOrigins.includes(origin) ? 'checked' : '';
-                        html += '<label class="origin-checkbox-label">';
-                        html += `<input type="checkbox" name="product_origins[${product.id}][]" value="${origin}" ${isChecked}>`;
-                        html += `<span>${origin}</span>`;
-                        html += '</label>';
+                    // 드래그 가능한 원산지 리스트
+                    html += `<div class="origin-sortable" id="origin-${product.id}">`;
+                    availableOrigins.forEach(origin => {
+                        html += `<div class="origin-item" data-origin="${origin}">`;
+                        html += `${origin}`;
+                        html += `<span class="origin-item-remove" onclick="removeOrigin(${product.id}, '${origin}')">×</span>`;
+                        html += `</div>`;
                     });
+                    html += '</div>';
+                    
+                    // 추가 가능한 원산지 목록
+                    html += '<div class="origin-available">';
+                    const allOrigins = ['국산', '중국산', '일본산', '베트남산', '바레인산', '수입산'];
+                    allOrigins.forEach(origin => {
+                        if (!availableOrigins.includes(origin)) {
+                            html += `<span class="origin-add" onclick="addOrigin(${product.id}, '${origin}')">${origin} +</span>`;
+                        }
+                    });
+                    html += '</div>';
+                    
+                    // 숨겨진 input으로 순서 저장
+                    html += `<input type="hidden" name="product_origins[${product.id}]" id="origin-input-${product.id}" value='${JSON.stringify(availableOrigins)}'>`;
                     
                     html += '</div>';
                     html += '</td>';
@@ -678,6 +761,11 @@ function loadProductsForOrigin(categoryCode) {
                 html += '</tbody></table>';
                 container.innerHTML = html;
                 document.querySelector('.form-actions').style.display = 'flex';
+                
+                // SortableJS 초기화 - 모든 원산지 리스트에 대해
+                data.products.forEach(product => {
+                    initSortable(product.id);
+                });
             } else {
                 container.innerHTML = '<p>제품을 불러올 수 없습니다.</p>';
             }
@@ -738,6 +826,69 @@ function validateProductForm() {
     }
     
     return confirm(`선택한 ${checkedBoxes.length}개 제품의 정보를 변경하시겠습니까?`);
+}
+
+// SortableJS 초기화
+function initSortable(productId) {
+    const el = document.getElementById(`origin-${productId}`);
+    if (el) {
+        new Sortable(el, {
+            animation: 150,
+            ghostClass: 'ghost',
+            onEnd: function(evt) {
+                updateOriginOrder(productId);
+            }
+        });
+    }
+}
+
+// 원산지 순서 업데이트
+function updateOriginOrder(productId) {
+    const container = document.getElementById(`origin-${productId}`);
+    const origins = Array.from(container.querySelectorAll('.origin-item')).map(item => 
+        item.getAttribute('data-origin')
+    );
+    document.getElementById(`origin-input-${productId}`).value = JSON.stringify(origins);
+}
+
+// 원산지 추가
+function addOrigin(productId, origin) {
+    const container = document.getElementById(`origin-${productId}`);
+    const availableContainer = event.target.parentElement;
+    
+    // 새 원산지 아이템 생성
+    const div = document.createElement('div');
+    div.className = 'origin-item';
+    div.setAttribute('data-origin', origin);
+    div.innerHTML = `${origin}<span class="origin-item-remove" onclick="removeOrigin(${productId}, '${origin}')">×</span>`;
+    container.appendChild(div);
+    
+    // 클릭한 추가 버튼 제거
+    event.target.remove();
+    
+    // 순서 업데이트
+    updateOriginOrder(productId);
+}
+
+// 원산지 제거
+function removeOrigin(productId, origin) {
+    const container = document.getElementById(`origin-${productId}`);
+    const item = container.querySelector(`[data-origin="${origin}"]`);
+    
+    if (item) {
+        item.remove();
+        
+        // 추가 가능한 원산지 목록에 다시 추가
+        const availableContainer = container.parentElement.querySelector('.origin-available');
+        const span = document.createElement('span');
+        span.className = 'origin-add';
+        span.setAttribute('onclick', `addOrigin(${productId}, '${origin}')`);
+        span.innerHTML = `${origin} +`;
+        availableContainer.appendChild(span);
+        
+        // 순서 업데이트
+        updateOriginOrder(productId);
+    }
 }
 </script>
 

@@ -110,8 +110,15 @@ $products = $stmt->fetchAll();
 foreach ($products as &$product) {
     if (!empty($product['available_origins'])) {
         $product['available_origins_array'] = json_decode($product['available_origins'], true);
+        // 국산이 포함되어 있으면 국산을 기본값으로 설정
+        if (in_array('국산', $product['available_origins_array'])) {
+            $product['display_origin'] = '국산';
+        } else {
+            $product['display_origin'] = $product['available_origins_array'][0];
+        }
     } else {
         $product['available_origins_array'] = [$product['origin']];
+        $product['display_origin'] = $product['origin'];
     }
 }
 ?>
@@ -945,8 +952,15 @@ foreach ($products as &$product) {
             // available_origins 파싱 추가
             if (!empty($product['available_origins'])) {
                 $product['available_origins_array'] = json_decode($product['available_origins'], true);
+                // 국산이 포함되어 있으면 국산을 기본값으로 설정
+                if (in_array('국산', $product['available_origins_array'])) {
+                    $product['display_origin'] = '국산';
+                } else {
+                    $product['display_origin'] = $product['available_origins_array'][0];
+                }
             } else {
                 $product['available_origins_array'] = [$product['origin']];
+                $product['display_origin'] = $product['origin'];
             }
         }
         
@@ -1061,10 +1075,10 @@ foreach ($products as &$product) {
                             </div>
                         </div>
                         <?php endif; ?>
-                        <?php if (isset($product['available_origins_array']) && !empty($product['available_origins_array'])): ?>
+                        <?php if (isset($product['display_origin']) && !empty($product['display_origin'])): ?>
                         <div class="origin-info">
                             <span class="origin-info-label">원산지: </span>
-                            <span class="origin-info-text"><?php echo implode(', ', array_map('escape', $product['available_origins_array'])); ?></span>
+                            <span class="origin-info-text"><?php echo escape($product['display_origin']); ?></span>
                         </div>
                         <?php endif; ?>
                     </div>
@@ -1187,10 +1201,10 @@ foreach ($products as &$product) {
                             <span class="cert-label">인증:</span> <?php echo escape($product['certifications']); ?>
                         </div>
                         <?php endif; ?>
-                        <?php if (isset($product['available_origins_array']) && !empty($product['available_origins_array'])): ?>
+                        <?php if (isset($product['display_origin']) && !empty($product['display_origin'])): ?>
                         <div class="origin-info">
                             <span class="origin-info-label">원산지: </span>
-                            <span class="origin-info-text"><?php echo implode(', ', array_map('escape', $product['available_origins_array'])); ?></span>
+                            <span class="origin-info-text"><?php echo escape($product['display_origin']); ?></span>
                         </div>
                         <?php endif; ?>
                         <div class="product-list-footer">

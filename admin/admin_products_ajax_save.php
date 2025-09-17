@@ -32,6 +32,15 @@ try {
     $manufacturer = trim($_POST['manufacturer'] ?? '');
     $origin = trim($_POST['origin'] ?? '');
     $delivery_info = trim($_POST['delivery_info'] ?? '');
+    
+    // 원산지 선택 처리 - JSON 형식으로 받음
+    $available_origins_json = $_POST['available_origins'] ?? '[]';
+    $available_origins = json_decode($available_origins_json, true);
+    if (!empty($available_origins)) {
+        // 첫 번째 원산지를 기본값으로 설정
+        $origin = $available_origins[0];
+    }
+    $available_origins_json = json_encode($available_origins, JSON_UNESCAPED_UNICODE);
     $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     
@@ -94,6 +103,7 @@ try {
                 material = :material,
                 manufacturer = :manufacturer,
                 origin = :origin,
+                available_origins = :available_origins,
                 delivery_info = :delivery_info,
                 is_featured = :is_featured,
                 is_active = :is_active";
@@ -114,6 +124,7 @@ try {
             ':material' => $material,
             ':manufacturer' => $manufacturer,
             ':origin' => $origin,
+            ':available_origins' => $available_origins_json,
             ':delivery_info' => $delivery_info,
             ':is_featured' => $is_featured,
             ':is_active' => $is_active
@@ -179,7 +190,7 @@ try {
             'specifications', 'description', 'price',
             'unit', 'min_order_qty', 'stock_status',
             'features', 'dimensions', 'weight',
-            'material', 'manufacturer', 'origin',
+            'material', 'manufacturer', 'origin', 'available_origins',
             'delivery_info', 'is_featured', 'is_active'
         ];
         
@@ -188,7 +199,7 @@ try {
             ':specifications', ':description', ':price',
             ':unit', ':min_order_qty', ':stock_status',
             ':features', ':dimensions', ':weight',
-            ':material', ':manufacturer', ':origin',
+            ':material', ':manufacturer', ':origin', ':available_origins',
             ':delivery_info', ':is_featured', ':is_active'
         ];
         
@@ -208,6 +219,7 @@ try {
             ':material' => $material,
             ':manufacturer' => $manufacturer,
             ':origin' => $origin,
+            ':available_origins' => $available_origins_json,
             ':delivery_info' => $delivery_info,
             ':is_featured' => $is_featured,
             ':is_active' => $is_active

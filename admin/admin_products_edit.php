@@ -75,8 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $quality_cert = trim($_POST['quality_cert'] ?? '');
     $product_features = trim($_POST['product_features'] ?? '');
     
-    // 원산지 선택 처리
-    $available_origins = $_POST['available_origins'] ?? [];
+    // 원산지 선택 처리 - JSON 형식으로 받음
+    $available_origins_json = $_POST['available_origins'] ?? '[]';
+    $available_origins = json_decode($available_origins_json, true);
     $available_origins_json = json_encode($available_origins, JSON_UNESCAPED_UNICODE);
     
     // 유효성 검사
@@ -111,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $min_price, $max_price,
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
-                        $material, $manufacturer, $origin,
+                        $material, $manufacturer, (!empty($available_origins) ? $available_origins[0] : $origin),
                         $available_origins_json, $delivery_info, $is_featured, $is_active,
                         $detailed_description, $key_features, $technical_specs,
                         $applications, $certifications, $brochure_url,
@@ -138,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $specifications, $description, $price,
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
-                        $material, $manufacturer, $origin,
+                        $material, $manufacturer, (!empty($available_origins) ? $available_origins[0] : $origin),
                         $available_origins_json, $delivery_info, $is_featured, $is_active,
                         $detailed_description, $key_features, $technical_specs,
                         $applications, $certifications, $brochure_url,
@@ -175,7 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             features = ?, dimensions = ?, weight = ?,
                             material = ?, manufacturer = ?, origin = ?,
-                            delivery_info = ?, is_featured = ?, is_active = ?
+                            available_origins = ?, delivery_info = ?, is_featured = ?, is_active = ?
                         WHERE id = ?
                     ");
                     $stmt->execute([
@@ -199,8 +200,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit, min_order_qty, stock_status,
                             base_length, features, dimensions, weight,
                             material, manufacturer, origin,
-                            delivery_info, is_featured, is_active
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            available_origins, delivery_info, is_featured, is_active
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
@@ -209,7 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $delivery_info, $is_featured, $is_active
+                        $available_origins_json, $delivery_info, $is_featured, $is_active
                     ]);
                 } else if ($has_base_length) {
                     $stmt = $pdo->prepare("
@@ -219,7 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit, min_order_qty, stock_status,
                             base_length, features, dimensions, weight,
                             material, manufacturer, origin,
-                            delivery_info, is_featured, is_active
+                            available_origins, delivery_info, is_featured, is_active
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
@@ -228,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $delivery_info, $is_featured, $is_active
+                        $available_origins_json, $delivery_info, $is_featured, $is_active
                     ]);
                 } else if ($has_price_range) {
                     $stmt = $pdo->prepare("
@@ -239,7 +240,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit, min_order_qty, stock_status,
                             features, dimensions, weight,
                             material, manufacturer, origin,
-                            delivery_info, is_featured, is_active
+                            available_origins, delivery_info, is_featured, is_active
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
@@ -249,7 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $delivery_info, $is_featured, $is_active
+                        $available_origins_json, $delivery_info, $is_featured, $is_active
                     ]);
                 } else {
                     $stmt = $pdo->prepare("
@@ -259,8 +260,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit, min_order_qty, stock_status,
                             features, dimensions, weight,
                             material, manufacturer, origin,
-                            delivery_info, is_featured, is_active
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            available_origins, delivery_info, is_featured, is_active
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
@@ -268,7 +269,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $delivery_info, $is_featured, $is_active
+                        $available_origins_json, $delivery_info, $is_featured, $is_active
                     ]);
                 }
             }
@@ -620,6 +621,72 @@ include 'admin_head.php';
     color: #6c757d;
     line-height: 1.5;
 }
+
+/* 원산지 드래그 앤 드롭 스타일 */
+.origin-container {
+    margin-top: 10px;
+}
+
+.origin-sortable {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-height: 45px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f8f9fa;
+}
+
+.origin-item {
+    background: #007bff;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 24px;
+    cursor: move;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.origin-item.ghost {
+    opacity: 0.5;
+}
+
+.origin-item-remove {
+    cursor: pointer;
+    margin-left: 4px;
+    font-weight: bold;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.origin-item-remove:hover {
+    color: #ffcdd2;
+}
+
+.origin-available {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.origin-add {
+    background: #e9ecef;
+    color: #495057;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.origin-add:hover {
+    background: #dee2e6;
+    transform: translateY(-1px);
+}
 </style>
 
 <div class="form-header">
@@ -887,35 +954,49 @@ include 'admin_head.php';
         
         <div class="form-group">
             <label>판매 가능 원산지</label>
-            <div class="checkbox-group" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                <?php
-                // 가능한 원산지 목록
-                $origin_options = [
-                    "국산", "중국산", "일본산", "베트남산", 
-                    "바레이산", "수입산", "쟁가재고", "중고"
-                ];
+            <div class="origin-container">
+                <div class="origin-sortable" id="origin-sortable">
+                    <?php
+                    // 가능한 원산지 목록
+                    $origin_options = [
+                        "국산", "중국산", "일본산", "베트남산", 
+                        "바레인산", "수입산", "장기재고", "중고"
+                    ];
+                    
+                    // 현재 선택된 원산지 (JSON 디코드)
+                    $selected_origins = [];
+                    if (!empty($product['available_origins'])) {
+                        $selected_origins = json_decode($product['available_origins'], true) ?: [];
+                    }
+                    
+                    // 선택된 원산지 표시
+                    foreach ($selected_origins as $origin):
+                    ?>
+                    <div class="origin-item" data-origin="<?php echo htmlspecialchars($origin); ?>">
+                        <?php echo htmlspecialchars($origin); ?>
+                        <span class="origin-item-remove" onclick="removeOrigin('<?php echo htmlspecialchars($origin); ?>')">×</span>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
                 
-                // 현재 선택된 원산지 (JSON 디코드)
-                $selected_origins = [];
-                if (!empty($product['available_origins'])) {
-                    $selected_origins = json_decode($product['available_origins'], true) ?: [];
-                }
+                <div class="origin-available">
+                    <?php
+                    // 선택되지 않은 원산지 표시
+                    foreach ($origin_options as $origin):
+                        if (!in_array($origin, $selected_origins)):
+                    ?>
+                    <span class="origin-add" onclick="addOrigin('<?php echo htmlspecialchars($origin); ?>')"><?php echo htmlspecialchars($origin); ?> +</span>
+                    <?php 
+                        endif;
+                    endforeach; 
+                    ?>
+                </div>
                 
-                foreach ($origin_options as $origin): 
-                ?>
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" name="available_origins[]" value="<?php echo $origin; ?>"
-                           <?php echo in_array($origin, $selected_origins) ? 'checked' : ''; ?>
-                           style="margin-right: 5px;">
-                    <span><?php echo $origin; ?></span>
-                </label>
-                <?php endforeach; ?>
+                <input type="hidden" name="available_origins" id="available_origins_input" 
+                       value='<?php echo json_encode($selected_origins, JSON_UNESCAPED_UNICODE); ?>'>
             </div>
             <div class="help-text" style="margin-top: 10px;">
-                <label style="cursor: pointer;">
-                    <input type="checkbox" id="select-all-origins" style="margin-right: 5px;">
-                    모두 선택
-                </label>
+                원산지를 드래그하여 순서를 변경할 수 있습니다. 첫 번째 원산지가 기본값으로 표시됩니다.
             </div>
         </div>
         
@@ -1149,26 +1230,6 @@ document.getElementById('specifications').addEventListener('blur', function() {
 // 페이지 로드 시 버튼 상태 설정
 window.addEventListener('DOMContentLoaded', function() {
     toggleApplyPriceButton();
-    
-    // 원산지 모두 선택 기능
-    const selectAllCheckbox = document.getElementById('select-all-origins');
-    const originCheckboxes = document.querySelectorAll('input[name="available_origins[]"]');
-    
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
-            originCheckboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
-            });
-        });
-    }
-    
-    // 개별 체크박스 변경 시 모두 선택 상태 업데이트
-    originCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const allChecked = Array.from(originCheckboxes).every(cb => cb.checked);
-            selectAllCheckbox.checked = allChecked;
-        });
-    });
 });
 
 // 페이지 로드 시 철근 제품인 경우 단가 확인
@@ -1197,6 +1258,9 @@ document.querySelector('form').addEventListener('submit', function(e) {
         // 원래 select는 비활성화
         material.disabled = true;
     }
+    
+    // 원산지 순서 최종 업데이트
+    updateOriginOrder();
     
     // AJAX로 폼 제출
     const formData = new FormData(this);
@@ -1245,7 +1309,7 @@ document.querySelector('form').addEventListener('submit', function(e) {
         
         // 버튼 복원
         submitBtn.disabled = false;
-        submitBtn.textContent = data.newId ? '수정하기' : submitBtn.textContent;
+        submitBtn.textContent = '<?php echo $id > 0 ? '수정하기' : '등록하기'; ?>';
         
         // 재질 select 복원
         if (material.disabled) {
@@ -1556,6 +1620,67 @@ function handleDrop(e) {
     
     return false;
 }
+
+// SortableJS 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    const el = document.getElementById('origin-sortable');
+    if (el) {
+        new Sortable(el, {
+            animation: 150,
+            ghostClass: 'ghost',
+            onEnd: function(evt) {
+                updateOriginOrder();
+            }
+        });
+    }
+});
+
+// 원산지 순서 업데이트
+function updateOriginOrder() {
+    const container = document.getElementById('origin-sortable');
+    const origins = Array.from(container.querySelectorAll('.origin-item')).map(item => 
+        item.getAttribute('data-origin')
+    );
+    document.getElementById('available_origins_input').value = JSON.stringify(origins);
+}
+
+// 원산지 추가
+function addOrigin(origin) {
+    const container = document.getElementById('origin-sortable');
+    const div = document.createElement('div');
+    div.className = 'origin-item';
+    div.setAttribute('data-origin', origin);
+    div.innerHTML = `${origin}<span class="origin-item-remove" onclick="removeOrigin('${origin}')">×</span>`;
+    container.appendChild(div);
+    
+    // 추가 버튼 숨기기
+    event.target.remove();
+    
+    updateOriginOrder();
+}
+
+// 원산지 제거
+function removeOrigin(origin) {
+    const container = document.getElementById('origin-sortable');
+    const item = container.querySelector(`[data-origin="${origin}"]`);
+    
+    if (item) {
+        item.remove();
+        
+        // 추가 가능한 목록에 다시 추가
+        const availableContainer = document.querySelector('.origin-available');
+        const span = document.createElement('span');
+        span.className = 'origin-add';
+        span.setAttribute('onclick', `addOrigin('${origin}')`);
+        span.innerHTML = `${origin} +`;
+        availableContainer.appendChild(span);
+        
+        updateOriginOrder();
+    }
+}
 </script>
+
+<!-- SortableJS for drag and drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
 <?php include 'admin_tail.php'; ?>

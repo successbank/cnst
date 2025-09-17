@@ -35,10 +35,11 @@ if ($action === 'update_products_origin_stock') {
         $updated_count = 0;
         
         foreach ($product_ids as $product_id) {
-            // 원산지 업데이트
-            $origins = $product_origins[$product_id] ?? [];
+            // 원산지 업데이트 - JSON 형식으로 받음
+            $origins_json = $product_origins[$product_id] ?? '[]';
+            $origins = json_decode($origins_json, true);
+            
             if (!empty($origins)) {
-                $origins_json = json_encode($origins, JSON_UNESCAPED_UNICODE);
                 $stmt = $pdo->prepare("
                     UPDATE products 
                     SET available_origins = ?, 
@@ -46,6 +47,7 @@ if ($action === 'update_products_origin_stock') {
                         updated_at = NOW() 
                     WHERE id = ?
                 ");
+                // 첫 번째 원산지를 기본값으로 설정
                 $stmt->execute([$origins_json, $origins[0], $product_id]);
             }
             
