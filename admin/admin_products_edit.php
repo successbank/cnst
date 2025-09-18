@@ -37,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $product_code = trim($_POST['product_code'] ?? '');
     $product_code = $product_code === '' ? null : $product_code;
     $specifications = trim($_POST['specifications'] ?? '');
+    $specification = trim($_POST['specification'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $price = isset($_POST['price']) && $_POST['price'] !== '' ? (float)$_POST['price'] : null;
     $min_price = isset($_POST['min_price']) && $_POST['min_price'] !== '' ? (float)$_POST['min_price'] : null;
@@ -111,9 +112,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // 수정
                 if ($has_base_length && $has_price_range) {
                     $stmt = $pdo->prepare("
-                        UPDATE products SET 
+                        UPDATE products SET
                             category_code = ?, product_name = ?, product_code = ?,
-                            specifications = ?, description = ?, price = ?,
+                            specifications = ?, specification = ?, description = ?, price = ?,
                             min_price = ?, max_price = ?,
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             base_length = ?, features = ?, dimensions = ?, weight = ?,
@@ -129,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
-                        $specifications, $description, $price,
+                        $specifications, $specification, $description, $price,
                         $min_price, $max_price,
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
@@ -144,9 +145,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                 } else if ($has_base_length) {
                     $stmt = $pdo->prepare("
-                        UPDATE products SET 
+                        UPDATE products SET
                             category_code = ?, product_name = ?, product_code = ?,
-                            specifications = ?, description = ?, price = ?,
+                            specifications = ?, specification = ?, description = ?, price = ?,
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             base_length = ?, features = ?, dimensions = ?, weight = ?,
                             material = ?, manufacturer = ?, origin = ?,
@@ -160,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
-                        $specifications, $description, $price,
+                        $specifications, $specification, $description, $price,
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
                         $material, $manufacturer, (!empty($available_origins) ? $available_origins[0] : $origin),
@@ -173,9 +174,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                 } else if ($has_price_range) {
                     $stmt = $pdo->prepare("
-                        UPDATE products SET 
+                        UPDATE products SET
                             category_code = ?, product_name = ?, product_code = ?,
-                            specifications = ?, description = ?, price = ?,
+                            specifications = ?, specification = ?, description = ?, price = ?,
                             min_price = ?, max_price = ?,
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             features = ?, dimensions = ?, weight = ?,
@@ -186,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
-                        $specifications, $description, $price,
+                        $specifications, $specification, $description, $price,
                         $min_price, $max_price,
                         $unit, $min_order_qty, $stock_status,
                         $features, $dimensions, $weight,
@@ -197,9 +198,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                 } else {
                     $stmt = $pdo->prepare("
-                        UPDATE products SET 
+                        UPDATE products SET
                             category_code = ?, product_name = ?, product_code = ?,
-                            specifications = ?, description = ?, price = ?,
+                            specifications = ?, specification = ?, description = ?, price = ?,
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             features = ?, dimensions = ?, weight = ?,
                             material = ?, manufacturer = ?, origin = ?,
@@ -209,7 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
-                        $specifications, $description, $price,
+                        $specifications, $specification, $description, $price,
                         $unit, $min_order_qty, $stock_status,
                         $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
@@ -235,7 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
-                        $specifications, $description, $price,
+                        $specifications, $specification, $description, $price,
                         $min_price, $max_price,
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
@@ -257,7 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
-                        $specifications, $description, $price,
+                        $specifications, $specification, $description, $price,
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
@@ -279,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
-                        $specifications, $description, $price,
+                        $specifications, $specification, $description, $price,
                         $min_price, $max_price,
                         $unit, $min_order_qty, $stock_status,
                         $features, $dimensions, $weight,
@@ -301,7 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
-                        $specifications, $description, $price,
+                        $specifications, $specification, $description, $price,
                         $unit, $min_order_qty, $stock_status,
                         $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
@@ -950,10 +951,18 @@ include 'admin_head.php';
         </div>
         
         <div class="form-group">
-            <label for="specifications">규격 <span class="required">*</span></label>
-            <input type="text" id="specifications" name="specifications" 
+            <label for="specifications">규격(관리용)</label>
+            <input type="text" id="specifications" name="specifications"
                    value="<?php echo htmlspecialchars($product['specifications'] ?? ''); ?>"
+                   placeholder="예: 200×200×8×12">
+        </div>
+
+        <div class="form-group">
+            <label for="specification">규격(표시용) <span class="required">*</span></label>
+            <input type="text" id="specification" name="specification"
+                   value="<?php echo htmlspecialchars($product['specification'] ?? ''); ?>"
                    placeholder="예: 200×200×8×12" required>
+            <div class="help-text">제품 상세 페이지에 표시될 규격입니다</div>
         </div>
         
         <div class="form-group">
@@ -2273,6 +2282,48 @@ function removeMaterialPriceField(material) {
         item.remove();
     }
 }
+
+// 제품명에서 규격 자동 추출
+function extractSpecificationFromProductName() {
+    const productNameInput = document.getElementById('product_name');
+    const specificationInput = document.getElementById('specification');
+    const specificationsInput = document.getElementById('specifications');
+
+    if (!productNameInput || !specificationInput) return;
+
+    productNameInput.addEventListener('input', function() {
+        const productName = this.value;
+
+        // 규격 패턴 매칭 (숫자*숫자 또는 숫자x숫자 패턴)
+        const specPattern = /([0-9]+[\*xX×][0-9]+(?:[\*xX×][0-9]+)*(?:[\*xX×][0-9]+)*)/g;
+        const matches = productName.match(specPattern);
+
+        if (matches && matches.length > 0) {
+            const specification = matches[0];
+
+            // 규격 필드가 비어있을 때만 자동 입력
+            if (!specificationInput.value || specificationInput.value === '') {
+                specificationInput.value = specification;
+                // specifications 필드도 동일하게 업데이트
+                if (specificationsInput && !specificationsInput.value) {
+                    specificationsInput.value = specification;
+                }
+            }
+        }
+    });
+
+    // 표시용 규격 변경 시 관리용 규격도 동기화
+    specificationInput.addEventListener('input', function() {
+        if (specificationsInput && !specificationsInput.value) {
+            specificationsInput.value = this.value;
+        }
+    });
+}
+
+// DOM이 로드되면 실행
+document.addEventListener('DOMContentLoaded', function() {
+    extractSpecificationFromProductName();
+});
 </script>
 
 <!-- SortableJS for drag and drop -->

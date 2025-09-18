@@ -95,9 +95,10 @@ $total_products = $count_stmt->fetchColumn();
 $total_pages = ceil($total_products / $per_page);
 
 // 제품 목록 가져오기
-$sql = "SELECT p.*, pc.category_name 
-        FROM products p 
-        JOIN product_categories pc ON p.category_code = pc.category_code 
+$sql = "SELECT p.*, pc.category_name,
+        CONCAT(p.product_name, IF(p.specification IS NOT NULL AND p.specification != '', CONCAT(' ', p.specification), IF(p.specifications IS NOT NULL AND p.specifications != '', CONCAT(' ', p.specifications), ''))) AS display_name
+        FROM products p
+        JOIN product_categories pc ON p.category_code = pc.category_code
         WHERE {$where_clause}
         ORDER BY p.id DESC
         LIMIT {$per_page} OFFSET {$offset}";
@@ -1065,13 +1066,10 @@ foreach ($products as &$product) {
                         <?php endif; ?>
                     </div>
                     <div class="product-info">
-                        <h3><?php echo escape($product['product_name']); ?></h3>
+                        <h3><?php echo escape($product['display_name'] ?? $product['product_name']); ?></h3>
                         <?php if ($product['parent_product_id'] && $product['specification_weight']): ?>
                             <p class="unit-weight" style="color: #2196F3; font-weight: 600; font-size: 14px; margin: 8px 0;">
                                 단위중량: <?php echo $product['specification_weight']; ?>kg/m
-                            </p>
-                            <p class="calculator-link" style="color: #666; font-size: 13px;">
-                                📊 중량 계산하기
                             </p>
                         <?php elseif ($product['category_code'] === 'rebar'): ?>
                             <?php
@@ -1185,7 +1183,7 @@ foreach ($products as &$product) {
                     </div>
                     <div class="product-list-content">
                         <div class="product-list-header">
-                            <h3 class="product-list-title"><?php echo escape($product['product_name']); ?></h3>
+                            <h3 class="product-list-title"><?php echo escape($product['display_name'] ?? $product['product_name']); ?></h3>
                         </div>
                         <?php if ($product['category_code'] === 'rebar'): ?>
                             <?php

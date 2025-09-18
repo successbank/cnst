@@ -455,7 +455,8 @@ $defaultIcons = [
 <?php
 // 메인페이지 노출 제품 가져오기
 $stmt = $pdo->query("
-    SELECT p.*, pc.category_name
+    SELECT p.*, pc.category_name,
+    CONCAT(p.product_name, IF(p.specification IS NOT NULL AND p.specification != '', CONCAT(' ', p.specification), IF(p.specifications IS NOT NULL AND p.specifications != '', CONCAT(' ', p.specifications), ''))) AS display_name
     FROM products p
     JOIN product_categories pc ON p.category_code = pc.category_code
     WHERE p.show_on_homepage = 1 AND p.is_active = 1
@@ -489,7 +490,7 @@ if (!empty($featured_products)):
                             <?php endif; ?>
                         </div>
                         <div class="product-card-info">
-                            <h4><?php echo htmlspecialchars($product['product_name']); ?></h4>
+                            <h4><?php echo htmlspecialchars($product['display_name'] ?? $product['product_name']); ?></h4>
                             <?php if ($product['specifications']): ?>
                                 <p class="product-spec"><?php echo htmlspecialchars($product['specifications']); ?></p>
                             <?php endif; ?>

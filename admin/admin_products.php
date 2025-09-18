@@ -105,11 +105,12 @@ $totalCount = $stmt->fetchColumn();
 
 // 제품 목록 조회
 $stmt = $pdo->prepare("
-    SELECT p.*, pc.category_name 
+    SELECT p.*, pc.category_name,
+    CONCAT(p.product_name, IF(p.specification IS NOT NULL AND p.specification != '', CONCAT(' ', p.specification), IF(p.specifications IS NOT NULL AND p.specifications != '', CONCAT(' ', p.specifications), ''))) AS display_name
     FROM products p
     JOIN product_categories pc ON p.category_code = pc.category_code
-    WHERE $whereClause 
-    ORDER BY p.id DESC 
+    WHERE $whereClause
+    ORDER BY p.id DESC
     LIMIT $perPage OFFSET $offset
 ");
 $stmt->execute($params);
@@ -587,7 +588,7 @@ include 'admin_head.php';
                 </div>
             </td>
             <td>
-                <div class="product-name"><?php echo htmlspecialchars($product['product_name'] ?? ''); ?></div>
+                <div class="product-name"><?php echo htmlspecialchars($product['display_name'] ?? $product['product_name'] ?? ''); ?></div>
                 <div class="product-specs"><?php echo htmlspecialchars($product['specifications'] ?? ''); ?></div>
             </td>
             <td>

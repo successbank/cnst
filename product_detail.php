@@ -470,7 +470,14 @@ if ($product_id) {
     <section class="product-header-section">
         <div class="product-header-content">
             <div class="product-category"><?php echo htmlspecialchars($product['category_name']); ?></div>
-            <h1 class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></h1>
+            <h1 class="product-title"><?php
+                $display_name = $product['product_name'];
+                $display_spec = $product['specification'] ?: $product['specifications'];
+                if ($display_spec) {
+                    $display_name .= ' ' . $display_spec;
+                }
+                echo htmlspecialchars($display_name);
+            ?></h1>
             <p class="product-subtitle">충남스틸이 공급하는 고품질 <?php echo htmlspecialchars($product['category_name']); ?> 제품입니다</p>
         </div>
         <?php if ($is_admin): ?>
@@ -516,10 +523,10 @@ if ($product_id) {
                 </div>
                 
                 <div class="product-details-section">
-                    <?php if ($product['specification']): ?>
+                    <?php if ($product['specification'] || $product['specifications']): ?>
                     <div class="detail-item">
                         <div class="detail-label">규격</div>
-                        <div class="detail-value"><?php echo htmlspecialchars($product['specification']); ?></div>
+                        <div class="detail-value"><?php echo htmlspecialchars($product['specification'] ?: $product['specifications']); ?></div>
                     </div>
                     <?php endif; ?>
                     
