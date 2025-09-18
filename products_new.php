@@ -970,11 +970,15 @@ foreach ($products as &$product) {
     <div class="products-categories">
         <a href="?category=all&view=<?php echo $view_type; ?>&search=<?php echo urlencode($search); ?>" class="category-btn <?php echo $category_filter === 'all' ? 'active' : ''; ?>">전체</a>
         <?php foreach ($categories as $category): ?>
-            <a href="?category=<?php echo $category['category_code']; ?>&view=<?php echo $view_type; ?>&search=<?php echo urlencode($search); ?>" 
+            <a href="?category=<?php echo $category['category_code']; ?>&view=<?php echo $view_type; ?>&search=<?php echo urlencode($search); ?>"
                class="category-btn <?php echo $category_filter === $category['category_code'] ? 'active' : ''; ?>">
                 <?php echo escape($category['category_name']); ?>
             </a>
         <?php endforeach; ?>
+        <a href="?category=rebar&view=<?php echo $view_type; ?>&search=<?php echo urlencode($search); ?>"
+           class="category-btn <?php echo $category_filter === 'rebar' ? 'active' : ''; ?>">
+            철근
+        </a>
     </div>
 
     <?php 
