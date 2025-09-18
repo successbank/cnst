@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once 'db.php';
-require_once 'includes/rebar_unit_weights.php';
+// require_once 'includes/rebar_unit_weights.php'; // 철근 카테고리 삭제로 주석처리
 $currentPage = 'products';
 $pageTitle = '제품소개';
 $additionalCSS = [];
@@ -106,25 +106,25 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $products = $stmt->fetchAll();
 
-// 철근 번들 데이터를 미리 로드 (성능 최적화)
+// 철근 번들 데이터를 미리 로드 (성능 최적화) - 철근 카테고리 삭제로 주석처리
 $rebar_bundle_data = [];
-if ($category_filter === 'rebar' || $category_filter === 'all') {
-    $bundle_stmt = $pdo->query("
-        SELECT p_standard, p_material, p_unit_length, p_bd_count, p_bd_weight 
-        FROM rebar_bundle_data 
-        WHERE p_bd_count > 0 AND p_bd_weight > 0
-    ");
-    while ($row = $bundle_stmt->fetch(PDO::FETCH_ASSOC)) {
-        $key = $row['p_standard'] . '_' . $row['p_material'];
-        if (!isset($rebar_bundle_data[$key])) {
-            $rebar_bundle_data[$key] = [];
-        }
-        $rebar_bundle_data[$key][$row['p_unit_length']] = [
-            'bd_count' => $row['p_bd_count'],
-            'bd_weight' => $row['p_bd_weight']
-        ];
-    }
-}
+// if ($category_filter === 'rebar' || $category_filter === 'all') {
+//     $bundle_stmt = $pdo->query("
+//         SELECT p_standard, p_material, p_unit_length, p_bd_count, p_bd_weight
+//         FROM rebar_bundle_data
+//         WHERE p_bd_count > 0 AND p_bd_weight > 0
+//     ");
+//     while ($row = $bundle_stmt->fetch(PDO::FETCH_ASSOC)) {
+//         $key = $row['p_standard'] . '_' . $row['p_material'];
+//         if (!isset($rebar_bundle_data[$key])) {
+//             $rebar_bundle_data[$key] = [];
+//         }
+//         $rebar_bundle_data[$key][$row['p_unit_length']] = [
+//             'bd_count' => $row['p_bd_count'],
+//             'bd_weight' => $row['p_bd_weight']
+//         ];
+//     }
+// }
 
 // 모든 제품에 available_origins_array 파싱 및 번들 정보 추가
 foreach ($products as &$product) {
@@ -141,24 +141,24 @@ foreach ($products as &$product) {
         $product['display_origin'] = $product['origin'];
     }
     
-    // 철근 제품인 경우 번들 정보 추가
-    if ($product['category_code'] === 'rebar') {
-        // 규격 추출 (예: "철근 HD16" -> "HD16")
-        preg_match('/([A-Z]+D\d+)/', $product['product_name'], $matches);
-        if (isset($matches[1])) {
-            $spec = $matches[1];
-            $material = $product['material'] ?? 'SD400'; // 기본값 SD400
-            $bundle_key = $spec . '_' . $material;
-            
-            if (isset($rebar_bundle_data[$bundle_key])) {
-                $product['bundle_info'] = $rebar_bundle_data[$bundle_key];
-                // 대표 길이(8m) 정보 추가
-                if (isset($rebar_bundle_data[$bundle_key][8.0])) {
-                    $product['default_bundle'] = $rebar_bundle_data[$bundle_key][8.0];
-                }
-            }
-        }
-    }
+    // 철근 제품인 경우 번들 정보 추가 - 철근 카테고리 삭제로 주석처리
+    // if ($product['category_code'] === 'rebar') {
+    //     // 규격 추출 (예: "철근 HD16" -> "HD16")
+    //     preg_match('/([A-Z]+D\d+)/', $product['product_name'], $matches);
+    //     if (isset($matches[1])) {
+    //         $spec = $matches[1];
+    //         $material = $product['material'] ?? 'SD400'; // 기본값 SD400
+    //         $bundle_key = $spec . '_' . $material;
+    //
+    //         if (isset($rebar_bundle_data[$bundle_key])) {
+    //             $product['bundle_info'] = $rebar_bundle_data[$bundle_key];
+    //             // 대표 길이(8m) 정보 추가
+    //             if (isset($rebar_bundle_data[$bundle_key][8.0])) {
+    //                 $product['default_bundle'] = $rebar_bundle_data[$bundle_key][8.0];
+    //             }
+    //         }
+    //     }
+    // }
 }
 ?>
 
@@ -1276,30 +1276,6 @@ foreach ($products as &$product) {
         </div>
     <?php endif; ?>
     
-    <?php 
-    // 철근 카테고리에 제품이 없는 경우 기본 철근 규격 목록 표시
-    if ($category_filter === 'rebar' && empty($products)): 
-    ?>
-    <div class="rebar-specs-container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
-        <h3 style="text-align: center; margin-bottom: 30px; color: #2c3e50; font-size: 24px;">철근 규격별 단위중량</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
-            <?php 
-            $all_specs = getAllRebarSpecsWithWeight();
-            foreach ($all_specs as $spec): 
-            ?>
-            <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;">
-                <h4 style="color: #1428A0; font-size: 20px; margin-bottom: 10px;"><?php echo $spec['spec_name']; ?></h4>
-                <p style="color: #2196F3; font-weight: 600; font-size: 16px;"><?php echo $spec['unit_weight']; ?>kg/m</p>
-            </div>
-            <?php endforeach; ?>
-        </div>
-        <div style="text-align: center; margin-top: 30px;">
-            <a href="rebar_quote.php" class="btn" style="display: inline-block; padding: 15px 40px; background: #1428A0; color: white; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
-                철근 견적 계산하기
-            </a>
-        </div>
-    </div>
-    <?php endif; ?>
     
     <!-- 페이지네이션 -->
     <?php if ($total_pages > 1 || $total_products > 0): ?>
