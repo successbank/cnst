@@ -54,11 +54,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $pdo->query("SHOW COLUMNS FROM products LIKE 'min_price'");
     $has_price_range = $stmt->fetch() !== false;
     $features = trim($_POST['features'] ?? '');
-    $dimensions = trim($_POST['dimensions'] ?? '');
-    $weight = trim($_POST['weight'] ?? '');
-    $material = trim($_POST['material'] ?? '');
-    $manufacturer = trim($_POST['manufacturer'] ?? '');
-    $origin = trim($_POST['origin'] ?? '');
     $delivery_info = trim($_POST['delivery_info'] ?? '');
     $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
@@ -117,14 +112,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             specifications = ?, specification = ?, description = ?, price = ?,
                             min_price = ?, max_price = ?,
                             unit = ?, min_order_qty = ?, stock_status = ?,
-                            base_length = ?, features = ?, dimensions = ?, weight = ?,
-                            material = ?, manufacturer = ?, origin = ?,
-                            available_origins = ?, available_materials = ?, material_price_data = ?, 
+                            base_length = ?, features = ?,
+                            available_origins = ?, available_materials = ?, material_price_data = ?,
                             delivery_info = ?, is_featured = ?, is_active = ?,
                             show_on_homepage = ?, homepage_display_order = ?,
                             detailed_description = ?, key_features = ?, technical_specs = ?,
                             applications = ?, certifications = ?, brochure_url = ?,
-                            show_details = ?, quality_cert = ?, product_features = ?, 
+                            show_details = ?, quality_cert = ?, product_features = ?,
                             details_updated_at = NOW()
                         WHERE id = ?
                     ");
@@ -133,8 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $specifications, $specification, $description, $price,
                         $min_price, $max_price,
                         $unit, $min_order_qty, $stock_status,
-                        $base_length, $features, $dimensions, $weight,
-                        $material, $manufacturer, (!empty($available_origins) ? $available_origins[0] : $origin),
+                        $base_length, $features,
                         $available_origins_json, $available_materials_json, $material_price_data,
                         $delivery_info, $is_featured, $is_active,
                         $show_on_homepage, $homepage_display_order,
@@ -149,13 +142,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             category_code = ?, product_name = ?, product_code = ?,
                             specifications = ?, specification = ?, description = ?, price = ?,
                             unit = ?, min_order_qty = ?, stock_status = ?,
-                            base_length = ?, features = ?, dimensions = ?, weight = ?,
-                            material = ?, manufacturer = ?, origin = ?,
+                            base_length = ?, features = ?,
                             available_origins = ?, available_materials = ?, delivery_info = ?, is_featured = ?, is_active = ?,
                             show_on_homepage = ?, homepage_display_order = ?,
                             detailed_description = ?, key_features = ?, technical_specs = ?,
                             applications = ?, certifications = ?, brochure_url = ?,
-                            show_details = ?, quality_cert = ?, product_features = ?, 
+                            show_details = ?, quality_cert = ?, product_features = ?,
                             details_updated_at = NOW()
                         WHERE id = ?
                     ");
@@ -163,9 +155,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $category_code, $product_name, $product_code,
                         $specifications, $specification, $description, $price,
                         $unit, $min_order_qty, $stock_status,
-                        $base_length, $features, $dimensions, $weight,
-                        $material, $manufacturer, (!empty($available_origins) ? $available_origins[0] : $origin),
-                        $available_origins_json, $available_materials_json, $material_price_data, $delivery_info, $is_featured, $is_active,
+                        $base_length, $features,
+                        $available_origins_json, $available_materials_json, $delivery_info, $is_featured, $is_active,
                         $show_on_homepage, $homepage_display_order,
                         $detailed_description, $key_features, $technical_specs,
                         $applications, $certifications, $brochure_url,
@@ -179,9 +170,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             specifications = ?, specification = ?, description = ?, price = ?,
                             min_price = ?, max_price = ?,
                             unit = ?, min_order_qty = ?, stock_status = ?,
-                            features = ?, dimensions = ?, weight = ?,
-                            material = ?, manufacturer = ?, origin = ?,
-                            available_origins = ?, available_materials = ?, delivery_info = ?, is_featured = ?, is_active = ?, 
+                            features = ?,
+                            available_origins = ?, available_materials = ?, material_price_data = ?, delivery_info = ?, is_featured = ?, is_active = ?,
                             show_on_homepage = ?, homepage_display_order = ?
                         WHERE id = ?
                     ");
@@ -190,8 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $specifications, $specification, $description, $price,
                         $min_price, $max_price,
                         $unit, $min_order_qty, $stock_status,
-                        $features, $dimensions, $weight,
-                        $material, $manufacturer, $origin,
+                        $features,
                         $available_origins_json, $available_materials_json, $material_price_data, $delivery_info, $is_featured, $is_active,
                         $show_on_homepage, $homepage_display_order,
                         $id
@@ -202,9 +191,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             category_code = ?, product_name = ?, product_code = ?,
                             specifications = ?, specification = ?, description = ?, price = ?,
                             unit = ?, min_order_qty = ?, stock_status = ?,
-                            features = ?, dimensions = ?, weight = ?,
-                            material = ?, manufacturer = ?, origin = ?,
-                            available_origins = ?, available_materials = ?, delivery_info = ?, is_featured = ?, is_active = ?,
+                            features = ?,
+                            available_origins = ?, available_materials = ?, material_price_data = ?, delivery_info = ?, is_featured = ?, is_active = ?,
                             show_on_homepage = ?, homepage_display_order = ?
                         WHERE id = ?
                     ");
@@ -212,8 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $category_code, $product_name, $product_code,
                         $specifications, $specification, $description, $price,
                         $unit, $min_order_qty, $stock_status,
-                        $features, $dimensions, $weight,
-                        $material, $manufacturer, $origin,
+                        $features,
                         $available_origins_json, $available_materials_json, $material_price_data, $delivery_info, $is_featured, $is_active,
                         $show_on_homepage, $homepage_display_order,
                         $id
@@ -1410,31 +1397,7 @@ include 'admin_head.php';
 <div id="messageBox" style="display: none; margin-top: 20px; padding: 15px; border-radius: 6px;"></div>
 
 <script>
-// 재질 선택 변경 시 처리
-document.getElementById('material').addEventListener('change', function() {
-    const customInput = document.getElementById('material_custom');
-    if (this.value === '기타') {
-        customInput.style.display = 'block';
-        customInput.required = true;
-    } else {
-        customInput.style.display = 'none';
-        customInput.required = false;
-        customInput.value = '';
-    }
-});
-
-// 페이지 로드 시 기타 선택 여부 확인
-window.addEventListener('DOMContentLoaded', function() {
-    const material = document.getElementById('material');
-    const customInput = document.getElementById('material_custom');
-    
-    <?php if (($product['material'] ?? '') && !in_array($product['material'], ['SS400', 'SM490', 'SM490A', 'SM490B', 'SM520', 'SM570', 'SUS304', 'SUS316', 'SUS430', 'S45C', 'SCM440'])): ?>
-    // 목록에 없는 재질인 경우
-    material.value = '기타';
-    customInput.style.display = 'block';
-    customInput.value = '<?php echo htmlspecialchars($product['material'] ?? ''); ?>';
-    <?php endif; ?>
-});
+// 재질 선택 처리 코드 제거 (material 필드 삭제로 인해 불필요)
 
 // 기준단가 변경 시 최저/최대단가 자동 계산
 function calculatePriceRange() {
@@ -1533,26 +1496,10 @@ window.addEventListener('DOMContentLoaded', function() {
 // 폼 제출 시 처리
 document.querySelector('form').addEventListener('submit', function(e) {
     e.preventDefault(); // 기본 폼 제출 방지
-    
-    const material = document.getElementById('material');
-    const customInput = document.getElementById('material_custom');
-    
-    // 기타 재질 처리
-    if (material.value === '기타' && customInput.value.trim()) {
-        // 기타 선택 시 직접 입력한 값을 material 필드에 설정
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'material';
-        hiddenInput.value = customInput.value.trim();
-        this.appendChild(hiddenInput);
-        
-        // 원래 select는 비활성화
-        material.disabled = true;
-    }
-    
+
     // 원산지 순서 최종 업데이트
     updateOriginOrder();
-    
+
     // 재질 순서 최종 업데이트
     updateMaterialOrder();
     
@@ -1600,15 +1547,10 @@ document.querySelector('form').addEventListener('submit', function(e) {
         setTimeout(() => {
             messageBox.style.display = 'none';
         }, 3000);
-        
+
         // 버튼 복원
         submitBtn.disabled = false;
         submitBtn.textContent = '<?php echo $id > 0 ? '수정하기' : '등록하기'; ?>';
-        
-        // 재질 select 복원
-        if (material.disabled) {
-            material.disabled = false;
-        }
     })
     .catch(error => {
         console.error('Error:', error);

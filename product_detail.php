@@ -529,7 +529,25 @@ if ($product_id) {
                         <div class="detail-value"><?php echo htmlspecialchars($product['specification'] ?: $product['specifications']); ?></div>
                     </div>
                     <?php endif; ?>
-                    
+
+                    <?php if ($product['price'] && $product['price'] > 0): ?>
+                    <?php
+                    $min_price = isset($product['min_price']) && $product['min_price'] > 0
+                        ? $product['min_price']
+                        : $product['price'] * 0.90;
+                    $max_price = isset($product['max_price']) && $product['max_price'] > 0
+                        ? $product['max_price']
+                        : $product['price'] * 1.10;
+                    ?>
+                    <div class="detail-item">
+                        <div class="detail-label">가격 범위</div>
+                        <div class="detail-value">
+                            <span style="color: #2196F3; margin-right: 15px;">최저: <?php echo number_format($min_price); ?>원</span>
+                            <span style="color: #FF5722;">최대: <?php echo number_format($max_price); ?>원</span>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
                     <?php if ($product['specification_weight']): ?>
                     <div class="detail-item">
                         <div class="detail-label">단위중량</div>

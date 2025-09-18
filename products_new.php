@@ -1071,19 +1071,12 @@ foreach ($products as &$product) {
                     </div>
                     <div class="product-info">
                         <h3><?php echo escape($product['display_name'] ?? $product['product_name']); ?></h3>
-                        <?php if ($product['parent_product_id'] && $product['specification_weight']): ?>
-                            <p class="unit-weight" style="color: #2196F3; font-weight: 600; font-size: 14px; margin: 8px 0;">
-                                단위중량: <?php echo $product['specification_weight']; ?>kg/m
-                            </p>
-                        <?php elseif ($product['category_code'] === 'rebar'): ?>
+                        <?php if ($product['category_code'] === 'rebar'): ?>
                             <?php
                             // 이미 계산된 단중 사용
                             $unitWeight = isset($product['unit_weight']) ? $product['unit_weight'] : getRebarUnitWeightFromProductName($product['product_name']);
                             if ($unitWeight):
                             ?>
-                            <p class="unit-weight" style="color: #2196F3; font-weight: 600; font-size: 14px;">
-                                단위중량: <?php echo $unitWeight; ?>kg/m
-                            </p>
                             <?php endif; ?>
                             <?php if (isset($product['default_bundle'])): ?>
                             <p style="color: #666; font-size: 13px; margin: 5px 0;">
@@ -1110,10 +1103,6 @@ foreach ($products as &$product) {
                             <div class="price-item-mini min">
                                 <span class="label">최저</span>
                                 <span class="value"><?php echo number_format($min_price); ?></span>
-                            </div>
-                            <div class="price-item-mini base">
-                                <span class="label">기준</span>
-                                <span class="value"><?php echo number_format($product['price']); ?></span>
                             </div>
                             <div class="price-item-mini max">
                                 <span class="label">최대</span>
@@ -1195,9 +1184,6 @@ foreach ($products as &$product) {
                             $unitWeight = isset($product['unit_weight']) ? $product['unit_weight'] : getRebarUnitWeightFromProductName($product['product_name']);
                             if ($unitWeight):
                             ?>
-                            <p class="unit-weight" style="color: #2196F3; font-weight: 600; font-size: 14px; margin: 5px 0;">
-                                단위중량: <?php echo $unitWeight; ?>kg/m
-                            </p>
                             <?php endif; ?>
                             <?php if (isset($product['default_bundle'])): ?>
                             <p style="color: #666; font-size: 13px; margin: 5px 0;">
@@ -1224,10 +1210,6 @@ foreach ($products as &$product) {
                             <div class="price-item-list min">
                                 <span class="label">최저</span>
                                 <span class="value"><?php echo number_format($min_price); ?>원</span>
-                            </div>
-                            <div class="price-item-list base">
-                                <span class="label">기준</span>
-                                <span class="value"><?php echo number_format($product['price']); ?>원</span>
                             </div>
                             <div class="price-item-list max">
                                 <span class="label">최대</span>
