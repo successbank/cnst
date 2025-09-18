@@ -3,6 +3,7 @@
 // 검색 필터
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $category_filter = isset($_GET['category']) ? trim($_GET['category']) : '';
+$homepage_filter = isset($_GET['homepage']) ? $_GET['homepage'] : '';
 
 // 제품 목록 쿼리
 $where = ["1=1"];
@@ -18,6 +19,10 @@ if ($search) {
 if ($category_filter) {
     $where[] = "p.category_code = ?";
     $params[] = $category_filter;
+}
+
+if ($homepage_filter === '1') {
+    $where[] = "p.show_on_homepage = 1";
 }
 
 $whereClause = implode(" AND ", $where);
@@ -341,6 +346,104 @@ a, button, .btn, .category-tab {
     border-color: #1428A0 !important;
 }
 
+/* 토글 스위치 */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: #2196F3;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+/* 노출 순서 입력 */
+.order-input {
+    width: 60px;
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 13px;
+}
+
+.order-input:focus {
+    outline: none;
+    border-color: #2196F3;
+}
+
+/* 토스트 알림 */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    background: #333;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    animation: slideIn 0.3s ease;
+}
+
+.toast.success {
+    background: #28a745;
+}
+
+.toast.error {
+    background: #dc3545;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
 /* 반응형 */
 @media (max-width: 768px) {
     .action-bar {
@@ -388,6 +491,9 @@ a, button, .btn, .category-tab {
 }
 </style>
 
+<!-- 토스트 알림 컨테이너 -->
+<div class="toast-container" id="toastContainer"></div>
+
 <!-- 액션 바 -->
 <div class="action-bar">
     <form method="GET" action="" class="search-form">
@@ -399,6 +505,11 @@ a, button, .btn, .category-tab {
     </form>
     
     <div>
+        <?php if ($homepage_filter === '1'): ?>
+            <a href="?tab=products" class="btn btn-secondary">전체 보기</a>
+        <?php else: ?>
+            <a href="?tab=products&homepage=1" class="btn btn-warning">메인노출 제품만</a>
+        <?php endif; ?>
         <a href="products_export.php?category=<?php echo urlencode($category_filter); ?>" 
            class="btn btn-success">
             📥 엑셀 다운로드
@@ -441,6 +552,8 @@ a, button, .btn, .category-tab {
         <option value="">작업 선택</option>
         <option value="activate">활성화</option>
         <option value="deactivate">비활성화</option>
+        <option value="show_homepage">메인페이지 노출</option>
+        <option value="hide_homepage">메인페이지 숨김</option>
         <option value="delete">삭제</option>
     </select>
     <button type="button" onclick="executeBulkAction()" class="btn btn-primary btn-sm">실행</button>
@@ -464,6 +577,7 @@ a, button, .btn, .category-tab {
                     <th class="hide-mobile">단위중량</th>
                     <th>재고상태</th>
                     <th class="hide-mobile">상태</th>
+                    <th class="hide-mobile">메인노출</th>
                     <th>관리</th>
                 </tr>
             </thead>
@@ -505,6 +619,24 @@ a, button, .btn, .category-tab {
                         <?php else: ?>
                             <span class="badge badge-danger">비활성</span>
                         <?php endif; ?>
+                    </td>
+                    <td class="hide-mobile">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" 
+                                       onchange="toggleHomepage(<?php echo $product['id']; ?>, this.checked, event)"
+                                       <?php echo $product['show_on_homepage'] ? 'checked' : ''; ?>>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <?php if ($product['show_on_homepage']): ?>
+                            <input type="number" 
+                                   class="order-input" 
+                                   value="<?php echo $product['homepage_display_order']; ?>"
+                                   min="0"
+                                   onchange="updateHomepageOrder(<?php echo $product['id']; ?>, this.value)"
+                                   placeholder="순서">
+                            <?php endif; ?>
+                        </div>
                     </td>
                     <td>
                         <a href="../product_detail.php?id=<?php echo $product['id']; ?>" 
@@ -593,11 +725,99 @@ function executeBulkAction() {
         case 'deactivate':
             confirmMsg = '선택한 제품을 비활성화하시겠습니까?';
             break;
+        case 'show_homepage':
+            confirmMsg = '선택한 제품을 메인페이지에 노출하시겠습니까?';
+            break;
+        case 'hide_homepage':
+            confirmMsg = '선택한 제품을 메인페이지에서 숨기시겠습니까?';
+            break;
     }
     
     if (confirm(confirmMsg)) {
         document.getElementById('formAction').value = action;
         document.getElementById('productsForm').submit();
     }
+}
+
+// 토스트 알림 표시
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    
+    const container = document.getElementById('toastContainer');
+    container.appendChild(toast);
+    
+    // 3초 후 제거
+    setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// 메인페이지 노출 토글
+function toggleHomepage(productId, isChecked, event) {
+    const orderInput = event.target.closest('td').querySelector('.order-input');
+    
+    fetch('ajax/toggle_homepage.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `product_id=${productId}&show_on_homepage=${isChecked ? 1 : 0}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            
+            // 순서 입력 필드 표시/숨김
+            if (isChecked && !orderInput) {
+                const div = event.target.closest('div');
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'order-input';
+                input.value = '0';
+                input.min = '0';
+                input.placeholder = '순서';
+                input.onchange = function() {
+                    updateHomepageOrder(productId, this.value);
+                };
+                div.appendChild(input);
+            } else if (!isChecked && orderInput) {
+                orderInput.remove();
+            }
+        } else {
+            showToast(data.error || '오류가 발생했습니다.', 'error');
+            // 체크박스 원래 상태로 되돌리기
+            event.target.checked = !isChecked;
+        }
+    })
+    .catch(error => {
+        showToast('서버 오류가 발생했습니다.', 'error');
+        event.target.checked = !isChecked;
+    });
+}
+
+// 메인페이지 노출 순서 업데이트
+function updateHomepageOrder(productId, order) {
+    fetch('ajax/update_homepage_order.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `product_id=${productId}&order=${order}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+        } else {
+            showToast(data.error || '오류가 발생했습니다.', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('서버 오류가 발생했습니다.', 'error');
+    });
 }
 </script>

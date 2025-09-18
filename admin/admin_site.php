@@ -293,12 +293,12 @@ try {
             
             <div class="form-group">
                 <label for="company_tel">대표전화</label>
-                <input type="tel" id="company_tel" name="company_tel" value="<?php echo htmlspecialchars($companySettings['company_tel'] ?? '041-532-1234'); ?>" required>
+                <input type="tel" id="company_tel" name="company_tel" value="<?php echo htmlspecialchars($companySettings['company_tel'] ?? '032-564-1616'); ?>" required>
             </div>
             
             <div class="form-group">
                 <label for="company_fax">팩스</label>
-                <input type="tel" id="company_fax" name="company_fax" value="<?php echo htmlspecialchars($companySettings['company_fax'] ?? '041-532-1235'); ?>">
+                <input type="tel" id="company_fax" name="company_fax" value="<?php echo htmlspecialchars($companySettings['company_fax'] ?? '032-564-0090'); ?>">
             </div>
             
             <div class="form-group">
@@ -356,7 +356,7 @@ try {
             <div class="form-group">
                 <label for="contact_phone">문의 전화번호</label>
                 <input type="tel" id="contact_phone" name="contact_phone" 
-                       value="<?php echo htmlspecialchars($contactSettings['contact_phone'] ?? '041-532-1234'); ?>" required>
+                       value="<?php echo htmlspecialchars($contactSettings['contact_phone'] ?? '032-564-1616'); ?>" required>
                 <small>고객이 연락할 수 있는 대표 번호입니다.</small>
             </div>
             

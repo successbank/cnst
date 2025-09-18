@@ -287,6 +287,207 @@ include 'head.php';
         width: 100%;
     }
 }
+
+/* 파일 업로드 영역 */
+.file-upload-container {
+    margin-top: 10px;
+}
+
+.drop-zone {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.drop-zone.drag-over {
+    border-color: #1A237E;
+    background: #e3f2fd;
+}
+
+.drop-zone-content {
+    pointer-events: none;
+}
+
+.drop-zone-content i {
+    font-size: 48px;
+    color: #999;
+    margin-bottom: 10px;
+}
+
+.drop-zone-content p {
+    margin: 0 0 20px 0;
+    color: #666;
+    font-size: 16px;
+}
+
+.select-files-btn {
+    padding: 10px 20px;
+    background: #1A237E;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    pointer-events: auto;
+}
+
+.select-files-btn:hover {
+    background: #283593;
+}
+
+/* 파일 목록 */
+.file-list {
+    margin-top: 20px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.file-item.image-file {
+    background: #e3f2fd;
+}
+
+.file-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 15px;
+}
+
+.file-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e9ecef;
+    border-radius: 4px;
+    margin-right: 15px;
+    font-size: 24px;
+    color: #666;
+}
+
+.file-info {
+    flex: 1;
+}
+
+.file-name {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.file-size {
+    font-size: 13px;
+    color: #666;
+}
+
+.file-remove {
+    padding: 6px 12px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.file-remove:hover {
+    background: #c82333;
+}
+
+/* 이미지 미리보기 슬라이더 */
+.image-preview-slider {
+    margin-top: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.slider-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.slider-wrapper {
+    overflow: hidden;
+    margin: 0 50px;
+}
+
+.preview-images {
+    display: flex;
+    transition: transform 0.3s ease;
+}
+
+.preview-image {
+    flex: 0 0 100%;
+    text-align: center;
+}
+
+.preview-image img {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.slider-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.slider-nav:hover {
+    background: rgba(0,0,0,0.7);
+}
+
+.slider-nav.prev {
+    left: 10px;
+}
+
+.slider-nav.next {
+    right: 10px;
+}
+
+.slider-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.dot.active {
+    background: #1A237E;
+}
 </style>
 
 <div class="page-header">
@@ -299,7 +500,7 @@ include 'head.php';
             <div class="alert error"><?php echo $error; ?></div>
         <?php endif; ?>
         
-        <form method="post" enctype="multipart/form-data" class="board-form">
+        <form method="post" enctype="multipart/form-data" class="board-form" id="boardForm" onsubmit="return handleFormSubmit(event)">
             <div class="form-group">
                 <label for="title">제목 <span class="required">*</span></label>
                 <input type="text" id="title" name="title" required placeholder="제목을 입력하세요">
@@ -453,9 +654,32 @@ include 'head.php';
             <?php if ($board->allowsUpload()): ?>
             <div class="form-group">
                 <label for="attachment">첨부파일</label>
-                <input type="file" id="attachment" name="attachment[]" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx">
-                <small>최대 10MB (파일당), 허용 확장자: jpg, png, pdf, doc, docx, xls, xlsx. 여러 파일을 선택할 수 있습니다.</small>
-                <div id="file-list" style="margin-top: 10px;"></div>
+                <div class="file-upload-container">
+                    <div id="drop-zone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>파일을 드래그하여 놓거나 클릭하여 선택하세요</p>
+                            <input type="file" id="attachment" name="attachment[]" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx" style="display: none;">
+                            <button type="button" class="select-files-btn">파일 선택</button>
+                        </div>
+                    </div>
+                    <small>최대 10MB (파일당), 허용 확장자: jpg, jpeg, png, gif, pdf, doc, docx, xls, xlsx</small>
+                    
+                    <!-- 파일 목록 -->
+                    <div id="file-list" class="file-list"></div>
+                    
+                    <!-- 이미지 미리보기 슬라이더 -->
+                    <div id="image-preview-slider" class="image-preview-slider" style="display: none;">
+                        <div class="slider-container">
+                            <button type="button" class="slider-nav prev" onclick="changeSlide(-1)">‹</button>
+                            <div class="slider-wrapper">
+                                <div id="preview-images" class="preview-images"></div>
+                            </div>
+                            <button type="button" class="slider-nav next" onclick="changeSlide(1)">›</button>
+                        </div>
+                        <div class="slider-dots" id="slider-dots"></div>
+                    </div>
+                </div>
             </div>
             <?php endif; ?>
             
@@ -493,6 +717,340 @@ include 'head.php';
 </section>
 
 <script>
+// 파일 업로드 관련 변수
+let selectedFiles = [];
+let fileInput;
+let dropZone;
+let currentSlideIndex = 0;
+
+// DOM이 로드되면 실행
+document.addEventListener('DOMContentLoaded', function() {
+    fileInput = document.getElementById('attachment');
+    dropZone = document.getElementById('drop-zone');
+    
+    if (fileInput && dropZone) {
+        // 파일 선택 버튼 클릭 이벤트
+        const selectBtn = document.querySelector('.select-files-btn');
+        if (selectBtn) {
+            selectBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Select button clicked');
+                fileInput.click();
+            });
+        }
+        
+        // 드롭존 클릭 이벤트
+        dropZone.addEventListener('click', function(e) {
+            // 버튼 클릭은 제외
+            if (!e.target.classList.contains('select-files-btn') && 
+                e.target.parentElement && !e.target.parentElement.classList.contains('select-files-btn')) {
+                if (e.target === dropZone || e.target.parentElement.className === 'drop-zone-content') {
+                    console.log('Drop zone clicked');
+                    fileInput.click();
+                }
+            }
+        });
+        
+        // 파일 입력 변경 이벤트
+        fileInput.addEventListener('change', function(e) {
+            console.log('File input changed:', e.target.files.length, 'files');
+            console.log('File input event target:', e.target);
+            console.log('Files:', e.target.files);
+            
+            try {
+                if (e.target.files && e.target.files.length > 0) {
+                    handleFiles(e.target.files);
+                    // 파일 입력 초기화 (같은 파일 재선택 가능하도록)
+                    e.target.value = '';
+                }
+            } catch (error) {
+                console.error('Error in file input change handler:', error);
+                alert('파일 처리 중 오류가 발생했습니다: ' + error.message);
+            }
+        });
+        
+        // 드래그 앤 드롭 이벤트
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+        
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+        });
+        
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            handleFiles(e.dataTransfer.files);
+        });
+    }
+});
+
+// 파일 처리 함수
+function handleFiles(files) {
+    console.log('handleFiles called with', files.length, 'files');
+    console.log('Files object:', files);
+    
+    try {
+        const maxFileSize = 10 * 1024 * 1024; // 10MB
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf', 
+                             'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                             'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+        
+        let addedCount = 0;
+        for (let file of files) {
+            console.log('Processing file:', file.name, file.type, file.size);
+        
+        // 파일 크기 검증
+        if (file.size > maxFileSize) {
+            alert(`파일 "${file.name}"의 크기가 10MB를 초과합니다.`);
+            continue;
+        }
+        
+        // 파일 타입 검증
+        if (!allowedTypes.includes(file.type)) {
+            alert(`파일 "${file.name}"은(는) 허용되지 않는 형식입니다.`);
+            continue;
+        }
+        
+        // 중복 파일 체크
+        if (selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+            alert(`파일 "${file.name}"은(는) 이미 추가되었습니다.`);
+            continue;
+        }
+        
+        selectedFiles.push(file);
+        addedCount++;
+    }
+    
+        console.log('Added', addedCount, 'files. Total:', selectedFiles.length);
+        
+        updateFileList();
+        updateImageSlider();
+        updateFileInput();
+    } catch (error) {
+        console.error('Error in handleFiles:', error);
+        alert('파일 처리 중 오류가 발생했습니다: ' + error.message);
+    }
+}
+
+// 파일 목록 업데이트
+function updateFileList() {
+    const fileList = document.getElementById('file-list');
+    fileList.innerHTML = '';
+    
+    selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        
+        if (file.type.startsWith('image/')) {
+            fileItem.classList.add('image-file');
+            
+            // 이미지 썸네일
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const thumbnail = document.createElement('img');
+                thumbnail.src = e.target.result;
+                thumbnail.className = 'file-thumbnail';
+                fileItem.prepend(thumbnail);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            // 파일 아이콘
+            const icon = document.createElement('div');
+            icon.className = 'file-icon';
+            icon.innerHTML = getFileIcon(file.type);
+            fileItem.appendChild(icon);
+        }
+        
+        // 파일 정보
+        const fileInfo = document.createElement('div');
+        fileInfo.className = 'file-info';
+        fileInfo.innerHTML = `
+            <div class="file-name">${file.name}</div>
+            <div class="file-size">${formatFileSize(file.size)}</div>
+        `;
+        fileItem.appendChild(fileInfo);
+        
+        // 삭제 버튼
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'file-remove';
+        removeBtn.textContent = '삭제';
+        removeBtn.onclick = function() {
+            removeFile(index);
+        };
+        fileItem.appendChild(removeBtn);
+        
+        fileList.appendChild(fileItem);
+    });
+}
+
+// 파일 제거
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    updateFileList();
+    updateImageSlider();
+    updateFileInput();
+}
+
+// 이미지 슬라이더 업데이트
+function updateImageSlider() {
+    const imageFiles = selectedFiles.filter(file => file.type.startsWith('image/'));
+    const slider = document.getElementById('image-preview-slider');
+    const previewImages = document.getElementById('preview-images');
+    const dotsContainer = document.getElementById('slider-dots');
+    
+    if (imageFiles.length === 0) {
+        slider.style.display = 'none';
+        return;
+    }
+    
+    slider.style.display = 'block';
+    previewImages.innerHTML = '';
+    dotsContainer.innerHTML = '';
+    
+    imageFiles.forEach((file, index) => {
+        // 이미지 프리뷰
+        const previewDiv = document.createElement('div');
+        previewDiv.className = 'preview-image';
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = file.name;
+            previewDiv.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+        
+        previewImages.appendChild(previewDiv);
+        
+        // 도트 네비게이션
+        const dot = document.createElement('span');
+        dot.className = 'dot' + (index === 0 ? ' active' : '');
+        dot.onclick = function() {
+            goToSlide(index);
+        };
+        dotsContainer.appendChild(dot);
+    });
+    
+    currentSlideIndex = 0;
+    updateSliderPosition();
+}
+
+// 슬라이드 변경
+function changeSlide(direction) {
+    const imageFiles = selectedFiles.filter(file => file.type.startsWith('image/'));
+    currentSlideIndex += direction;
+    
+    if (currentSlideIndex < 0) {
+        currentSlideIndex = imageFiles.length - 1;
+    } else if (currentSlideIndex >= imageFiles.length) {
+        currentSlideIndex = 0;
+    }
+    
+    updateSliderPosition();
+}
+
+// 특정 슬라이드로 이동
+function goToSlide(index) {
+    currentSlideIndex = index;
+    updateSliderPosition();
+}
+
+// 슬라이더 위치 업데이트
+function updateSliderPosition() {
+    const previewImages = document.getElementById('preview-images');
+    const dots = document.querySelectorAll('.dot');
+    
+    previewImages.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
+    
+    dots.forEach((dot, index) => {
+        dot.classList.toggle('active', index === currentSlideIndex);
+    });
+}
+
+// 파일 입력 업데이트 (DataTransfer API 제거)
+function updateFileInput() {
+    // DataTransfer API는 일부 브라우저에서 지원하지 않으므로 제거
+    // 대신 폼 제출 시 FormData로 직접 처리
+    console.log('Selected files count:', selectedFiles.length);
+}
+
+// 파일 아이콘 가져오기
+function getFileIcon(fileType) {
+    if (fileType.includes('pdf')) return '📄';
+    if (fileType.includes('word')) return '📝';
+    if (fileType.includes('excel')) return '📊';
+    return '📎';
+}
+
+// 파일 크기 포맷
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// 폼 제출 처리
+function handleFormSubmit(event) {
+    console.log('Form submit, selected files:', selectedFiles.length);
+    
+    if (selectedFiles.length > 0) {
+        // 기본 폼 제출 방지
+        event.preventDefault();
+        
+        // FormData 생성
+        const formData = new FormData(event.target);
+        
+        // 기존 파일 입력 제거
+        formData.delete('attachment[]');
+        
+        // selectedFiles 배열의 파일들을 FormData에 추가
+        selectedFiles.forEach(file => {
+            formData.append('attachment[]', file);
+        });
+        
+        console.log('Submitting form with FormData');
+        
+        // 폼 제출
+        const form = event.target;
+        const xhr = new XMLHttpRequest();
+        
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                // 성공 시 리디렉션 처리
+                if (xhr.responseURL && xhr.responseURL !== window.location.href) {
+                    window.location.href = xhr.responseURL;
+                } else {
+                    // 응답 내용을 현재 페이지에 표시
+                    document.open();
+                    document.write(xhr.responseText);
+                    document.close();
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            alert('업로드 중 오류가 발생했습니다.');
+        };
+        
+        xhr.open('POST', form.action || window.location.href);
+        xhr.send(formData);
+        
+        return false;
+    }
+    
+    // 파일이 없으면 기본 폼 제출
+    return true;
+}
+
 // 전화번호 포맷팅
 function formatPhoneNumber(e) {
     let value = e.target.value.replace(/[^\d]/g, '');
@@ -519,43 +1077,8 @@ if (productCategory && document.getElementById('product_category')) {
     document.getElementById('product_category').value = productCategory;
 }
 
-// 파일 선택 시 목록 표시
-document.getElementById('attachment')?.addEventListener('change', function(e) {
-    const fileList = document.getElementById('file-list');
-    fileList.innerHTML = '';
-    
-    if (this.files.length > 0) {
-        const ul = document.createElement('ul');
-        ul.style.listStyle = 'none';
-        ul.style.padding = '0';
-        ul.style.margin = '10px 0';
-        
-        for (let i = 0; i < this.files.length; i++) {
-            const li = document.createElement('li');
-            li.style.padding = '8px 12px';
-            li.style.backgroundColor = '#f8f9fa';
-            li.style.marginBottom = '5px';
-            li.style.borderRadius = '4px';
-            li.style.fontSize = '14px';
-            li.style.border = '1px solid #e5e5e7';
-            
-            const file = this.files[i];
-            const fileSize = (file.size / 1024 / 1024).toFixed(2);
-            li.innerHTML = `📎 ${file.name} <span style="color: #666; font-size: 13px;">(${fileSize}MB)</span>`;
-            
-            ul.appendChild(li);
-        }
-        
-        fileList.appendChild(ul);
-        
-        const info = document.createElement('p');
-        info.style.fontSize = '14px';
-        info.style.color = '#666';
-        info.style.marginTop = '10px';
-        info.textContent = `총 ${this.files.length}개 파일 선택됨`;
-        fileList.appendChild(info);
-    }
-});
+// 이미 파일 처리는 위의 handleFiles 함수에서 처리됨
+// 중복된 이벤트 리스너 제거
 </script>
 
 <?php include 'tail.php'; ?>

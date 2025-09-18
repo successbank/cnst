@@ -1,85 +1,47 @@
 <?php
 require_once 'db.php';
 
-header('Content-Type: text/plain; charset=utf-8');
-
 try {
-    // Check rebar specifications
-    echo "=== Rebar Specifications ===\n";
-    $stmt = $pdo->query("SELECT * FROM rebar_specifications WHERE is_active = 1 ORDER BY id");
-    $specs = $stmt->fetchAll();
-    echo "Total specifications: " . count($specs) . "\n\n";
+    $pdo = getDB();
     
-    foreach ($specs as $spec) {
-        echo "ID: {$spec['id']}, Name: {$spec['spec_name']}, Unit Weight: {$spec['unit_weight']}\n";
-    }
+    // 철근 제품 중 하나를 선택해서 데이터 확인
+    $sql = "SELECT id, product_name, weight_per_meter, length_data, pieces_per_ton 
+            FROM products 
+            WHERE category_code = 'rebar' AND product_name LIKE '%D10%'
+            LIMIT 1";
     
-    // Check D10 spec specifically
-    echo "\n=== D10 Specification ===\n";
-    $stmt = $pdo->prepare("SELECT * FROM rebar_specifications WHERE spec_name = ? AND is_active = 1");
-    $stmt->execute(['D10']);
-    $d10_spec = $stmt->fetch();
-    
-    if ($d10_spec) {
-        echo "D10 Spec ID: {$d10_spec['id']}\n";
-        
-        // Check length info for D10
-        echo "\n=== D10 Length Info ===\n";
-        $stmt = $pdo->prepare("SELECT * FROM rebar_length_info WHERE spec_id = ? ORDER BY length");
-        $stmt->execute([$d10_spec['id']]);
-        $lengths = $stmt->fetchAll();
-        echo "Total length records: " . count($lengths) . "\n\n";
-        
-        foreach ($lengths as $length) {
-            echo "Length: {$length['length']}m, Pieces/ton: {$length['pieces_per_ton']}, ";
-            echo "Total weight: {$length['total_weight']}kg, Weight/piece: {$length['weight_per_piece']}kg\n";
-        }
-    } else {
-        echo "D10 specification not found\n";
-    }
-    
-    // Check materials
-    echo "\n=== Rebar Materials ===\n";
-    $stmt = $pdo->query("SELECT * FROM rebar_materials WHERE is_active = 1 ORDER BY display_order");
-    $materials = $stmt->fetchAll();
-    echo "Total materials: " . count($materials) . "\n\n";
-    
-    foreach ($materials as $mat) {
-        echo "ID: {$mat['id']}, ";
-        echo "Code: {$mat['material_code']}, Additional price: {$mat['additional_price']}원/kg\n";
-    }
-    
-    // Check products with both category codes
-    echo "\n=== Rebar Products (category_code = 'rebar') ===\n";
-    $stmt = $pdo->query("SELECT id, product_name, price, category_code FROM products WHERE category_code = 'rebar' AND is_active = 1 ORDER BY product_name");
-    $products = $stmt->fetchAll();
-    echo "Total rebar products: " . count($products) . "\n\n";
-    
-    foreach ($products as $prod) {
-        echo "ID: {$prod['id']}, Name: {$prod['product_name']}, Price: {$prod['price']}원/kg\n";
-    }
-    
-    echo "\n=== Rebar Products (category_code = '114') ===\n";
-    $stmt = $pdo->query("SELECT id, product_name, price, category_code FROM products WHERE category_code = '114' AND is_active = 1 ORDER BY product_name");
-    $products = $stmt->fetchAll();
-    echo "Total rebar products: " . count($products) . "\n\n";
-    
-    foreach ($products as $prod) {
-        echo "ID: {$prod['id']}, Name: {$prod['product_name']}, Price: {$prod['price']}원/kg\n";
-    }
-    
-    // Check specific product
-    echo "\n=== Product ID 1010 ===\n";
-    $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
-    $stmt->execute([1010]);
+    $stmt = $pdo->query($sql);
     $product = $stmt->fetch();
+    
     if ($product) {
-        echo "Product name: {$product['product_name']}\n";
-        echo "Category code: {$product['category_code']}\n";
-        echo "Price: {$product['price']}\n";
+        echo "제품명: " . $product['product_name'] . "\n";
+        echo "ID: " . $product['id'] . "\n";
+        echo "미터당 중량: " . $product['weight_per_meter'] . "kg\n\n";
+        
+        // JSON 데이터 파싱
+        $length_data = json_decode($product['length_data'], true);
+        $pieces_data = json_decode($product['pieces_per_ton'], true);
+        
+        echo "길이별 데이터 (처음 5개):\n";
+        echo str_pad("길이(m)", 10) . str_pad("본중(kg)", 12) . str_pad("톤당본수", 12) . "\n";
+        echo str_repeat("-", 34) . "\n";
+        
+        $count = 0;
+        foreach ($length_data as $length => $data) {
+            if ($count >= 5) break;
+            echo str_pad($data['length'], 10) . 
+                 str_pad($data['weight_per_piece'], 12) . 
+                 str_pad($data['pieces_per_ton'], 12) . "\n";
+            $count++;
+        }
+        
+        echo "\n전체 데이터 개수: " . count($length_data) . "개\n";
+    } else {
+        echo "철근 D10 제품을 찾을 수 없습니다.\n";
     }
     
 } catch (Exception $e) {
-    echo "Error: " . $e->getMessage() . "\n";
+    echo "오류: " . $e->getMessage() . "\n";
 }
 ?>
+EOF < /dev/null

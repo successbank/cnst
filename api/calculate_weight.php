@@ -19,6 +19,7 @@ try {
     $material = $input['material'] ?? '';
     $length = floatval($input['length'] ?? 0);
     $quantity = intval($input['quantity'] ?? 0);
+    $origin = $input['origin'] ?? '';
     
     if (empty($category_code) || empty($specification) || $quantity <= 0) {
         throw new Exception('필수 파라미터가 누락되었습니다.');
@@ -29,7 +30,10 @@ try {
         SELECT 
             product_name,
             calculation_type,
-            unit_weight_data
+            unit_weight_data,
+            origin_price_data,
+            material_price_data,
+            price
         FROM products 
         WHERE category_code = ? AND has_calculator = 1
         LIMIT 1
@@ -83,6 +87,53 @@ try {
         ];
     }
     
+    // 가격 계산 (기본 가격이 설정된 경우)
+    $price_per_kg = floatval($product['price'] ?? 1000); // 기본값 1000원/kg
+    $base_price = $calculated_weight * $price_per_kg;
+    
+    // 원산지별 추가 비용 계산
+    $origin_additional_cost = 0;
+    $origin_price_per_kg = 0;
+    
+    if (!empty($origin) && !empty($product['origin_price_data'])) {
+        $origin_prices = json_decode($product['origin_price_data'], true);
+        if (isset($origin_prices[$origin])) {
+            $origin_price_per_kg = floatval($origin_prices[$origin]);
+            $origin_additional_cost = $calculated_weight * $origin_price_per_kg;
+        }
+    }
+    
+    // 재질별 추가 비용 계산
+    $material_additional_cost = 0;
+    $material_price_per_kg = 0;
+    
+    if (!empty($material) && !empty($product['material_price_data'])) {
+        $material_prices = json_decode($product['material_price_data'], true);
+        if (isset($material_prices[$material])) {
+            $material_price_per_kg = floatval($material_prices[$material]);
+            $material_additional_cost = $calculated_weight * $material_price_per_kg;
+        }
+    }
+    
+    $total_price = $base_price + $origin_additional_cost + $material_additional_cost;
+    
+    // 가격 계산 과정 추가
+    if ($price_per_kg > 0) {
+        $calculation_steps[] = "기본 금액: " . round($calculated_weight, 1) . "kg × " . number_format($price_per_kg) . "원/kg = " . number_format($base_price) . "원";
+        
+        if ($origin && $origin_price_per_kg !== 0) {
+            $sign = $origin_price_per_kg > 0 ? '+' : '';
+            $calculation_steps[] = "원산지({$origin}) 추가비용: " . round($calculated_weight, 1) . "kg × {$sign}" . number_format($origin_price_per_kg) . "원/kg = {$sign}" . number_format($origin_additional_cost) . "원";
+        }
+        
+        if ($material && $material_price_per_kg !== 0) {
+            $sign = $material_price_per_kg > 0 ? '+' : '';
+            $calculation_steps[] = "재질({$material}) 추가비용: " . round($calculated_weight, 1) . "kg × {$sign}" . number_format($material_price_per_kg) . "원/kg = {$sign}" . number_format($material_additional_cost) . "원";
+        }
+        
+        $calculation_steps[] = "최종 금액: " . number_format($total_price) . "원";
+    }
+    
     // 계산 로그 저장 (옵션)
     $user_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     $log_stmt = $pdo->prepare("
@@ -107,6 +158,11 @@ try {
         'quantity' => $quantity,
         'unit_weight' => $unit_weight,
         'calculated_weight' => round($calculated_weight, 1),
+        'base_price' => $base_price,
+        'origin' => $origin,
+        'origin_additional_cost' => $origin_additional_cost,
+        'material_additional_cost' => $material_additional_cost,
+        'total_price' => $total_price,
         'calculation_steps' => $calculation_steps
     ];
     

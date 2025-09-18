@@ -1,6 +1,6 @@
 <?php
 // 데이터베이스 연결
-$host = 'project5_mysql';
+$host = 'project1_mysql';
 $dbname = 'project5_db';
 $username = 'root';
 $password = 'rootpassword';

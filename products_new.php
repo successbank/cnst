@@ -106,7 +106,27 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $products = $stmt->fetchAll();
 
-// 모든 제품에 available_origins_array 파싱
+// 철근 번들 데이터를 미리 로드 (성능 최적화)
+$rebar_bundle_data = [];
+if ($category_filter === 'rebar' || $category_filter === 'all') {
+    $bundle_stmt = $pdo->query("
+        SELECT p_standard, p_material, p_unit_length, p_bd_count, p_bd_weight 
+        FROM rebar_bundle_data 
+        WHERE p_bd_count > 0 AND p_bd_weight > 0
+    ");
+    while ($row = $bundle_stmt->fetch(PDO::FETCH_ASSOC)) {
+        $key = $row['p_standard'] . '_' . $row['p_material'];
+        if (!isset($rebar_bundle_data[$key])) {
+            $rebar_bundle_data[$key] = [];
+        }
+        $rebar_bundle_data[$key][$row['p_unit_length']] = [
+            'bd_count' => $row['p_bd_count'],
+            'bd_weight' => $row['p_bd_weight']
+        ];
+    }
+}
+
+// 모든 제품에 available_origins_array 파싱 및 번들 정보 추가
 foreach ($products as &$product) {
     if (!empty($product['available_origins'])) {
         $product['available_origins_array'] = json_decode($product['available_origins'], true);
@@ -119,6 +139,25 @@ foreach ($products as &$product) {
     } else {
         $product['available_origins_array'] = [$product['origin']];
         $product['display_origin'] = $product['origin'];
+    }
+    
+    // 철근 제품인 경우 번들 정보 추가
+    if ($product['category_code'] === 'rebar') {
+        // 규격 추출 (예: "철근 HD16" -> "HD16")
+        preg_match('/([A-Z]+D\d+)/', $product['product_name'], $matches);
+        if (isset($matches[1])) {
+            $spec = $matches[1];
+            $material = $product['material'] ?? 'SD400'; // 기본값 SD400
+            $bundle_key = $spec . '_' . $material;
+            
+            if (isset($rebar_bundle_data[$bundle_key])) {
+                $product['bundle_info'] = $rebar_bundle_data[$bundle_key];
+                // 대표 길이(8m) 정보 추가
+                if (isset($rebar_bundle_data[$bundle_key][8.0])) {
+                    $product['default_bundle'] = $rebar_bundle_data[$bundle_key][8.0];
+                }
+            }
+        }
     }
 }
 ?>
@@ -1043,10 +1082,15 @@ foreach ($products as &$product) {
                             <p class="unit-weight" style="color: #2196F3; font-weight: 600; font-size: 14px;">
                                 단위중량: <?php echo $unitWeight; ?>kg/m
                             </p>
-                            <p class="calculator-link" style="color: #666; font-size: 13px;">
-                                📊 중량 계산하기
+                            <?php endif; ?>
+                            <?php if (isset($product['default_bundle'])): ?>
+                            <p style="color: #666; font-size: 13px; margin: 5px 0;">
+                                8m 기준: <?php echo $product['default_bundle']['bd_count']; ?>본/번들, <?php echo $product['default_bundle']['bd_weight']; ?>kg/번들
                             </p>
                             <?php endif; ?>
+                            <p class="calculator-link" style="color: #0066cc; font-size: 13px; font-weight: 600;">
+                                📊 번들 계산하기
+                            </p>
                         <?php endif; ?>
                         <?php if ($product['category_code'] !== 'rebar'): ?>
                         <p class="description"><?php echo escape($product['description']); ?></p>
@@ -1153,6 +1197,14 @@ foreach ($products as &$product) {
                                 단위중량: <?php echo $unitWeight; ?>kg/m
                             </p>
                             <?php endif; ?>
+                            <?php if (isset($product['default_bundle'])): ?>
+                            <p style="color: #666; font-size: 13px; margin: 5px 0;">
+                                8m 기준: <?php echo $product['default_bundle']['bd_count']; ?>본/번들, <?php echo $product['default_bundle']['bd_weight']; ?>kg/번들
+                            </p>
+                            <?php endif; ?>
+                            <p style="color: #0066cc; font-size: 13px; font-weight: 600;">
+                                📊 번들 기준 계산기 제공
+                            </p>
                         <?php endif; ?>
                         <?php if ($product['category_code'] !== 'rebar'): ?>
                         <p class="product-list-description"><?php echo escape($product['description']); ?></p>

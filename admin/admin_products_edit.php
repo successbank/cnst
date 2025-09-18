@@ -61,6 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $delivery_info = trim($_POST['delivery_info'] ?? '');
     $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
+    $show_on_homepage = isset($_POST['show_on_homepage']) ? 1 : 0;
+    $homepage_display_order = isset($_POST['homepage_display_order']) ? (int)$_POST['homepage_display_order'] : 0;
     
     // 새로운 상세내용 필드들
     $detailed_description = trim($_POST['detailed_description'] ?? '');
@@ -80,6 +82,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $available_origins = json_decode($available_origins_json, true);
     $available_origins_json = json_encode($available_origins, JSON_UNESCAPED_UNICODE);
     
+    // 재질 선택 처리 - JSON 형식으로 받음
+    $available_materials_json = $_POST['available_materials'] ?? '[]';
+    $available_materials = json_decode($available_materials_json, true);
+    $available_materials_json = json_encode($available_materials, JSON_UNESCAPED_UNICODE);
+    
+    // 재질별 가격 처리
+    $material_prices = $_POST['material_prices'] ?? [];
+    $material_price_data = json_encode($material_prices, JSON_UNESCAPED_UNICODE);
+    
     // 유효성 검사
     $errors = [];
     if (!$category_code) $errors[] = "카테고리를 선택해주세요.";
@@ -89,6 +100,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$errors) {
         try {
             if ($id > 0) {
+                // 디버그: 어떤 조건이 실행되는지 확인
+                echo "<div style='background: #ffeaa7; padding: 10px; margin: 10px; border-radius: 5px;'>";
+                echo "디버그 정보:<br>";
+                echo "has_base_length: " . ($has_base_length ? 'true' : 'false') . "<br>";
+                echo "has_price_range: " . ($has_price_range ? 'true' : 'false') . "<br>";
+                echo "price 값: " . ($price ?? 'null') . "<br>";
+                echo "</div>";
+                
                 // 수정
                 if ($has_base_length && $has_price_range) {
                     $stmt = $pdo->prepare("
@@ -99,7 +118,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             base_length = ?, features = ?, dimensions = ?, weight = ?,
                             material = ?, manufacturer = ?, origin = ?,
-                            available_origins = ?, delivery_info = ?, is_featured = ?, is_active = ?,
+                            available_origins = ?, available_materials = ?, material_price_data = ?, 
+                            delivery_info = ?, is_featured = ?, is_active = ?,
+                            show_on_homepage = ?, homepage_display_order = ?,
                             detailed_description = ?, key_features = ?, technical_specs = ?,
                             applications = ?, certifications = ?, brochure_url = ?,
                             show_details = ?, quality_cert = ?, product_features = ?, 
@@ -113,7 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
                         $material, $manufacturer, (!empty($available_origins) ? $available_origins[0] : $origin),
-                        $available_origins_json, $delivery_info, $is_featured, $is_active,
+                        $available_origins_json, $available_materials_json, $material_price_data,
+                        $delivery_info, $is_featured, $is_active,
+                        $show_on_homepage, $homepage_display_order,
                         $detailed_description, $key_features, $technical_specs,
                         $applications, $certifications, $brochure_url,
                         $show_details, $quality_cert, $product_features,
@@ -127,7 +150,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             base_length = ?, features = ?, dimensions = ?, weight = ?,
                             material = ?, manufacturer = ?, origin = ?,
-                            available_origins = ?, delivery_info = ?, is_featured = ?, is_active = ?,
+                            available_origins = ?, available_materials = ?, delivery_info = ?, is_featured = ?, is_active = ?,
+                            show_on_homepage = ?, homepage_display_order = ?,
                             detailed_description = ?, key_features = ?, technical_specs = ?,
                             applications = ?, certifications = ?, brochure_url = ?,
                             show_details = ?, quality_cert = ?, product_features = ?, 
@@ -140,7 +164,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
                         $material, $manufacturer, (!empty($available_origins) ? $available_origins[0] : $origin),
-                        $available_origins_json, $delivery_info, $is_featured, $is_active,
+                        $available_origins_json, $available_materials_json, $material_price_data, $delivery_info, $is_featured, $is_active,
+                        $show_on_homepage, $homepage_display_order,
                         $detailed_description, $key_features, $technical_specs,
                         $applications, $certifications, $brochure_url,
                         $show_details, $quality_cert, $product_features,
@@ -155,7 +180,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             features = ?, dimensions = ?, weight = ?,
                             material = ?, manufacturer = ?, origin = ?,
-                            delivery_info = ?, is_featured = ?, is_active = ?
+                            available_origins = ?, available_materials = ?, delivery_info = ?, is_featured = ?, is_active = ?, 
+                            show_on_homepage = ?, homepage_display_order = ?
                         WHERE id = ?
                     ");
                     $stmt->execute([
@@ -165,7 +191,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $available_origins_json, $delivery_info, $is_featured, $is_active,
+                        $available_origins_json, $available_materials_json, $material_price_data, $delivery_info, $is_featured, $is_active,
+                        $show_on_homepage, $homepage_display_order,
                         $id
                     ]);
                 } else {
@@ -176,7 +203,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             features = ?, dimensions = ?, weight = ?,
                             material = ?, manufacturer = ?, origin = ?,
-                            available_origins = ?, delivery_info = ?, is_featured = ?, is_active = ?
+                            available_origins = ?, available_materials = ?, delivery_info = ?, is_featured = ?, is_active = ?,
+                            show_on_homepage = ?, homepage_display_order = ?
                         WHERE id = ?
                     ");
                     $stmt->execute([
@@ -185,7 +213,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $available_origins_json, $delivery_info, $is_featured, $is_active,
+                        $available_origins_json, $available_materials_json, $material_price_data, $delivery_info, $is_featured, $is_active,
+                        $show_on_homepage, $homepage_display_order,
                         $id
                     ]);
                 }
@@ -200,8 +229,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit, min_order_qty, stock_status,
                             base_length, features, dimensions, weight,
                             material, manufacturer, origin,
-                            available_origins, delivery_info, is_featured, is_active
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            available_origins, delivery_info, is_featured, is_active,
+                            show_on_homepage, homepage_display_order
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
@@ -210,7 +240,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $available_origins_json, $delivery_info, $is_featured, $is_active
+                        $available_origins_json, $delivery_info, $is_featured, $is_active,
+                        $show_on_homepage, $homepage_display_order
                     ]);
                 } else if ($has_base_length) {
                     $stmt = $pdo->prepare("
@@ -220,8 +251,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit, min_order_qty, stock_status,
                             base_length, features, dimensions, weight,
                             material, manufacturer, origin,
-                            available_origins, delivery_info, is_featured, is_active
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            available_origins, delivery_info, is_featured, is_active,
+                            show_on_homepage, homepage_display_order
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
@@ -229,7 +261,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $base_length, $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $available_origins_json, $delivery_info, $is_featured, $is_active
+                        $available_origins_json, $delivery_info, $is_featured, $is_active,
+                        $show_on_homepage, $homepage_display_order
                     ]);
                 } else if ($has_price_range) {
                     $stmt = $pdo->prepare("
@@ -240,8 +273,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit, min_order_qty, stock_status,
                             features, dimensions, weight,
                             material, manufacturer, origin,
-                            available_origins, delivery_info, is_featured, is_active
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            available_origins, delivery_info, is_featured, is_active,
+                            show_on_homepage, homepage_display_order
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
@@ -250,7 +284,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $available_origins_json, $delivery_info, $is_featured, $is_active
+                        $available_origins_json, $delivery_info, $is_featured, $is_active,
+                        $show_on_homepage, $homepage_display_order
                     ]);
                 } else {
                     $stmt = $pdo->prepare("
@@ -260,8 +295,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit, min_order_qty, stock_status,
                             features, dimensions, weight,
                             material, manufacturer, origin,
-                            available_origins, delivery_info, is_featured, is_active
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            available_origins, delivery_info, is_featured, is_active,
+                            show_on_homepage, homepage_display_order
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
                         $category_code, $product_name, $product_code,
@@ -269,15 +305,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $unit, $min_order_qty, $stock_status,
                         $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
-                        $available_origins_json, $delivery_info, $is_featured, $is_active
+                        $available_origins_json, $delivery_info, $is_featured, $is_active,
+                        $show_on_homepage, $homepage_display_order
                     ]);
                 }
             }
             
-            header("Location: admin_products.php?message=saved");
-            exit;
+            // 디버깅을 위해 임시로 리다이렉션 비활성화
+            echo "<div style='background: #d4edda; color: #155724; padding: 15px; margin: 20px; border-radius: 5px;'>";
+            echo "✅ 제품이 성공적으로 업데이트되었습니다.";
+            echo "<br>업데이트된 가격: " . number_format($price ?? 0, 0) . "원";
+            echo "<br><a href='admin_products.php'>제품 목록으로 돌아가기</a> | ";
+            echo "<a href='admin_products_edit.php?id={$id}'>계속 편집하기</a>";
+            echo "</div>";
+            // header("Location: admin_products.php?message=saved");
+            // exit;
         } catch (PDOException $e) {
             $errors[] = "저장 중 오류가 발생했습니다: " . $e->getMessage();
+            // 디버그 정보 추가
+            error_log("Product update error: " . $e->getMessage());
+            error_log("SQL State: " . $e->getCode());
         }
     }
 }
@@ -687,6 +734,161 @@ include 'admin_head.php';
     background: #dee2e6;
     transform: translateY(-1px);
 }
+
+/* 원산지별 가격 스타일 */
+#origin-price-container {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.origin-price-item {
+    display: grid;
+    grid-template-columns: 150px 200px 1fr;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.origin-price-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.origin-price-item label {
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.origin-price-input {
+    max-width: 200px;
+}
+
+.origin-price-item .help-text {
+    font-size: 12px;
+    color: #666;
+    margin: 0;
+}
+
+/* 재질별 가격 스타일 (원산지와 동일) */
+#material-price-container {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.material-price-item {
+    display: grid;
+    grid-template-columns: 150px 200px 1fr;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.material-price-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.material-price-item label {
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.material-price-input {
+    max-width: 200px;
+}
+
+.material-price-item .help-text {
+    font-size: 12px;
+    color: #666;
+    margin: 0;
+}
+
+/* 재질 드래그 앤 드롭 스타일 (원산지와 동일) */
+.material-container {
+    margin-top: 10px;
+}
+
+.material-sortable {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-height: 45px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f8f9fa;
+}
+
+.material-item {
+    background: #28a745;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 24px;
+    cursor: move;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.material-item.ghost {
+    opacity: 0.5;
+}
+
+.material-item-remove {
+    cursor: pointer;
+    margin-left: 4px;
+    font-weight: bold;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.material-item-remove:hover {
+    color: #ffcdd2;
+}
+
+.material-available {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.material-add {
+    background: #e9ecef;
+    color: #495057;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.material-add:hover {
+    background: #dee2e6;
+    transform: translateY(-1px);
+}
+
+/* 수동 입력 버튼 스타일 */
+.material-custom-input button:hover {
+    background: #138496 !important;
+}
+
+.material-custom-input button:active {
+    transform: translateY(1px);
+}
 </style>
 
 <div class="form-header">
@@ -720,7 +922,7 @@ include 'admin_head.php';
         <div class="form-row">
             <div class="form-group">
                 <label for="category_code">카테고리 <span class="required">*</span></label>
-                <select id="category_code" name="category_code" required>
+                <select id="category_code" name="category_code" required onchange="updateMaterialOptions(event)">
                     <option value="">카테고리 선택</option>
                     <?php foreach ($categories as $category): ?>
                         <option value="<?php echo $category['category_code']; ?>"
@@ -796,28 +998,14 @@ include 'admin_head.php';
         <div class="form-row">
             <div class="form-group">
                 <label for="price">기준단가</label>
-                <div style="display: flex; gap: 10px; align-items: flex-start;">
-                    <input type="number" id="price" name="price" step="0.01"
-                           value="<?php echo $product['price'] ?? ''; ?>"
-                           placeholder="0.00"
-                           onchange="calculatePriceRange()"
-                           style="flex: 1;">
-                    <?php if (($product['category_code'] ?? '') === 'rebar' || !$id): ?>
-                    <button type="button" 
-                            id="applyRebarPriceBtn"
-                            onclick="checkAndApplyRebarPrice()"
-                            style="padding: 10px 16px; background: #17a2b8; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; white-space: nowrap; display: none;"
-                            title="철근 기본 단가 적용">
-                        단가 적용
-                    </button>
-                    <?php endif; ?>
-                </div>
+                <input type="number" id="price" name="price" step="0.01"
+                       value="<?php echo $product['price'] ?? ''; ?>"
+                       placeholder="0.00"
+                       onchange="calculatePriceRange()"
+                       class="form-control">
                 <div class="help-text">
                     견적 문의 제품은 비워두세요<br>
                     <small style="color: #007bff;">계산식: 단위중량(kg/m) × 길이(m) × 수량(본) × 기준단가(원/TON)</small>
-                    <?php if (($product['category_code'] ?? '') === 'rebar' || !$id): ?>
-                    <br><small style="color: #17a2b8;">※ 철근 제품은 철근 자재 관리에서 설정한 기본 단가가 자동 적용됩니다.</small>
-                    <?php endif; ?>
                 </div>
             </div>
             
@@ -903,7 +1091,7 @@ include 'admin_head.php';
             </div>
             
             <div class="form-group">
-                <label for="material">재질</label>
+                <label for="material">기본 재질</label>
                 <select id="material" name="material" style="width: 100%;">
                     <option value="">재질 선택</option>
                     <optgroup label="일반 구조용강">
@@ -927,7 +1115,7 @@ include 'admin_head.php';
                         <option value="기타" <?php echo ($product['material'] ?? '') == '기타' ? 'selected' : ''; ?>>기타</option>
                     </optgroup>
                 </select>
-                <div class="help-text">주요 재질: SS400(일반구조용), SM490(고강도구조용)</div>
+                <div class="help-text">제품의 기본 재질 정보입니다</div>
                 <input type="text" id="material_custom" name="material_custom" 
                        placeholder="목록에 없는 재질 직접 입력" 
                        style="width: 100%; margin-top: 5px; display: none;"
@@ -997,6 +1185,152 @@ include 'admin_head.php';
             </div>
             <div class="help-text" style="margin-top: 10px;">
                 원산지를 드래그하여 순서를 변경할 수 있습니다. 첫 번째 원산지가 기본값으로 표시됩니다.
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>원산지별 추가 비용 (kg당)</label>
+            <div id="origin-price-container">
+                <?php
+                // 원산지별 가격 데이터 파싱
+                $origin_prices = [];
+                if (!empty($product['origin_price_data'])) {
+                    $origin_prices = json_decode($product['origin_price_data'], true) ?: [];
+                }
+                
+                // 선택된 원산지에 대해 가격 입력 필드 표시
+                foreach ($selected_origins as $origin):
+                    $price = $origin_prices[$origin] ?? 0;
+                ?>
+                <div class="origin-price-item" data-origin="<?php echo htmlspecialchars($origin); ?>">
+                    <label><?php echo htmlspecialchars($origin); ?></label>
+                    <input type="number" 
+                           name="origin_prices[<?php echo htmlspecialchars($origin); ?>]" 
+                           value="<?php echo $price; ?>" 
+                           step="10"
+                           placeholder="0"
+                           class="form-control origin-price-input">
+                    <span class="help-text">원/kg (기본가격 대비 추가비용, 마이너스 가능)</span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <div class="help-text" style="margin-top: 10px;">
+                각 원산지별로 kg당 추가 비용을 입력하세요. 
+                예: 국산 0원, 중국산 -50원(할인), 일본산 +200원(할증)
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>판매 가능 재질</label>
+            <div class="material-container">
+                <div class="material-sortable" id="material-sortable">
+                    <?php
+                    // 카테고리별 재질 목록
+                    $material_options = [];
+                    if (isset($product['category_code'])) {
+                        if ($product['category_code'] === 'rebar') {
+                            // 철근 재질
+                            $material_options = ["SD300", "SD400", "SD400S", "SD500", "SD600", "SD600S"];
+                        } else {
+                            // 기타 철강재 재질
+                            $material_options = [
+                                "SS400", "SM490", "SM490A", "SM490B", "SM520", "SM570",
+                                "SUS304", "SUS316", "SUS430", "S45C", "SCM440", 
+                                "SPHC", "SS400/A36", "SM45C"
+                            ];
+                        }
+                    } else {
+                        // 기본 재질 목록
+                        $material_options = [
+                            "SS400", "SM490", "SM490A", "SM490B", "SM520", "SM570",
+                            "SUS304", "SUS316", "SUS430", "S45C", "SCM440", 
+                            "SPHC", "SS400/A36", "SM45C"
+                        ];
+                    }
+                    
+                    // 현재 선택된 재질 (JSON 디코드)
+                    $selected_materials = [];
+                    if (!empty($product['available_materials'])) {
+                        $selected_materials = json_decode($product['available_materials'], true) ?: [];
+                    }
+                    
+                    // 선택된 재질 표시
+                    foreach ($selected_materials as $material):
+                    ?>
+                    <div class="material-item" data-material="<?php echo htmlspecialchars($material); ?>">
+                        <?php echo htmlspecialchars($material); ?>
+                        <span class="material-item-remove" onclick="removeMaterial('<?php echo htmlspecialchars($material); ?>')">×</span>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                
+                <div class="material-available">
+                    <?php
+                    // 선택되지 않은 재질 표시
+                    foreach ($material_options as $material):
+                        if (!in_array($material, $selected_materials)):
+                    ?>
+                    <span class="material-add" onclick="addMaterial('<?php echo htmlspecialchars($material); ?>')"><?php echo htmlspecialchars($material); ?> +</span>
+                    <?php 
+                        endif;
+                    endforeach; 
+                    ?>
+                </div>
+                
+                <!-- 수동 입력 영역 -->
+                <div class="material-custom-input" style="margin-top: 15px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" 
+                               id="custom_material_input" 
+                               placeholder="직접 재질 입력 (예: SD700)" 
+                               style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                        <button type="button" 
+                                onclick="addCustomMaterial()" 
+                                style="padding: 8px 20px; background: #17a2b8; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            추가
+                        </button>
+                    </div>
+                </div>
+                
+                <input type="hidden" name="available_materials" id="available_materials_input" 
+                       value='<?php echo json_encode($selected_materials, JSON_UNESCAPED_UNICODE); ?>'>
+            </div>
+            <div class="help-text" style="margin-top: 10px;">
+                재질을 드래그하여 순서를 변경할 수 있습니다. 첫 번째 재질이 기본값으로 표시됩니다.<br>
+                목록에 없는 재질은 직접 입력하여 추가할 수 있습니다.
+            </div>
+        </div>
+        
+        <!-- 재질별 추가 비용 -->
+        <div class="form-group">
+            <label>재질별 추가 비용 (kg당)</label>
+            <div id="material-price-container">
+                <?php
+                // 재질별 가격 데이터 파싱
+                $material_prices = [];
+                if (!empty($product['material_price_data'])) {
+                    $material_prices = json_decode($product['material_price_data'], true) ?: [];
+                }
+                
+                // 선택된 재질에 대해 가격 입력 필드 표시
+                foreach ($selected_materials as $material):
+                    $price = $material_prices[$material] ?? 0;
+                ?>
+                <div class="material-price-item" data-material="<?php echo htmlspecialchars($material); ?>">
+                    <label><?php echo htmlspecialchars($material); ?></label>
+                    <input type="number" 
+                           name="material_prices[<?php echo htmlspecialchars($material); ?>]" 
+                           value="<?php echo $price; ?>" 
+                           step="10"
+                           placeholder="0"
+                           class="form-control material-price-input">
+                    <span class="help-text">원/kg (기본가격 대비 추가비용, 마이너스 가능)</span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <div class="help-text" style="margin-top: 10px;">
+                각 재질별로 kg당 추가 비용을 입력하세요. 
+                예: SS400 0원(기준), SM490 +100원, SUS304 +500원(스테인리스)
             </div>
         </div>
         
@@ -1103,6 +1437,19 @@ include 'admin_head.php';
             <input type="checkbox" id="show_details" name="show_details" value="1"
                    <?php echo ($product['show_details'] ?? 1) ? 'checked' : ''; ?>>
             <label for="show_details">상세내용 표시 (체크 해제 시 기본 정보만 표시)</label>
+        </div>
+        
+        <div class="checkbox-group">
+            <input type="checkbox" id="show_on_homepage" name="show_on_homepage" value="1"
+                   <?php echo ($product['show_on_homepage'] ?? 0) ? 'checked' : ''; ?>>
+            <label for="show_on_homepage">메인페이지 노출</label>
+        </div>
+        
+        <div class="form-group">
+            <label for="homepage_display_order">메인페이지 노출 순서</label>
+            <input type="number" id="homepage_display_order" name="homepage_display_order" 
+                   value="<?php echo htmlspecialchars($product['homepage_display_order'] ?? 0); ?>"
+                   min="0" placeholder="숫자가 작을수록 먼저 표시됩니다">
         </div>
     </div>
     
@@ -1216,21 +1563,21 @@ function toggleApplyPriceButton() {
     }
 }
 
-// 카테고리 변경 시 철근 단가 확인
-document.getElementById('category_code').addEventListener('change', function() {
-    toggleApplyPriceButton();
-    checkAndApplyRebarPrice();
-});
+// 카테고리 변경 시 처리 (단가 적용 버튼 제거됨)
+// document.getElementById('category_code').addEventListener('change', function() {
+//     toggleApplyPriceButton();
+//     checkAndApplyRebarPrice();
+// });
 
-// 규격 입력 시 철근 단가 확인
-document.getElementById('specifications').addEventListener('blur', function() {
-    checkAndApplyRebarPrice();
-});
+// 규격 입력 시 처리 (단가 적용 버튼 제거됨)
+// document.getElementById('specifications').addEventListener('blur', function() {
+//     checkAndApplyRebarPrice();
+// });
 
-// 페이지 로드 시 버튼 상태 설정
-window.addEventListener('DOMContentLoaded', function() {
-    toggleApplyPriceButton();
-});
+// 페이지 로드 시 처리 (단가 적용 버튼 제거됨)
+// window.addEventListener('DOMContentLoaded', function() {
+//     toggleApplyPriceButton();
+// });
 
 // 페이지 로드 시 철근 제품인 경우 단가 확인
 <?php if ($id > 0 && ($product['category_code'] ?? '') === 'rebar' && !$product['price']): ?>
@@ -1261,6 +1608,9 @@ document.querySelector('form').addEventListener('submit', function(e) {
     
     // 원산지 순서 최종 업데이트
     updateOriginOrder();
+    
+    // 재질 순서 최종 업데이트
+    updateMaterialOrder();
     
     // AJAX로 폼 제출
     const formData = new FormData(this);
@@ -1623,13 +1973,33 @@ function handleDrop(e) {
 
 // SortableJS 초기화
 document.addEventListener('DOMContentLoaded', function() {
-    const el = document.getElementById('origin-sortable');
-    if (el) {
-        new Sortable(el, {
+    // 페이지 로드 시 카테고리에 맞는 재질 옵션 업데이트
+    <?php if ($id > 0 && !empty($product['category_code'])): ?>
+    setTimeout(function() {
+        updateMaterialOptions();
+    }, 100);
+    <?php endif; ?>
+    
+    // 원산지 Sortable
+    const originEl = document.getElementById('origin-sortable');
+    if (originEl) {
+        new Sortable(originEl, {
             animation: 150,
             ghostClass: 'ghost',
             onEnd: function(evt) {
                 updateOriginOrder();
+            }
+        });
+    }
+    
+    // 재질 Sortable
+    const materialEl = document.getElementById('material-sortable');
+    if (materialEl) {
+        new Sortable(materialEl, {
+            animation: 150,
+            ghostClass: 'ghost',
+            onEnd: function(evt) {
+                updateMaterialOrder();
             }
         });
     }
@@ -1656,6 +2026,9 @@ function addOrigin(origin) {
     // 추가 버튼 숨기기
     event.target.remove();
     
+    // 가격 입력 필드 추가
+    addOriginPriceField(origin);
+    
     updateOriginOrder();
 }
 
@@ -1675,7 +2048,229 @@ function removeOrigin(origin) {
         span.innerHTML = `${origin} +`;
         availableContainer.appendChild(span);
         
+        // 가격 입력 필드 제거
+        removeOriginPriceField(origin);
+        
         updateOriginOrder();
+    }
+}
+
+// 원산지별 가격 필드 추가
+function addOriginPriceField(origin) {
+    const container = document.getElementById('origin-price-container');
+    const div = document.createElement('div');
+    div.className = 'origin-price-item';
+    div.setAttribute('data-origin', origin);
+    div.innerHTML = `
+        <label>${origin}</label>
+        <input type="number" 
+               name="origin_prices[${origin}]" 
+               value="0" 
+               step="10"
+               placeholder="0"
+               class="form-control origin-price-input">
+        <span class="help-text">원/kg (기본가격 대비 추가비용, 마이너스 가능)</span>
+    `;
+    container.appendChild(div);
+}
+
+// 원산지별 가격 필드 제거
+function removeOriginPriceField(origin) {
+    const container = document.getElementById('origin-price-container');
+    const item = container.querySelector(`[data-origin="${origin}"]`);
+    if (item) {
+        item.remove();
+    }
+}
+
+// 재질 관리 함수들
+// 재질 순서 업데이트
+function updateMaterialOrder() {
+    const container = document.getElementById('material-sortable');
+    const materials = Array.from(container.querySelectorAll('.material-item')).map(item => 
+        item.getAttribute('data-material')
+    );
+    document.getElementById('available_materials_input').value = JSON.stringify(materials);
+}
+
+// 카테고리 변경 시 재질 옵션 업데이트
+function updateMaterialOptions(event) {
+    const categoryCode = document.getElementById('category_code').value;
+    const materialSortable = document.getElementById('material-sortable');
+    const materialAvailable = document.querySelector('.material-available');
+    
+    // 재질 목록 정의
+    let materialOptions = [];
+    if (categoryCode === 'rebar') {
+        // 철근 재질
+        materialOptions = ["SD300", "SD400", "SD400S", "SD500", "SD600", "SD600S"];
+    } else {
+        // 기타 철강재 재질
+        materialOptions = [
+            "SS400", "SM490", "SM490A", "SM490B", "SM520", "SM570",
+            "SUS304", "SUS316", "SUS430", "S45C", "SCM440", 
+            "SPHC", "SS400/A36", "SM45C"
+        ];
+    }
+    
+    // 현재 선택된 재질 가져오기
+    const selectedMaterials = Array.from(materialSortable.querySelectorAll('.material-item')).map(item => 
+        item.getAttribute('data-material')
+    );
+    
+    // 선택된 재질 중 새 옵션에 없는 것은 유지 (커스텀 재질 보호)
+    // 단, 카테고리 변경 시에만 제거
+    const isInitialLoad = !event || event.type !== 'change';
+    if (!isInitialLoad) {
+        materialSortable.querySelectorAll('.material-item').forEach(item => {
+            const material = item.getAttribute('data-material');
+            if (!materialOptions.includes(material)) {
+                item.remove();
+            }
+        });
+    }
+    
+    // 사용 가능한 재질 목록 재구성
+    materialAvailable.innerHTML = '';
+    
+    // 현재 선택된 재질 다시 가져오기 (커스텀 재질 포함)
+    const currentSelected = Array.from(materialSortable.querySelectorAll('.material-item')).map(item => 
+        item.getAttribute('data-material')
+    );
+    
+    // 카테고리별 기본 재질 중 선택되지 않은 것만 표시
+    materialOptions.forEach(material => {
+        if (!currentSelected.includes(material)) {
+            const span = document.createElement('span');
+            span.className = 'material-add';
+            span.setAttribute('onclick', `addMaterial('${material}')`);
+            span.innerHTML = `${material} +`;
+            materialAvailable.appendChild(span);
+        }
+    });
+    
+    // 재질별 가격 필드는 제거하지 않음 (커스텀 재질 보호)
+    // 새로 추가된 재질의 가격 필드만 동적으로 추가됨
+    
+    updateMaterialOrder();
+}
+
+// 재질 추가
+function addMaterial(material) {
+    const container = document.getElementById('material-sortable');
+    const div = document.createElement('div');
+    div.className = 'material-item';
+    div.setAttribute('data-material', material);
+    div.innerHTML = `${material}<span class="material-item-remove" onclick="removeMaterial('${material}')">×</span>`;
+    container.appendChild(div);
+    
+    // 추가 버튼 숨기기
+    event.target.remove();
+    
+    // 가격 입력 필드 추가
+    addMaterialPriceField(material);
+    
+    updateMaterialOrder();
+}
+
+// 사용자 정의 재질 추가
+function addCustomMaterial() {
+    const input = document.getElementById('custom_material_input');
+    const material = input.value.trim().toUpperCase(); // 대문자로 변환
+    
+    if (!material) {
+        alert('재질명을 입력해주세요.');
+        return;
+    }
+    
+    // 이미 존재하는 재질인지 확인
+    const existingMaterials = Array.from(document.querySelectorAll('#material-sortable .material-item')).map(item => 
+        item.getAttribute('data-material')
+    );
+    
+    if (existingMaterials.includes(material)) {
+        alert('이미 추가된 재질입니다.');
+        return;
+    }
+    
+    // 재질 추가
+    const container = document.getElementById('material-sortable');
+    const div = document.createElement('div');
+    div.className = 'material-item';
+    div.setAttribute('data-material', material);
+    div.innerHTML = `${material}<span class="material-item-remove" onclick="removeMaterial('${material}')">×</span>`;
+    container.appendChild(div);
+    
+    // 가격 입력 필드 추가
+    addMaterialPriceField(material);
+    
+    // 입력 필드 초기화
+    input.value = '';
+    
+    updateMaterialOrder();
+}
+
+// Enter 키로 재질 추가
+document.addEventListener('DOMContentLoaded', function() {
+    const customInput = document.getElementById('custom_material_input');
+    if (customInput) {
+        customInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addCustomMaterial();
+            }
+        });
+    }
+});
+
+// 재질 제거
+function removeMaterial(material) {
+    const container = document.getElementById('material-sortable');
+    const item = container.querySelector(`[data-material="${material}"]`);
+    
+    if (item) {
+        item.remove();
+        
+        // 추가 가능한 목록에 다시 추가
+        const availableContainer = document.querySelector('.material-available');
+        const span = document.createElement('span');
+        span.className = 'material-add';
+        span.setAttribute('onclick', `addMaterial('${material}')`);
+        span.innerHTML = `${material} +`;
+        availableContainer.appendChild(span);
+        
+        // 가격 입력 필드 제거
+        removeMaterialPriceField(material);
+        
+        updateMaterialOrder();
+    }
+}
+
+// 재질별 가격 필드 추가
+function addMaterialPriceField(material) {
+    const container = document.getElementById('material-price-container');
+    const div = document.createElement('div');
+    div.className = 'material-price-item';
+    div.setAttribute('data-material', material);
+    div.innerHTML = `
+        <label>${material}</label>
+        <input type="number" 
+               name="material_prices[${material}]" 
+               value="0" 
+               step="10"
+               placeholder="0"
+               class="form-control material-price-input">
+        <span class="help-text">원/kg (기본가격 대비 추가비용, 마이너스 가능)</span>
+    `;
+    container.appendChild(div);
+}
+
+// 재질별 가격 필드 제거
+function removeMaterialPriceField(material) {
+    const container = document.getElementById('material-price-container');
+    const item = container.querySelector(`[data-material="${material}"]`);
+    if (item) {
+        item.remove();
     }
 }
 </script>

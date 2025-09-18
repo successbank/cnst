@@ -32,6 +32,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $current
                     $stmt->execute($selected_ids);
                     $message = "bulk_deactivated";
                     break;
+                    
+                case 'show_homepage':
+                    $stmt = $pdo->prepare("UPDATE products SET show_on_homepage = 1 WHERE id IN ($ids_placeholder)");
+                    $stmt->execute($selected_ids);
+                    $message = "bulk_show_homepage";
+                    break;
+                    
+                case 'hide_homepage':
+                    $stmt = $pdo->prepare("UPDATE products SET show_on_homepage = 0 WHERE id IN ($ids_placeholder)");
+                    $stmt->execute($selected_ids);
+                    $message = "bulk_hide_homepage";
+                    break;
             }
             header("Location: admin_products_integrated.php?tab=products&message=$message");
             exit;
@@ -327,6 +339,8 @@ if (isset($_SESSION['error_message'])) {
             'bulk_deleted' => '선택한 제품이 삭제되었습니다.',
             'bulk_activated' => '선택한 제품이 활성화되었습니다.',
             'bulk_deactivated' => '선택한 제품이 비활성화되었습니다.',
+            'bulk_show_homepage' => '선택한 제품이 메인페이지에 노출됩니다.',
+            'bulk_hide_homepage' => '선택한 제품이 메인페이지에서 숨겨졌습니다.',
             'weight_deleted' => '단중표 데이터가 삭제되었습니다.',
             'error' => '처리 중 오류가 발생했습니다.'
         ];

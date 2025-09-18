@@ -66,6 +66,40 @@ function maskCompanyName($name) {
         return $firstTwo . str_repeat('*', $length - 2);
     }
 }
+
+// 제목 마스킹 함수
+function maskTitle($title) {
+    if (empty($title)) return '-';
+    
+    // 공백과 특수문자를 제거하여 내용을 알아보기 어렵게 만듦
+    $title = preg_replace('/[\s\p{P}\p{S}]/u', '', $title);
+    
+    // 20자로 제한
+    $title = mb_substr($title, 0, 20, 'UTF-8');
+    
+    // UTF-8 문자열을 문자 배열로 변환
+    $chars = preg_split('//u', $title, -1, PREG_SPLIT_NO_EMPTY);
+    
+    // 일부 문자만 표시하고 나머지는 *로 대체
+    $masked = [];
+    $totalChars = count($chars);
+    
+    // 첫 글자는 항상 표시
+    if ($totalChars > 0) {
+        $masked[] = $chars[0];
+    }
+    
+    // 2-3글자마다 하나씩 표시
+    for ($i = 1; $i < $totalChars; $i++) {
+        if ($i % 2 == 0) {
+            $masked[] = $chars[$i];
+        } else {
+            $masked[] = '*';
+        }
+    }
+    
+    return implode('', $masked);
+}
 ?>
 
 <style>
@@ -145,7 +179,7 @@ function maskCompanyName($name) {
                         </td>
                         <td style="text-align: left;">
                             <a href="board_view.php?type=consignment&id=<?php echo $post['id']; ?>">
-                                <?php echo escape($post['title']); ?>
+                                <?php echo escape(maskTitle($post['title'])); ?>
                                 <?php if ($post['attachment']): ?>
                                     <span class="file-icon">📎</span>
                                 <?php endif; ?>

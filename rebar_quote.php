@@ -817,11 +817,11 @@ if (isset($_GET['action'])) {
         <h3 style="margin-bottom: 20px; color: #333; font-size: 20px;">견적 문의 요망</h3>
         <p style="margin-bottom: 24px; color: #666; line-height: 1.6;">
             선택하신 제품의 상세 견적은 전화 문의 부탁드립니다.<br><br>
-            <strong style="color: #1428A0; font-size: 18px;">문의 전화: 010-9820-0495</strong>
+            <strong style="color: #1428A0; font-size: 18px;">문의 전화: 032-564-1616</strong>
         </p>
         <div style="display: flex; gap: 12px; justify-content: center;">
             <button onclick="closeInquiryModal()" style="padding: 10px 24px; background: #f0f0f0; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">닫기</button>
-            <a href="tel:010-9820-0495" style="padding: 10px 24px; background: #1428A0; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; text-decoration: none; display: inline-block;">전화하기</a>
+            <a href="tel:032-564-1616" style="padding: 10px 24px; background: #1428A0; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; text-decoration: none; display: inline-block;">전화하기</a>
         </div>
     </div>
 </div>

@@ -2,7 +2,7 @@
 echo "Testing database connection...\n";
 
 $hosts = [
-    "project5_mysql" => "Docker hostname",
+    "project1_mysql" => "Docker hostname",
     "172.18.0.3" => "Direct IP",
     "mysql" => "Service name",
     "127.0.0.1" => "Localhost"

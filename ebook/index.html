@@ -111,5 +111,323 @@ body { margin: 0px; overflow:hidden }
 </style>
 <script type="text/javascript" src="js/fbendscript.js"></script>
 
+<!-- 플로팅 목차 버튼 -->
+<div id="floatingTocButton" title="목차 보기">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M3 9h14V7H3v2m0 4h14v-2H3v2m0 4h14v-2H3v2m16 0h2v-2h-2v2m0-10v2h2V7h-2m0 6h2v-2h-2v2z"/>
+    </svg>
+</div>
+
+<!-- 목차 팝업 -->
+<div id="tocModal" class="toc-modal">
+    <div class="toc-modal-content">
+        <div class="toc-header">
+            <h2>목차</h2>
+            <span class="toc-close">&times;</span>
+        </div>
+        <div class="toc-body">
+            <div class="toc-section">
+                <h3 class="toc-category">🟢 철근류</h3>
+                <ul class="toc-items">
+                    <li><a href="#" data-page="7">철근 테이블에 따른 ....................... 7</a></li>
+                    <li><a href="#" data-page="10">10철 및표 .............................. 10</a></li>
+                    <li><a href="#" data-page="11">철근 ................................... 11</a></li>
+                </ul>
+            </div>
+            
+            <div class="toc-section">
+                <h3 class="toc-category">🟢 형강류</h3>
+                <ul class="toc-items">
+                    <li><a href="#" data-page="11">KS표준 형강 ............................ 11</a></li>
+                    <li><a href="#" data-page="21">H형강 ................................. 21</a></li>
+                    <li><a href="#" data-page="24">I형강 .................................. 24</a></li>
+                    <li><a href="#" data-page="26">찬넬 ㄷ형강, U형강 ..................... 26</a></li>
+                    <li><a href="#" data-page="29">앵글 L형강 ............................. 29</a></li>
+                    <li><a href="#" data-page="32">평철 ................................... 32</a></li>
+                    <li><a href="#" data-page="36">강판(철판) ............................. 36</a></li>
+                    <li><a href="#" data-page="37">무늬철판 ............................... 37</a></li>
+                    <li><a href="#" data-page="38">체크레이트플레이트 ..................... 38</a></li>
+                    <li><a href="#" data-page="39">사각후레임 ............................. 39</a></li>
+                    <li><a href="#" data-page="41">디프레이트 ............................. 41</a></li>
+                </ul>
+            </div>
+            
+            <div class="toc-section">
+                <h3 class="toc-category">🟢 강관류</h3>
+                <ul class="toc-items">
+                    <li><a href="#" data-page="42">원형스틸 탄소강관 ...................... 42</a></li>
+                    <li><a href="#" data-page="44">갈바이징강 탄소강관 .................... 44</a></li>
+                    <li><a href="#" data-page="46">사각파이프 원형파이프 비교표 ........... 46</a></li>
+                    <li><a href="#" data-page="47">일반구조용 각형강관 .................... 47</a></li>
+                    <li><a href="#" data-page="48">일반구조용사각파이프, 휀스용, 인테리어용,가벼 ... 48</a></li>
+                </ul>
+            </div>
+            
+            <div class="toc-section">
+                <h3 class="toc-category">🟢 창호류</h3>
+                <ul class="toc-items">
+                    <li><a href="#" data-page="49">엘보(엠보판철) ......................... 49</a></li>
+                </ul>
+            </div>
+            
+            <div class="toc-section">
+                <h3 class="toc-category">🟢 스테인리스</h3>
+                <ul class="toc-items">
+                    <li><a href="#" data-page="57">스테인리스 관련사 시공사 목록표 ........ 57</a></li>
+                    <li><a href="#" data-page="58">스테인리스(SUS) 일반사 사각파이프 특별가 ... 58</a></li>
+                    <li><a href="#" data-page="60">스테인리스 최신자료 중국표 ............. 60</a></li>
+                    <li><a href="#" data-page="61">중급중량 .................................. 61</a></li>
+                </ul>
+            </div>
+            
+            <div class="toc-section">
+                <h3 class="toc-category">🟢 기타</h3>
+                <ul class="toc-items">
+                    <li><a href="#" data-page="61">환산표 ................................ 61</a></li>
+                    <li><a href="#" data-page="67">규격 및 약호 .......................... 67</a></li>
+                    <li><a href="#" data-page="68">각종 단위 대비표 ...................... 68</a></li>
+                    <li><a href="#" data-page="71">볼트 규격 체널 범용 용표 .............. 71</a></li>
+                    <li><a href="#" data-page="75">반합수용적 기종규사, 대장리, 앵플소, 쌍볼표 .... 75</a></li>
+                </ul>
+            </div>
+            
+            <div class="toc-section">
+                <h3 class="toc-category">🟢 토목자재</h3>
+                <ul class="toc-items">
+                    <li><a href="#" data-page="76">클럽파일, ㅁ구형강 H빔사, 조각파뿔, 쌓플레이트 .... 77</a></li>
+                </ul>
+            </div>
+            
+            <div class="toc-section">
+                <h3 class="toc-category">🟢 시스크레트(고장력)</h3>
+                <ul class="toc-items">
+                    <li><a href="#" data-page="79">건물 안전에 사용 고활용 ............... 79</a></li>
+                </ul>
+            </div>
+            
+            <div class="toc-section">
+                <h3 class="toc-category">🟢 철근 표시법</h3>
+                <ul class="toc-items">
+                    <li><a href="#" data-page="80">KS D 3504 철근 콘크리트 보강용 표시법 .... 80</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 목차 스타일 -->
+<style>
+/* 플로팅 버튼 스타일 */
+#floatingTocButton {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 56px;
+    height: 56px;
+    background-color: #2196F3;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+    z-index: 9998;
+}
+
+#floatingTocButton:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+/* 모달 스타일 */
+.toc-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s;
+}
+
+.toc-modal-content {
+    position: relative;
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    width: 90%;
+    max-width: 700px;
+    max-height: 80vh;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: slideIn 0.3s;
+}
+
+.toc-header {
+    background-color: #2196F3;
+    color: white;
+    padding: 20px;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.toc-header h2 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.toc-close {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+.toc-close:hover {
+    transform: rotate(90deg);
+}
+
+.toc-body {
+    padding: 20px;
+    max-height: calc(80vh - 80px);
+    overflow-y: auto;
+}
+
+.toc-section {
+    margin-bottom: 25px;
+}
+
+.toc-category {
+    color: #2196F3;
+    font-size: 18px;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.toc-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.toc-items li {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.toc-items a {
+    color: #333;
+    text-decoration: none;
+    display: block;
+    transition: color 0.3s, padding-left 0.3s;
+}
+
+.toc-items a:hover {
+    color: #2196F3;
+    padding-left: 10px;
+}
+
+/* 애니메이션 */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* 모바일 대응 */
+@media screen and (max-width: 600px) {
+    #floatingTocButton {
+        bottom: 20px;
+        right: 20px;
+        width: 48px;
+        height: 48px;
+    }
+    
+    .toc-modal-content {
+        width: 95%;
+        margin: 2% auto;
+    }
+    
+    .toc-header h2 {
+        font-size: 20px;
+    }
+    
+    .toc-category {
+        font-size: 16px;
+    }
+}
+</style>
+
+<!-- 목차 JavaScript -->
+<script>
+// DOM이 로드된 후 실행
+document.addEventListener('DOMContentLoaded', function() {
+    var tocButton = document.getElementById('floatingTocButton');
+    var tocModal = document.getElementById('tocModal');
+    var closeBtn = document.querySelector('.toc-close');
+    
+    // 플로팅 버튼 클릭
+    tocButton.onclick = function() {
+        tocModal.style.display = 'block';
+    }
+    
+    // 닫기 버튼 클릭
+    closeBtn.onclick = function() {
+        tocModal.style.display = 'none';
+    }
+    
+    // 모달 외부 클릭
+    window.onclick = function(event) {
+        if (event.target == tocModal) {
+            tocModal.style.display = 'none';
+        }
+    }
+    
+    // ESC 키로 닫기
+    document.onkeydown = function(event) {
+        if (event.keyCode == 27 && tocModal.style.display == 'block') {
+            tocModal.style.display = 'none';
+        }
+    }
+    
+    // 목차 항목 클릭 시 페이지 이동
+    var tocLinks = document.querySelectorAll('.toc-items a');
+    tocLinks.forEach(function(link) {
+        link.onclick = function(e) {
+            e.preventDefault();
+            var page = this.getAttribute('data-page');
+            
+            // Flash 기반 뷰어의 페이지로 이동
+            if (typeof showPage === 'function') {
+                showPage(page);
+            } else {
+                // Flash가 없거나 함수가 없는 경우 basic-html 버전으로 이동
+                window.location.href = './files/basic-html/page' + page + '.html';
+            }
+            
+            // 모달 닫기
+            tocModal.style.display = 'none';
+        }
+    });
+});
+</script>
+
 </body>
 </html>

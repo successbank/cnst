@@ -41,6 +41,24 @@ try {
         $origin = $available_origins[0];
     }
     $available_origins_json = json_encode($available_origins, JSON_UNESCAPED_UNICODE);
+    
+    // 원산지별 가격 데이터 처리
+    $origin_prices = $_POST['origin_prices'] ?? [];
+    $origin_price_data = json_encode($origin_prices, JSON_UNESCAPED_UNICODE);
+    
+    // 재질 선택 처리 - JSON 형식으로 받음
+    $available_materials_json = $_POST['available_materials'] ?? '[]';
+    $available_materials = json_decode($available_materials_json, true);
+    if (!empty($available_materials)) {
+        // 첫 번째 재질을 기본값으로 설정
+        $material = $available_materials[0];
+    }
+    $available_materials_json = json_encode($available_materials, JSON_UNESCAPED_UNICODE);
+    
+    // 재질별 가격 데이터 처리
+    $material_prices = $_POST['material_prices'] ?? [];
+    $material_price_data = json_encode($material_prices, JSON_UNESCAPED_UNICODE);
+    
     $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     
@@ -77,7 +95,10 @@ try {
         'certifications' => false,
         'brochure_url' => false,
         'show_details' => false,
-        'details_updated_at' => false
+        'details_updated_at' => false,
+        'origin_price_data' => false,
+        'material_price_data' => false,
+        'available_materials' => false
     ];
     
     foreach ($columns_check as $column => &$exists) {
@@ -173,6 +194,18 @@ try {
         }
         if ($columns_check['details_updated_at']) {
             $sql .= ", details_updated_at = NOW()";
+        }
+        if ($columns_check['origin_price_data']) {
+            $sql .= ", origin_price_data = :origin_price_data";
+            $params[':origin_price_data'] = $origin_price_data;
+        }
+        if ($columns_check['material_price_data']) {
+            $sql .= ", material_price_data = :material_price_data";
+            $params[':material_price_data'] = $material_price_data;
+        }
+        if ($columns_check['available_materials']) {
+            $sql .= ", available_materials = :available_materials";
+            $params[':available_materials'] = $available_materials_json;
         }
         
         $sql .= " WHERE id = :id";
@@ -275,6 +308,21 @@ try {
             $columns[] = 'show_details';
             $values[] = ':show_details';
             $params[':show_details'] = $show_details;
+        }
+        if ($columns_check['origin_price_data']) {
+            $columns[] = 'origin_price_data';
+            $values[] = ':origin_price_data';
+            $params[':origin_price_data'] = $origin_price_data;
+        }
+        if ($columns_check['material_price_data']) {
+            $columns[] = 'material_price_data';
+            $values[] = ':material_price_data';
+            $params[':material_price_data'] = $material_price_data;
+        }
+        if ($columns_check['available_materials']) {
+            $columns[] = 'available_materials';
+            $values[] = ':available_materials';
+            $params[':available_materials'] = $available_materials_json;
         }
         
         $sql = "INSERT INTO products (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";

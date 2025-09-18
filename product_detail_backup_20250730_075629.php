@@ -1430,7 +1430,7 @@ if ($product && ($product['category_code'] === '114' || $product['category_code'
                     </svg>
                     견적 문의하기
                 </button>
-                <a href="tel:041-532-6982" class="btn-secondary">
+                <a href="tel:032-564-1616" class="btn-secondary">
                     전화 문의
                 </a>
             </div>

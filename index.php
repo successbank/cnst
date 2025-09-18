@@ -301,6 +301,36 @@ startAutoSlide();
 <?php endif; ?>
 
 <!-- 주요 제품 -->
+<?php 
+// 활성화된 제품 아이콘 가져오기
+try {
+    $stmt = $pdo->query("SELECT * FROM product_icons WHERE is_active = 1 ORDER BY display_order ASC, id ASC");
+    $icons = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $icons = [];
+}
+
+// 기본 SVG 아이콘 맵핑
+$defaultIcons = [
+    'rebar' => '<path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>',
+    'hbeam' => '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>',
+    'plate' => '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>',
+    'metalath' => '<path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/>',
+    'light-hbeam' => '<path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>',
+    'ibeam' => '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 14H7v-2h10v2zm0-4H7v-2h10v2zm0-4H7V7h10v2z"/>',
+    'angle' => '<path d="M12 2l-5.5 9h11z M12 22l5.5-9h-11z"/>',
+    'channel' => '<path d="M21 18H2v2h19c1.1 0 2-.9 2-2s-.9-2-2-2zm0-14H2v2h19c1.1 0 2-.9 2-2s-.9-2-2-2zm0 7H2v2h19c1.1 0 2-.9 2-2s-.9-2-2-2z"/>',
+    'round-bar' => '<circle cx="12" cy="12" r="10"/>',
+    'flat-bar' => '<rect x="2" y="10" width="20" height="4"/>',
+    'c-channel' => '<path d="M6 2v20h12V2H6zm2 18V4h8v16H8z"/>',
+    'tech-plate' => '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/><circle cx="18" cy="6" r="2" fill="#1A237E"/>',
+    'square-pipe' => '<rect x="4" y="4" width="16" height="16" fill="none" stroke="white" stroke-width="2"/><rect x="8" y="8" width="8" height="8" fill="#1A237E"/>',
+    'round-pipe' => '<circle cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="2"/><circle cx="12" cy="12" r="6" fill="#1A237E"/>',
+    'rail' => '<path d="M2 12h20M2 8h20M2 16h20"/><rect x="6" y="6" width="12" height="12" fill="none" stroke="white" stroke-width="1"/>',
+    'sheet-pile' => '<path d="M3 3v18l3-3 3 3 3-3 3 3 3-3 3 3V3l-3 3-3-3-3 3-3-3-3 3z"/>',
+    'stainless' => '<circle cx="12" cy="12" r="3"/><path d="M12 1l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 1z"/>'
+];
+?>
 <section class="section">
     <div class="section-container">
         <div class="section-header">
@@ -309,74 +339,33 @@ startAutoSlide();
         </div>
         <!-- 통합된 제품 영역 -->
         <div class="product-nav-unified" id="productNavUnified">
-            <!-- 기본 표시 9개 제품 (첫 번째 줄) -->
+            <?php if (!empty($icons)): ?>
+            <!-- 첫 번째 줄 (8개) -->
             <div class="product-row product-row-main">
-                <a href="products.php#rebar" class="product-nav-item">
+                <?php 
+                $firstRowIcons = array_slice($icons, 0, 8);
+                foreach ($firstRowIcons as $icon): 
+                ?>
+                <a href="<?php echo htmlspecialchars($icon['icon_url'] ?? '#'); ?>" 
+                   target="<?php echo htmlspecialchars($icon['url_target'] ?? '_self'); ?>" 
+                   class="product-nav-item">
                     <div class="product-nav-icon">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                            <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
-                        </svg>
+                        <?php if ($icon['icon_image']): ?>
+                            <img src="<?php echo htmlspecialchars($icon['icon_image']); ?>" alt="" style="width: 40px; height: 40px; object-fit: contain;">
+                        <?php elseif (isset($defaultIcons[$icon['category_code']])): ?>
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
+                                <?php echo $defaultIcons[$icon['category_code']]; ?>
+                            </svg>
+                        <?php else: ?>
+                            <span style="font-size: 24px;">📦</span>
+                        <?php endif; ?>
                     </div>
-                    <span>철근(특판)</span>
+                    <span><?php echo htmlspecialchars($icon['icon_name']); ?></span>
                 </a>
-                <a href="products.php#hbeam" class="product-nav-item">
-                    <div class="product-nav-icon">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                        </svg>
-                    </div>
-                    <span>H형강(H빔)</span>
-                </a>
-                <a href="products.php#plate" class="product-nav-item">
-                    <div class="product-nav-icon">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
-                        </svg>
-                    </div>
-                    <span>철강(강판)</span>
-                </a>
-                <a href="products.php#metalath" class="product-nav-item">
-                    <div class="product-nav-icon">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                            <path d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"/>
-                        </svg>
-                    </div>
-                    <span>메탈라스(망철판)</span>
-                </a>
-                <a href="products.php#light-hbeam" class="product-nav-item">
-                    <div class="product-nav-icon">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                            <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
-                        </svg>
-                    </div>
-                    <span>경량H형강</span>
-                </a>
-                <a href="products.php#ibeam" class="product-nav-item">
-                    <div class="product-nav-icon">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 14H7v-2h10v2zm0-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                        </svg>
-                    </div>
-                    <span>I형강(빔)</span>
-                </a>
-                <a href="products.php#angle" class="product-nav-item">
-                    <div class="product-nav-icon">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                            <path d="M12 2l-5.5 9h11z M12 22l5.5-9h-11z"/>
-                        </svg>
-                    </div>
-                    <span>ㄱ형강(앵글)</span>
-                </a>
-                <a href="products.php#channel" class="product-nav-item">
-                    <div class="product-nav-icon">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                            <path d="M21 18H2v2h19c1.1 0 2-.9 2-2s-.9-2-2-2zm0-14H2v2h19c1.1 0 2-.9 2-2s-.9-2-2-2zm0 7H2v2h19c1.1 0 2-.9 2-2s-.9-2-2-2z"/>
-                        </svg>
-                    </div>
-                    <span>ㄷ형강(찬넬)</span>
-                </a>
+                <?php endforeach; ?>
             </div>
             
+            <?php if (count($icons) > 8): ?>
             <!-- 더보기 버튼 (중앙에 위치) -->
             <div class="product-expand-container" id="productExpandContainer">
                 <button class="product-expand-btn" onclick="toggleProductExpansion()">
@@ -386,87 +375,58 @@ startAutoSlide();
                 </button>
             </div>
             
-            <!-- 확장 제품 영역 (두 번째, 세 번째 줄) -->
+            <!-- 확장 제품 영역 (두 번째 줄) -->
             <div class="product-rows-expanded" id="productRowsExpanded">
-                <!-- 두 번째 줄 (1개 + 8개) -->
+                <!-- 두 번째 줄 (8개) -->
                 <div class="product-row">
-                    <a href="products.php#round-bar" class="product-nav-item">
+                    <?php 
+                    $secondRowIcons = array_slice($icons, 8, 8);
+                    foreach ($secondRowIcons as $icon): 
+                    ?>
+                    <a href="<?php echo htmlspecialchars($icon['icon_url'] ?? '#'); ?>" 
+                       target="<?php echo htmlspecialchars($icon['url_target'] ?? '_self'); ?>" 
+                       class="product-nav-item">
                         <div class="product-nav-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                                <circle cx="12" cy="12" r="10"/>
-                            </svg>
+                            <?php if ($icon['icon_image']): ?>
+                                <img src="<?php echo htmlspecialchars($icon['icon_image']); ?>" alt="" style="width: 40px; height: 40px; object-fit: contain;">
+                            <?php elseif (isset($defaultIcons[$icon['category_code']])): ?>
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
+                                    <?php echo $defaultIcons[$icon['category_code']]; ?>
+                                </svg>
+                            <?php else: ?>
+                                <span style="font-size: 24px;">📦</span>
+                            <?php endif; ?>
                         </div>
-                        <span>환봉(원형강)</span>
+                        <span><?php echo htmlspecialchars($icon['icon_name']); ?></span>
                     </a>
-                    <a href="products.php#flat-bar" class="product-nav-item">
+                    <?php endforeach; ?>
+                    
+                    <?php 
+                    // 추가 아이콘이 있으면 표시 (16개 이상)
+                    if (count($icons) > 16):
+                        $additionalIcons = array_slice($icons, 16);
+                        foreach ($additionalIcons as $icon): 
+                    ?>
+                    <a href="<?php echo htmlspecialchars($icon['icon_url'] ?? '#'); ?>" 
+                       target="<?php echo htmlspecialchars($icon['url_target'] ?? '_self'); ?>" 
+                       class="product-nav-item">
                         <div class="product-nav-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                                <rect x="2" y="10" width="20" height="4"/>
-                            </svg>
+                            <?php if ($icon['icon_image']): ?>
+                                <img src="<?php echo htmlspecialchars($icon['icon_image']); ?>" alt="" style="width: 40px; height: 40px; object-fit: contain;">
+                            <?php elseif (isset($defaultIcons[$icon['category_code']])): ?>
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
+                                    <?php echo $defaultIcons[$icon['category_code']]; ?>
+                                </svg>
+                            <?php else: ?>
+                                <span style="font-size: 24px;">📦</span>
+                            <?php endif; ?>
                         </div>
-                        <span>평철</span>
+                        <span><?php echo htmlspecialchars($icon['icon_name']); ?></span>
                     </a>
-                    <a href="products.php#c-channel" class="product-nav-item">
-                        <div class="product-nav-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                                <path d="M6 2v20h12V2H6zm2 18V4h8v16H8z"/>
-                            </svg>
-                        </div>
-                        <span>C형강</span>
-                    </a>
-                    <a href="products.php#tech-plate" class="product-nav-item">
-                        <div class="product-nav-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                                <circle cx="18" cy="6" r="2" fill="#1A237E"/>
-                            </svg>
-                        </div>
-                        <span>테크플레이트</span>
-                    </a>
-                    <a href="products.php#square-pipe" class="product-nav-item">
-                        <div class="product-nav-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                                <rect x="4" y="4" width="16" height="16" fill="none" stroke="white" stroke-width="2"/>
-                                <rect x="8" y="8" width="8" height="8" fill="#1A237E"/>
-                            </svg>
-                        </div>
-                        <span>사각파이프(각관)</span>
-                    </a>
-                    <a href="products.php#round-pipe" class="product-nav-item">
-                        <div class="product-nav-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                                <circle cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="2"/>
-                                <circle cx="12" cy="12" r="6" fill="#1A237E"/>
-                            </svg>
-                        </div>
-                        <span>원형파이프(강관)</span>
-                    </a>
-                    <a href="products.php#rail" class="product-nav-item">
-                        <div class="product-nav-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                                <path d="M2 12h20M2 8h20M2 16h20"/>
-                                <rect x="6" y="6" width="12" height="12" fill="none" stroke="white" stroke-width="1"/>
-                            </svg>
-                        </div>
-                        <span>레일</span>
-                    </a>
-                    <a href="products.php#sheet-pile" class="product-nav-item">
-                        <div class="product-nav-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                                <path d="M3 3v18l3-3 3 3 3-3 3 3 3-3 3 3V3l-3 3-3-3-3 3-3-3-3 3z"/>
-                            </svg>
-                        </div>
-                        <span>강널말뚝(쉬트파일)</span>
-                    </a>
-                    <a href="products.php#stainless" class="product-nav-item">
-                        <div class="product-nav-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-                                <circle cx="12" cy="12" r="3"/>
-                                <path d="M12 1l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 1z"/>
-                            </svg>
-                        </div>
-                        <span>스테인레스(STS)</span>
-                    </a>
+                    <?php 
+                        endforeach;
+                    endif; 
+                    ?>
                 </div>
                 
                 <!-- 접기 버튼 -->
@@ -478,11 +438,397 @@ startAutoSlide();
                     </button>
                 </div>
             </div>
+            <?php endif; ?>
+            <?php else: ?>
+            <!-- 아이콘이 없을 때 기본 표시 -->
+            <div style="text-align: center; padding: 60px 0; color: #666;">
+                <p>표시할 제품 아이콘이 없습니다.</p>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 </section>
 
 
+
+<!-- 추천 제품 (메인페이지 노출 제품) -->
+<?php
+// 메인페이지 노출 제품 가져오기
+$stmt = $pdo->query("
+    SELECT p.*, pc.category_name
+    FROM products p
+    JOIN product_categories pc ON p.category_code = pc.category_code
+    WHERE p.show_on_homepage = 1 AND p.is_active = 1
+    ORDER BY p.homepage_display_order ASC, p.id DESC
+    LIMIT 12
+");
+$featured_products = $stmt->fetchAll();
+
+if (!empty($featured_products)):
+?>
+<section class="section featured-products-section">
+    <div class="section-container">
+        <div class="section-header">
+            <h3>추천 제품</h3>
+            <p>충남스틸이 추천하는 인기 제품입니다</p>
+        </div>
+        
+        <div class="featured-products-container">
+            <div class="featured-products-slider" id="featuredProductsSlider">
+                <?php foreach ($featured_products as $index => $product): ?>
+                <div class="featured-product-card">
+                    <a href="product_detail.php?id=<?php echo $product['id']; ?>" class="product-card-link">
+                        <div class="product-card-image">
+                            <?php if ($product['main_image']): ?>
+                                <img src="<?php echo htmlspecialchars($product['main_image']); ?>" 
+                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>">
+                            <?php else: ?>
+                                <div class="no-image-placeholder">
+                                    <span>이미지 준비중</span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="product-card-info">
+                            <h4><?php echo htmlspecialchars($product['product_name']); ?></h4>
+                            <?php if ($product['specifications']): ?>
+                                <p class="product-spec"><?php echo htmlspecialchars($product['specifications']); ?></p>
+                            <?php endif; ?>
+                            <div class="product-category">
+                                <span class="category-badge"><?php echo htmlspecialchars($product['category_name']); ?></span>
+                            </div>
+                            <?php if ($product['price'] && $product['price'] > 0): ?>
+                                <div class="product-price">
+                                    <span class="price-label">기준단가</span>
+                                    <span class="price-value"><?php echo number_format($product['price']); ?>원</span>
+                                </div>
+                                <?php if ($product['min_price'] && $product['max_price']): ?>
+                                <div class="price-range">
+                                    <?php echo number_format($product['min_price']); ?>원 ~ <?php echo number_format($product['max_price']); ?>원
+                                </div>
+                                <?php else: ?>
+                                <div class="price-range">
+                                    <?php echo number_format($product['price'] * 0.9); ?>원 ~ <?php echo number_format($product['price'] * 1.1); ?>원
+                                </div>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
+                    </a>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            
+            <!-- 슬라이드 네비게이션 -->
+            <button class="featured-nav-btn featured-prev" onclick="slideFeaturedProducts(-1)">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="featured-nav-btn featured-next" onclick="slideFeaturedProducts(1)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            
+            <!-- 점 표시기 -->
+            <div class="featured-dots" id="featuredDots"></div>
+        </div>
+    </div>
+</section>
+
+<style>
+/* 추천 제품 섹션 스타일 */
+.featured-products-section {
+    background-color: #f8f9fa;
+    padding: 60px 0;
+}
+
+.featured-products-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.featured-products-slider {
+    display: flex;
+    transition: transform 0.5s ease;
+    gap: 20px;
+}
+
+.featured-product-card {
+    flex: 0 0 calc(25% - 15px);
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.featured-product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+}
+
+.product-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.product-card-image {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    background: #f5f5f5;
+}
+
+.product-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.no-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e9ecef;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.product-card-info {
+    padding: 20px;
+}
+
+.product-card-info h4 {
+    font-size: 18px;
+    margin: 0 0 10px 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.product-spec {
+    font-size: 14px;
+    color: #666;
+    margin: 0 0 10px 0;
+}
+
+.product-category {
+    margin-bottom: 15px;
+}
+
+.category-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #e3f2fd;
+    color: #1976d2;
+    font-size: 12px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.product-price {
+    margin-bottom: 5px;
+}
+
+.price-label {
+    font-size: 12px;
+    color: #666;
+    margin-right: 5px;
+}
+
+.price-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1A237E;
+}
+
+.price-range {
+    font-size: 14px;
+    color: #666;
+}
+
+/* 네비게이션 버튼 */
+.featured-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+.featured-nav-btn:hover {
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.featured-prev {
+    left: 20px;
+}
+
+.featured-next {
+    right: 20px;
+}
+
+/* 점 표시기 */
+.featured-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 30px;
+}
+
+.featured-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.featured-dot.active {
+    background: #1A237E;
+    width: 24px;
+    border-radius: 4px;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1200px) {
+    .featured-product-card {
+        flex: 0 0 calc(33.333% - 14px);
+    }
+}
+
+@media (max-width: 768px) {
+    .featured-product-card {
+        flex: 0 0 calc(50% - 10px);
+    }
+    
+    .featured-nav-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 14px;
+    }
+    
+    .featured-prev {
+        left: 10px;
+    }
+    
+    .featured-next {
+        right: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .featured-product-card {
+        flex: 0 0 100%;
+    }
+}
+</style>
+
+<script>
+// 추천 제품 슬라이드 기능
+let featuredCurrentSlide = 0;
+let featuredProductsPerView = 4;
+let featuredTotalSlides = 0;
+
+function initFeaturedProducts() {
+    const slider = document.getElementById('featuredProductsSlider');
+    const products = slider.querySelectorAll('.featured-product-card');
+    const dotsContainer = document.getElementById('featuredDots');
+    
+    // 반응형에 따른 표시 개수 설정
+    if (window.innerWidth <= 480) {
+        featuredProductsPerView = 1;
+    } else if (window.innerWidth <= 768) {
+        featuredProductsPerView = 2;
+    } else if (window.innerWidth <= 1200) {
+        featuredProductsPerView = 3;
+    } else {
+        featuredProductsPerView = 4;
+    }
+    
+    featuredTotalSlides = Math.ceil(products.length / featuredProductsPerView);
+    
+    // 점 표시기 생성
+    dotsContainer.innerHTML = '';
+    for (let i = 0; i < featuredTotalSlides; i++) {
+        const dot = document.createElement('button');
+        dot.className = 'featured-dot' + (i === 0 ? ' active' : '');
+        dot.onclick = () => goToFeaturedSlide(i);
+        dotsContainer.appendChild(dot);
+    }
+    
+    updateFeaturedSlider();
+}
+
+function slideFeaturedProducts(direction) {
+    featuredCurrentSlide += direction;
+    
+    if (featuredCurrentSlide < 0) {
+        featuredCurrentSlide = featuredTotalSlides - 1;
+    } else if (featuredCurrentSlide >= featuredTotalSlides) {
+        featuredCurrentSlide = 0;
+    }
+    
+    updateFeaturedSlider();
+}
+
+function goToFeaturedSlide(index) {
+    featuredCurrentSlide = index;
+    updateFeaturedSlider();
+}
+
+function updateFeaturedSlider() {
+    const slider = document.getElementById('featuredProductsSlider');
+    const slideWidth = 100 / featuredProductsPerView;
+    const offset = -featuredCurrentSlide * 100;
+    
+    slider.style.transform = `translateX(${offset}%)`;
+    
+    // 점 표시기 업데이트
+    const dots = document.querySelectorAll('.featured-dot');
+    dots.forEach((dot, index) => {
+        dot.classList.toggle('active', index === featuredCurrentSlide);
+    });
+}
+
+// 자동 슬라이드
+let featuredAutoSlideInterval;
+
+function startFeaturedAutoSlide() {
+    featuredAutoSlideInterval = setInterval(() => {
+        slideFeaturedProducts(1);
+    }, 5000);
+}
+
+function stopFeaturedAutoSlide() {
+    clearInterval(featuredAutoSlideInterval);
+}
+
+// 초기화 및 이벤트 리스너
+document.addEventListener('DOMContentLoaded', () => {
+    initFeaturedProducts();
+    startFeaturedAutoSlide();
+    
+    // 마우스 호버 시 자동 슬라이드 중지
+    const container = document.querySelector('.featured-products-container');
+    container.addEventListener('mouseenter', stopFeaturedAutoSlide);
+    container.addEventListener('mouseleave', startFeaturedAutoSlide);
+});
+
+// 윈도우 리사이즈 시 재초기화
+window.addEventListener('resize', () => {
+    initFeaturedProducts();
+});
+</script>
+<?php endif; ?>
 
 <!-- 주요 서비스 -->
 <section class="section" style="background-color: #F8F9FA;">

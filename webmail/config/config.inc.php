@@ -5,7 +5,7 @@
 $config = [];
 
 // Database connection string (DSN) for read+write operations
-$config['db_dsnw'] = 'mysql://user:userpassword@project5_mysql/roundcube';
+$config['db_dsnw'] = 'mysql://root:rootpassword@project1_mysql/roundcube';
 
 // IMAP server configuration
 $config['imap_host'] = 'localhost:143';

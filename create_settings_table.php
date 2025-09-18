@@ -19,14 +19,14 @@ try {
     $settings = [
         ['company_name', '충남스틸', 'company'],
         ['company_address', '충청남도 아산시 둔포면 아산밸리로 63', 'company'],
-        ['company_tel', '041-532-1234', 'company'],
-        ['company_fax', '041-532-1235', 'company'],
+        ['company_tel', '032-564-1616', 'company'],
+        ['company_fax', '032-564-0090', 'company'],
         ['company_email', 'info@chungnamsteel.com', 'company'],
         ['site_title', '충남스틸 - 철강 전문 유통업체', 'seo'],
         ['site_description', '충남스틸은 철강 제품의 판매 및 가공을 전문으로 하는 철강 유통업체입니다. 고품질의 철강 제품과 신속한 납품으로 고객 만족을 추구합니다.', 'seo'],
         ['site_keywords', '철강, 철강유통, 충남스틸, 아산철강, 철강가공', 'seo'],
         ['contact_email', 'sales@chungnamsteel.com', 'contact'],
-        ['contact_phone', '041-532-1234', 'contact']
+        ['contact_phone', '032-564-1616', 'contact']
     ];
     
     $stmt = $pdo->prepare("INSERT INTO site_settings (setting_key, setting_value, setting_group) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE setting_value=setting_value");
