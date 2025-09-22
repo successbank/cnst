@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once 'db.php';
-// require_once 'includes/rebar_unit_weights.php'; // 철근 카테고리 삭제로 주석처리
+require_once 'includes/rebar_unit_weights.php'; // 철근 카테고리 활성화
 $currentPage = 'products';
 $pageTitle = '제품소개';
 $additionalCSS = [];
@@ -53,30 +53,12 @@ if ($category_filter !== 'all') {
 $where_clause = "p.is_active = 1";
 $params = [];
 
-// 부모 제품이 by_specification 모드인지 확인
+// 카테고리 필터 처리
 $show_specifications = false;
 if ($category_filter !== 'all') {
-    $check_stmt = $pdo->prepare("
-        SELECT display_mode FROM products 
-        WHERE category_code = ? AND parent_product_id IS NULL 
-        LIMIT 1
-    ");
-    $check_stmt->execute([$category_filter]);
-    $parent_display_mode = $check_stmt->fetchColumn();
-    
-    if ($parent_display_mode === 'by_specification') {
-        // 규격별 제품 표시 모드
-        $where_clause .= " AND p.category_code = ? AND p.parent_product_id IS NOT NULL";
-        $params[] = $category_filter;
-        $show_specifications = true;
-    } else {
-        // 일반 제품 표시 모드
-        $where_clause .= " AND p.category_code = ? AND p.parent_product_id IS NULL";
-        $params[] = $category_filter;
-    }
-} else {
-    // 전체 카테고리일 때는 parent_product_id가 NULL인 것만
-    $where_clause .= " AND p.parent_product_id IS NULL";
+    // 특정 카테고리 선택 시
+    $where_clause .= " AND p.category_code = ?";
+    $params[] = $category_filter;
 }
 
 if ($search !== '') {
@@ -96,7 +78,7 @@ $total_pages = ceil($total_products / $per_page);
 
 // 제품 목록 가져오기
 $sql = "SELECT p.*, pc.category_name,
-        CONCAT(p.product_name, IF(p.specification IS NOT NULL AND p.specification != '', CONCAT(' ', p.specification), IF(p.specifications IS NOT NULL AND p.specifications != '', CONCAT(' ', p.specifications), ''))) AS display_name
+        CONCAT(p.product_name, IF(p.specifications IS NOT NULL AND p.specifications != '', CONCAT(' ', p.specifications), '')) AS display_name
         FROM products p
         JOIN product_categories pc ON p.category_code = pc.category_code
         WHERE {$where_clause}
@@ -107,25 +89,26 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $products = $stmt->fetchAll();
 
-// 철근 번들 데이터를 미리 로드 (성능 최적화) - 철근 카테고리 삭제로 주석처리
+// 철근 번들 데이터를 미리 로드 (성능 최적화)
 $rebar_bundle_data = [];
-// if ($category_filter === 'rebar' || $category_filter === 'all') {
-//     $bundle_stmt = $pdo->query("
-//         SELECT p_standard, p_material, p_unit_length, p_bd_count, p_bd_weight
-//         FROM rebar_bundle_data
-//         WHERE p_bd_count > 0 AND p_bd_weight > 0
-//     ");
-//     while ($row = $bundle_stmt->fetch(PDO::FETCH_ASSOC)) {
-//         $key = $row['p_standard'] . '_' . $row['p_material'];
-//         if (!isset($rebar_bundle_data[$key])) {
-//             $rebar_bundle_data[$key] = [];
-//         }
-//         $rebar_bundle_data[$key][$row['p_unit_length']] = [
-//             'bd_count' => $row['p_bd_count'],
-//             'bd_weight' => $row['p_bd_weight']
-//         ];
-//     }
-// }
+if ($category_filter === 'rebar' || $category_filter === 'all') {
+    $bundle_stmt = $pdo->query("
+        SELECT spec_name, length, piece_weight, pieces_per_ton, weight_per_ton
+        FROM rebar_length_data
+        WHERE pieces_per_ton > 0 AND weight_per_ton > 0
+    ");
+    while ($row = $bundle_stmt->fetch(PDO::FETCH_ASSOC)) {
+        $key = $row['spec_name'];
+        if (!isset($rebar_bundle_data[$key])) {
+            $rebar_bundle_data[$key] = [];
+        }
+        $rebar_bundle_data[$key][$row['length']] = [
+            'piece_weight' => $row['piece_weight'],
+            'pieces_per_ton' => $row['pieces_per_ton'],
+            'weight_per_ton' => $row['weight_per_ton']
+        ];
+    }
+}
 
 // 모든 제품에 available_origins_array 파싱 및 번들 정보 추가
 foreach ($products as &$product) {
@@ -142,24 +125,22 @@ foreach ($products as &$product) {
         $product['display_origin'] = $product['origin'];
     }
     
-    // 철근 제품인 경우 번들 정보 추가 - 철근 카테고리 삭제로 주석처리
-    // if ($product['category_code'] === 'rebar') {
-    //     // 규격 추출 (예: "철근 HD16" -> "HD16")
-    //     preg_match('/([A-Z]+D\d+)/', $product['product_name'], $matches);
-    //     if (isset($matches[1])) {
-    //         $spec = $matches[1];
-    //         $material = $product['material'] ?? 'SD400'; // 기본값 SD400
-    //         $bundle_key = $spec . '_' . $material;
-    //
-    //         if (isset($rebar_bundle_data[$bundle_key])) {
-    //             $product['bundle_info'] = $rebar_bundle_data[$bundle_key];
-    //             // 대표 길이(8m) 정보 추가
-    //             if (isset($rebar_bundle_data[$bundle_key][8.0])) {
-    //                 $product['default_bundle'] = $rebar_bundle_data[$bundle_key][8.0];
-    //             }
-    //         }
-    //     }
-    // }
+    // 철근 제품인 경우 번들 정보 추가
+    if ($product['category_code'] === 'rebar') {
+        // 규격 추출 (예: "철근 D16" -> "D16")
+        preg_match('/(D\d+)/', $product['product_name'], $matches);
+        if (isset($matches[1])) {
+            $spec = $matches[1];
+
+            if (isset($rebar_bundle_data[$spec])) {
+                $product['bundle_info'] = $rebar_bundle_data[$spec];
+                // 대표 길이(8m) 정보 추가
+                if (isset($rebar_bundle_data[$spec][8.0])) {
+                    $product['default_bundle'] = $rebar_bundle_data[$spec][8.0];
+                }
+            }
+        }
+    }
 }
 ?>
 
@@ -975,10 +956,6 @@ foreach ($products as &$product) {
                 <?php echo escape($category['category_name']); ?>
             </a>
         <?php endforeach; ?>
-        <a href="?category=rebar&view=<?php echo $view_type; ?>&search=<?php echo urlencode($search); ?>"
-           class="category-btn <?php echo $category_filter === 'rebar' ? 'active' : ''; ?>">
-            철근
-        </a>
     </div>
 
     <?php 
@@ -1019,20 +996,11 @@ foreach ($products as &$product) {
         <!-- 타일 뷰 -->
         <div class="products-grid">
             <?php foreach ($products as $product): ?>
-                <?php 
-                // 규격별 제품인 경우 처리
-                if ($product['parent_product_id']) {
-                    // 계산기가 있는 제품은 모두 개별 상세 페이지로
-                    if ($product['has_calculator']) {
-                        $product_link = 'product_detail.php?id=' . $product['id'];
-                    } else {
-                        $product_link = 'product_detail.php?category=' . $product['category_code'] . '&spec=' . urlencode($product['specification']);
-                    }
-                } else {
-                    $product_link = 'product_detail.php?id=' . $product['id'];
-                }
+                <?php
+                // 제품 링크 설정
+                $product_link = 'product_detail.php?id=' . $product['id'];
                 ?>
-                <a href="<?php echo $product_link; ?>" class="product-card <?php echo ($product['parent_product_id'] || $product['category_code'] === 'rebar') ? 'spec-product' : ''; ?>">
+                <a href="<?php echo $product_link; ?>" class="product-card <?php echo ($product['category_code'] === 'rebar') ? 'spec-product' : ''; ?>">
                     <div class="product-image image-upload-wrapper" data-product-id="<?php echo $product['id']; ?>">
                         <?php if ($product['main_image']): ?>
                             <img src="<?php echo escape($product['main_image']); ?>" alt="<?php echo escape($product['product_name']); ?>">
@@ -1124,18 +1092,9 @@ foreach ($products as &$product) {
         <!-- 리스트 뷰 -->
         <div class="products-list">
             <?php foreach ($products as $product): ?>
-                <?php 
-                // 규격별 제품인 경우 처리
-                if ($product['parent_product_id']) {
-                    // 계산기가 있는 제품은 모두 개별 상세 페이지로
-                    if ($product['has_calculator']) {
-                        $product_link = 'product_detail.php?id=' . $product['id'];
-                    } else {
-                        $product_link = 'product_detail.php?category=' . $product['category_code'] . '&spec=' . urlencode($product['specification']);
-                    }
-                } else {
-                    $product_link = 'product_detail.php?id=' . $product['id'];
-                }
+                <?php
+                // 제품 링크 설정
+                $product_link = 'product_detail.php?id=' . $product['id'];
                 ?>
                 <a href="<?php echo $product_link; ?>" class="product-list-item <?php echo $product['category_code'] === 'rebar' ? 'spec-product' : ''; ?>">
                     <div class="product-list-image image-upload-wrapper" data-product-id="<?php echo $product['id']; ?>">

@@ -56,12 +56,13 @@ if ($product_id) {
     ?>
     
     <style>
-    /* Product Detail Page Styles - Using Samsung Style Variables */
+    /* Product Detail Page Styles - Clean Modern Design */
     .product-header-section {
-        background: linear-gradient(135deg, #E8F0FE 0%, #F8F9FA 100%);
-        padding: 60px 0;
+        background: #FFFFFF;
+        padding: 40px 0;
         text-align: center;
         position: relative;
+        border-bottom: 1px solid #E5E5E5;
     }
     
     .product-header-content {
@@ -71,23 +72,27 @@ if ($product_id) {
     }
     
     .product-category {
-        color: var(--primary-blue);
-        font-size: 18px;
-        margin-bottom: 12px;
-        font-weight: 600;
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 8px;
+        font-weight: 400;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     
     .product-title {
-        font-size: 36px;
+        font-size: 32px;
         font-weight: 700;
-        color: var(--text-primary);
-        margin-bottom: 12px;
+        color: #222;
+        margin-bottom: 16px;
+        line-height: 1.2;
     }
     
     .product-subtitle {
-        font-size: 18px;
-        color: var(--text-secondary);
+        font-size: 16px;
+        color: #666;
         margin-bottom: 20px;
+        line-height: 1.5;
     }
     
     .admin-actions {
@@ -103,10 +108,10 @@ if ($product_id) {
     }
     
     .product-info-section {
-        background: var(--white);
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        background: #FFFFFF;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         margin-bottom: 30px;
     }
     
@@ -153,21 +158,24 @@ if ($product_id) {
     }
     
     .detail-label {
-        font-weight: 600;
-        color: var(--text-secondary);
+        font-weight: 400;
+        color: #666;
         margin-bottom: 8px;
-        font-size: 14px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     
     .detail-value {
         font-size: 18px;
-        color: var(--text-primary);
+        color: #222;
+        font-weight: 500;
     }
     
     .unit-weight-highlight {
-        color: var(--primary-blue);
+        color: #1428A0;
         font-weight: 700;
-        font-size: 24px;
+        font-size: 28px;
     }
     
     .calculator-link-btn {
@@ -226,17 +234,33 @@ if ($product_id) {
     
     /* 실시간 계산기 스타일 */
     .calculator-section {
-        background: var(--bg-light);
-        border-radius: 12px;
-        padding: 20px;
-        margin-top: 20px;
+        background: #F8F9FA;
+        border-radius: 8px;
+        padding: 30px;
+        margin-top: 30px;
+        border: 1px solid #E5E5E5;
     }
     
     .calculator-title {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 20px;
+        color: #222;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .calculator-icon {
+        width: 24px;
+        height: 24px;
+        background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
     }
     
     .calc-form-row {
@@ -253,30 +277,32 @@ if ($product_id) {
     
     .calc-form-group label {
         font-size: 14px;
-        font-weight: 600;
-        color: var(--text-secondary);
+        font-weight: 500;
+        color: #666;
         margin-bottom: 8px;
     }
     
     .calc-control {
-        padding: 10px 12px;
-        border: 2px solid var(--border-color);
-        border-radius: 8px;
+        padding: 12px 16px;
+        border: 1px solid #DDD;
+        border-radius: 6px;
         font-size: 15px;
-        transition: border-color 0.3s;
+        transition: all 0.2s;
+        background: #FFFFFF;
     }
     
     .calc-control:focus {
         outline: none;
-        border-color: var(--primary-blue);
+        border-color: #1428A0;
+        box-shadow: 0 0 0 3px rgba(20, 40, 160, 0.1);
     }
     
     .calc-result {
-        background: var(--white);
+        background: #FFFFFF;
         border-radius: 8px;
-        padding: 20px;
-        margin-top: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        padding: 24px;
+        margin-top: 24px;
+        border: 1px solid #E5E5E5;
         animation: fadeIn 0.3s ease-in;
     }
     
@@ -293,21 +319,31 @@ if ($product_id) {
     }
     
     .calc-result-value {
-        font-size: 32px;
+        font-size: 36px;
         font-weight: 700;
-        color: var(--primary-blue);
-        margin-bottom: 15px;
+        color: #1428A0;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+    }
+
+    .calc-result-unit {
+        font-size: 20px;
+        font-weight: 400;
+        color: #666;
     }
     
     .calc-result-price {
-        font-size: 24px;
+        font-size: 22px;
         font-weight: 600;
-        color: var(--success-color);
-        margin: 15px 0;
-        padding: 15px;
-        background: var(--success-light-bg);
-        border-radius: 8px;
+        color: #28a745;
+        margin: 20px 0;
+        padding: 16px;
+        background: #E8F5E9;
+        border-radius: 6px;
         text-align: center;
+        border: 1px solid #C8E6C9;
     }
     
     .calc-steps {
@@ -464,6 +500,107 @@ if ($product_id) {
             border-right: none;
         }
     }
+
+    /* 철근 계산기 전용 스타일 */
+    .bundle-info {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+
+    .bundle-info h4 {
+        margin: 0 0 15px 0;
+        color: #333;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .bundle-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .bundle-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .bundle-label {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .bundle-value {
+        font-weight: bold;
+        color: #1976d2;
+        font-size: 16px;
+    }
+
+    .calc-result-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin: 20px 0;
+    }
+
+    .result-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px;
+        background: #f5f5f5;
+        border-radius: 6px;
+    }
+
+    .result-label {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .result-value {
+        font-weight: bold;
+        color: #333;
+        font-size: 16px;
+    }
+
+    .btn-add-quote {
+        width: 100%;
+        padding: 12px;
+        background: #1976d2;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-add-quote:hover {
+        background: #1565c0;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+    }
+
+    #rebarCalcResult {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        border: 1px solid #e0e0e0;
+    }
+
+    @media (max-width: 768px) {
+        .bundle-grid,
+        .calc-result-grid {
+            grid-template-columns: 1fr;
+        }
+    }
     </style>
     
     <!-- Product Header Section -->
@@ -530,6 +667,15 @@ if ($product_id) {
                     </div>
                     <?php endif; ?>
 
+                    <?php if ($product['specification_weight']): ?>
+                    <div class="detail-item">
+                        <div class="detail-label">단위중량</div>
+                        <div class="detail-value unit-weight-highlight">
+                            <?php echo number_format($product['specification_weight'], 3); ?> kg/<?php echo $product['calculation_type'] === 'sheet' ? '장' : 'm'; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
                     <?php if ($product['price'] && $product['price'] > 0): ?>
                     <?php
                     $min_price = isset($product['min_price']) && $product['min_price'] > 0
@@ -547,22 +693,124 @@ if ($product_id) {
                         </div>
                     </div>
                     <?php endif; ?>
-
-                    <?php if ($product['specification_weight']): ?>
-                    <div class="detail-item">
-                        <div class="detail-label">단위중량</div>
-                        <div class="detail-value unit-weight-highlight">
-                            <?php echo htmlspecialchars($product['specification_weight']); ?> kg/m
-                        </div>
-                    </div>
-                    <?php endif; ?>
                     
                     
                     
                     <?php if ($product['has_calculator']): ?>
                     <!-- 실시간 중량 계산기 섹션 -->
+                    <?php if ($product['category_code'] === 'rebar'): ?>
+                    <!-- 철근 전용 계산기 -->
                     <div class="calculator-section">
-                        <h3 class="calculator-title">📊 실시간 중량 계산기</h3>
+                        <h3 class="calculator-title">
+                            <span class="calculator-icon">📊</span>
+                            철근 중량 계산기 & 번들 정보
+                        </h3>
+                        <div class="inline-calculator">
+                            <div class="calc-form-row">
+                                <div class="calc-form-group">
+                                    <label>길이 선택</label>
+                                    <select id="calc-rebar-length" class="calc-control">
+                                        <option value="">길이를 선택하세요</option>
+                                        <option value="6" selected>6m</option>
+                                        <option value="6.5">6.5m</option>
+                                        <option value="7">7m</option>
+                                        <option value="7.5">7.5m</option>
+                                        <option value="8">8m</option>
+                                        <option value="9">9m</option>
+                                        <option value="10">10m</option>
+                                        <option value="11">11m</option>
+                                        <option value="12">12m</option>
+                                    </select>
+                                </div>
+
+                                <div class="calc-form-group">
+                                    <label>재질 선택</label>
+                                    <select id="calc-rebar-material" class="calc-control">
+                                        <option value="SD400" selected>SD400 (표준)</option>
+                                        <option value="SD300">SD300</option>
+                                        <option value="SD400W">SD400W</option>
+                                        <option value="SD400S">SD400S</option>
+                                        <option value="SD500">SD500</option>
+                                        <option value="SD500W">SD500W</option>
+                                        <option value="SD500S">SD500S</option>
+                                        <option value="SD600">SD600</option>
+                                        <option value="SD600S">SD600S</option>
+                                    </select>
+                                </div>
+
+                                <div class="calc-form-group">
+                                    <label>원산지</label>
+                                    <select id="calc-rebar-origin" class="calc-control">
+                                        <option value="국산" selected>국산</option>
+                                        <option value="수입산">수입산</option>
+                                    </select>
+                                </div>
+
+                                <div class="calc-form-group">
+                                    <label>수량 (본)</label>
+                                    <input type="number" id="calc-rebar-quantity" class="calc-control"
+                                           min="1" placeholder="예: 100" value="100">
+                                </div>
+                            </div>
+
+                            <!-- 번들 정보 표시 -->
+                            <div class="bundle-info" id="bundleInfo">
+                                <h4>번들 정보</h4>
+                                <div class="bundle-grid">
+                                    <div class="bundle-item">
+                                        <span class="bundle-label">본중 (kg/본)</span>
+                                        <span class="bundle-value" id="pieceWeight">-</span>
+                                    </div>
+                                    <div class="bundle-item">
+                                        <span class="bundle-label">톤당 본수</span>
+                                        <span class="bundle-value" id="piecesPerTon">-</span>
+                                    </div>
+                                    <div class="bundle-item">
+                                        <span class="bundle-label">번들당 본수</span>
+                                        <span class="bundle-value" id="piecesPerBundle">-</span>
+                                    </div>
+                                    <div class="bundle-item">
+                                        <span class="bundle-label">번들당 중량 (kg)</span>
+                                        <span class="bundle-value" id="bundleWeight">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 계산 결과 -->
+                            <div class="calc-result" id="rebarCalcResult">
+                                <div class="calc-result-header">계산 결과</div>
+                                <div class="calc-result-grid">
+                                    <div class="result-item">
+                                        <span class="result-label">총 중량</span>
+                                        <span class="result-value"><span id="totalWeight">0</span> kg</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">톤 환산</span>
+                                        <span class="result-value"><span id="totalTon">0</span> TON</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">필요 번들 수</span>
+                                        <span class="result-value"><span id="bundleCount">0</span> 번들</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <span class="result-label">예상 금액</span>
+                                        <span class="result-value"><span id="estimatedPrice">견적문의</span></span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-add-quote" onclick="addRebarToQuote()">
+                                    견적서에 추가
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <?php else: ?>
+                    <!-- 일반 제품 계산기 -->
+                    <div class="calculator-section">
+                        <h3 class="calculator-title">
+                            <span class="calculator-icon">📊</span>
+                            실시간 중량 계산기
+                        </h3>
                         <div class="inline-calculator">
                             <div class="calc-form-row">
                                 <?php if (!empty($product['available_origins'])): ?>
@@ -615,13 +863,17 @@ if ($product_id) {
                             <!-- 실시간 계산 결과 -->
                             <div class="calc-result" id="calcResult" style="display: none;">
                                 <div class="calc-result-header">계산 결과</div>
-                                <div class="calc-result-value" id="calcResultValue">0 kg</div>
+                                <div class="calc-result-value">
+                                    <span id="calcResultValue">0</span>
+                                    <span class="calc-result-unit">kg</span>
+                                </div>
                                 <div class="calc-result-price" id="calcResultPrice">견적금액: 0원</div>
                                 <div class="calc-steps" id="calcSteps"></div>
                             </div>
                         </div>
                     </div>
-                    
+                    <?php endif; ?>
+
                     <script>
                     // 계산기 데이터
                     const calculatorData = {
@@ -727,6 +979,158 @@ if ($product_id) {
     </div>
     
     <?php if ($product['has_calculator']): ?>
+    <?php if ($product['category_code'] === 'rebar'): ?>
+    <!-- 철근 전용 JavaScript -->
+    <script>
+    // 철근 데이터베이스에서 가져온 정보
+    const rebarSpec = '<?php echo str_replace("철근 ", "", $product['product_name']); ?>';
+    const unitWeight = <?php echo $product['specification_weight']; ?>; // kg/m
+
+    // 철근 번들 정보 계산
+    function calculateRebarBundle() {
+        const length = parseFloat(document.getElementById('calc-rebar-length').value) || 0;
+        const material = document.getElementById('calc-rebar-material').value;
+        const origin = document.getElementById('calc-rebar-origin').value;
+        const quantity = parseInt(document.getElementById('calc-rebar-quantity').value) || 0;
+
+        if (length === 0 || quantity === 0) {
+            document.getElementById('rebarCalcResult').style.display = 'none';
+            return;
+        }
+
+        // 본중 계산 (kg/본)
+        const pieceWeight = unitWeight * length;
+
+        // 톤당 본수 계산
+        const piecesPerTon = Math.floor(1000 / pieceWeight);
+
+        // 번들당 본수 (일반적으로 톤당 본수의 1/10 정도)
+        let piecesPerBundle;
+        if (rebarSpec <= 'D16') {
+            piecesPerBundle = Math.max(10, Math.floor(piecesPerTon / 10));
+        } else if (rebarSpec <= 'D25') {
+            piecesPerBundle = Math.max(5, Math.floor(piecesPerTon / 15));
+        } else {
+            piecesPerBundle = Math.max(3, Math.floor(piecesPerTon / 20));
+        }
+
+        // 번들당 중량
+        const bundleWeight = pieceWeight * piecesPerBundle;
+
+        // 총 중량 계산
+        const totalWeight = pieceWeight * quantity;
+        const totalTon = totalWeight / 1000;
+
+        // 필요 번들 수 계산
+        const bundleCount = Math.ceil(quantity / piecesPerBundle);
+
+        // 화면에 표시
+        document.getElementById('pieceWeight').textContent = pieceWeight.toFixed(2);
+        document.getElementById('piecesPerTon').textContent = piecesPerTon;
+        document.getElementById('piecesPerBundle').textContent = piecesPerBundle;
+        document.getElementById('bundleWeight').textContent = bundleWeight.toFixed(2);
+
+        document.getElementById('totalWeight').textContent = totalWeight.toFixed(2);
+        document.getElementById('totalTon').textContent = totalTon.toFixed(3);
+        document.getElementById('bundleCount').textContent = bundleCount;
+
+        // 재질별 추가 단가 (kg당)
+        const materialPrices = {
+            'SD300': 30,
+            'SD400': 0,
+            'SD400W': 50,
+            'SD400S': 50,
+            'SD500': 40,
+            'SD500W': 90,
+            'SD500S': 90,
+            'SD600': 80,
+            'SD600S': 130
+        };
+
+        // 재질 추가 단가 계산
+        const materialPrice = materialPrices[material] || 0;
+        if (materialPrice > 0) {
+            document.getElementById('estimatedPrice').textContent =
+                `재질 추가단가: ${materialPrice}원/kg (견적문의)`;
+        } else {
+            document.getElementById('estimatedPrice').textContent = '견적문의';
+        }
+
+        document.getElementById('rebarCalcResult').style.display = 'block';
+    }
+
+    // 번들 정보 불러오기 (DB 연동 시)
+    async function loadBundleInfo(length) {
+        try {
+            const response = await fetch('/api/get_rebar_bundle.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    spec: rebarSpec,
+                    length: length
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                // DB에서 가져온 정보로 업데이트
+                document.getElementById('pieceWeight').textContent = data.piece_weight;
+                document.getElementById('piecesPerTon').textContent = data.pieces_per_ton;
+            }
+        } catch (error) {
+            console.log('번들 정보를 불러올 수 없습니다:', error);
+        }
+    }
+
+    // 견적서에 추가
+    function addRebarToQuote() {
+        const length = document.getElementById('calc-rebar-length').value;
+        const material = document.getElementById('calc-rebar-material').value;
+        const origin = document.getElementById('calc-rebar-origin').value;
+        const quantity = document.getElementById('calc-rebar-quantity').value;
+        const totalWeight = document.getElementById('totalWeight').textContent;
+
+        const quoteItem = {
+            product_id: <?php echo $product['id']; ?>,
+            product_name: '<?php echo $product['product_name']; ?>',
+            specification: `${rebarSpec} ${length}m`,
+            material: material,
+            origin: origin,
+            quantity: quantity,
+            weight: totalWeight,
+            unit: 'kg'
+        };
+
+        // 기존 견적서에 추가
+        let cart = JSON.parse(sessionStorage.getItem('quote_cart') || '[]');
+        cart.push(quoteItem);
+        sessionStorage.setItem('quote_cart', JSON.stringify(cart));
+
+        alert('견적서에 추가되었습니다.');
+
+        // 견적서 페이지로 이동 옵션
+        if (confirm('견적서 페이지로 이동하시겠습니까?')) {
+            window.location.href = '/quote_request.php';
+        }
+    }
+
+    // 이벤트 리스너 등록
+    document.addEventListener('DOMContentLoaded', function() {
+        // 입력 필드 변경 시 자동 계산
+        document.getElementById('calc-rebar-length').addEventListener('change', calculateRebarBundle);
+        document.getElementById('calc-rebar-material').addEventListener('change', calculateRebarBundle);
+        document.getElementById('calc-rebar-origin').addEventListener('change', calculateRebarBundle);
+        document.getElementById('calc-rebar-quantity').addEventListener('input', calculateRebarBundle);
+
+        // 초기 계산
+        calculateRebarBundle();
+    });
+    </script>
+
+    <?php else: ?>
+    <!-- 일반 제품 JavaScript -->
     <script>
     // 실시간 계산 기능
     function calculateWeight() {
@@ -794,7 +1198,7 @@ if ($product_id) {
         calculationSteps.push(`견적금액: ${calculatedWeight.toFixed(1)}kg × ${pricePerKg.toLocaleString()}원/kg = ${totalPrice.toLocaleString()}원`);
         
         // 결과 표시
-        document.getElementById('calcResultValue').textContent = calculatedWeight.toFixed(1) + ' kg';
+        document.getElementById('calcResultValue').textContent = calculatedWeight.toFixed(1);
         document.getElementById('calcResultPrice').textContent = '견적금액: ' + totalPrice.toLocaleString() + '원';
         
         // 계산 과정 표시
@@ -831,11 +1235,12 @@ if ($product_id) {
         }
     });
     </script>
-    <?php endif; ?>
-    
+    <?php endif; ?>  <!-- 철근/일반 제품 구분 endif -->
+    <?php endif; ?>  <!-- has_calculator endif -->
+
     <?php
     require_once 'tail.php';
-    
+
 } else if ($category_code) {
     // 기존 계산기 페이지 코드
     
@@ -1211,10 +1616,9 @@ if ($product_id) {
         }
     });
     </script>
-    
-    <?php 
+    <?php
     require_once 'tail.php';
-    
+
 } else {
     // 파라미터가 없으면 제품 목록으로 리다이렉트
     header('Location: products.php');

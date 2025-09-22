@@ -30,7 +30,7 @@ docker exec -it project1_php php /var/www/html/[migration_file.php]
 ### Database Access
 ```bash
 # Access MySQL CLI
-docker exec -it project1_mysql mysql -u user -puserpassword project5_db
+docker exec -it project1_mysql mysql -u user -puserpassword project1_db
 
 # Common database operations
 mysql> SHOW TABLES;

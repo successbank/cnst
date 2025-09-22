@@ -12,10 +12,19 @@ class SteelCalculator {
     
     /**
      * H형강, I형강, C형강 등 형강류 중량 계산
+     * /114/2/2.txt 계산식 적용: 본당 중량은 소수점 첫째자리 반올림
      */
-    public function calculateBeamWeight($unitWeight, $length, $quantity = 1) {
-        // 중량(kg) = 단위중량(kg/m) × 길이(m) × 수량
-        return $unitWeight * $length * $quantity;
+    public function calculateBeamWeight($unitWeight, $length, $quantity = 1, $roundPerPiece = true) {
+        // 1본 중량 계산 (단위중량 × 길이)
+        $weightPerPiece = $unitWeight * $length;
+
+        // H형강의 경우 본당 중량을 반올림
+        if ($roundPerPiece) {
+            $weightPerPiece = round($weightPerPiece);
+        }
+
+        // 총 중량 = 1본 중량 × 수량
+        return $weightPerPiece * $quantity;
     }
     
     /**
@@ -63,11 +72,26 @@ class SteelCalculator {
     
     /**
      * 앵글(ㄱ형강) 중량 계산
+     * /114/5/ㄱ형강.txt 계산식 적용: 소수점 둘째자리까지 계산
      */
-    public function calculateAngleWeight($width1, $width2, $thickness, $length, $quantity = 1) {
-        // 중량(kg) = [(A + B - t) × t × 0.00785] × 길이(m) × 수량
-        $weight_per_meter = ($width1 + $width2 - $thickness) * $thickness * 0.00785;
-        return $weight_per_meter * $length * $quantity;
+    public function calculateAngleWeight($unitWeight, $length, $quantity = 1, $useUnitWeight = true) {
+        if ($useUnitWeight) {
+            // 단위중량이 주어진 경우 (데이터베이스 방식)
+            // 1본 중량 = 단위중량 × 길이 (소수점 둘째자리까지)
+            $weightPerPiece = round($unitWeight * $length, 2);
+            // 총 중량 = 본당중량 × 수량 (소수점 둘째자리 올림)
+            $totalWeight = $weightPerPiece * $quantity;
+            return round($totalWeight, 2);
+        } else {
+            // 기존 계산 방식 (치수로 계산)
+            $width1 = func_get_arg(0);
+            $width2 = func_get_arg(1);
+            $thickness = func_get_arg(2);
+            $weight_per_meter = ($width1 + $width2 - $thickness) * $thickness * 0.00785;
+            $weightPerPiece = round($weight_per_meter * $length, 2);
+            $totalWeight = $weightPerPiece * $quantity;
+            return round($totalWeight, 2);
+        }
     }
     
     /**
@@ -135,13 +159,25 @@ class SteelCalculator {
                 );
                 
             case 'angle':
-                return $this->calculateAngleWeight(
-                    $specifications['width1'] ?? 0,
-                    $specifications['width2'] ?? $specifications['width1'] ?? 0,
-                    $specifications['thickness'] ?? 0,
-                    $length,
-                    $quantity
-                );
+            case 'unequal-angle':
+                // ㄱ형강 및 부등변ㄱ형강 - 단위중량 방식 사용
+                if (isset($specifications['unit_weight'])) {
+                    return $this->calculateAngleWeight(
+                        $specifications['unit_weight'],
+                        $length,
+                        $quantity,
+                        true
+                    );
+                } else {
+                    return $this->calculateAngleWeight(
+                        $specifications['width1'] ?? 0,
+                        $specifications['width2'] ?? $specifications['width1'] ?? 0,
+                        $specifications['thickness'] ?? 0,
+                        $length,
+                        $quantity,
+                        false
+                    );
+                }
                 
             case 'rebar':
                 return $this->calculateRebarWeight(
@@ -198,25 +234,102 @@ class SteelCalculator {
      */
     public function getProductPrice($productId, $specId = null) {
         $query = "
-            SELECT * FROM product_prices 
-            WHERE product_id = ? 
-            AND is_active = 1 
+            SELECT * FROM product_prices
+            WHERE product_id = ?
+            AND is_active = 1
             AND (effective_date <= CURDATE() OR effective_date IS NULL)
             AND (expiry_date >= CURDATE() OR expiry_date IS NULL)
         ";
-        
+
         $params = [$productId];
-        
+
         if ($specId) {
             $query .= " AND (spec_id = ? OR spec_id IS NULL)";
             $params[] = $specId;
         }
-        
+
         $query .= " ORDER BY spec_id DESC, effective_date DESC LIMIT 1";
-        
+
         $stmt = $this->pdo->prepare($query);
         $stmt->execute($params);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * 제품별 계산 예제 생성
+     */
+    public function getBeamCalculationExamples($categoryCode = 'h-beam') {
+        $examples = [];
+
+        if ($categoryCode == 'h-beam') {
+            // H형강 예제 - 반올림
+            $examples[] = [
+                'specification' => '100×100×6×8',
+                'unit_weight' => 17.2,
+                'length' => 11,
+                'quantity' => 10,
+                'weight_per_piece' => 189,
+                'total_weight' => 1890
+            ];
+
+            $examples[] = [
+                'specification' => '125×125×6.5×9',
+                'unit_weight' => 23.8,
+                'length' => 12,
+                'quantity' => 9,
+                'weight_per_piece' => 286,
+                'total_weight' => 2574
+            ];
+        } elseif ($categoryCode == 'angle') {
+            // ㄱ형강 예제 - 소수점 둘째자리
+            $examples[] = [
+                'specification' => '25×25×3T',
+                'unit_weight' => 1.12,
+                'length' => 8,
+                'quantity' => 14,
+                'weight_per_piece' => 8.96,  // 1.12 × 8 = 8.96
+                'total_weight' => 125.44     // 8.96 × 14 = 125.44
+            ];
+        } elseif ($categoryCode == 'unequal-angle') {
+            // 부등변ㄱ형강 예제
+            $examples[] = [
+                'specification' => '50×30×3T',
+                'unit_weight' => 1.83,
+                'length' => 9,
+                'quantity' => 9,
+                'weight_per_piece' => 16.47,  // 1.83 × 9 = 16.47
+                'total_weight' => 148.23      // 16.47 × 9 = 148.23
+            ];
+        }
+
+        return $examples;
+    }
+
+    /**
+     * 계산 결과 포맷팅
+     */
+    public function formatCalculationResult($unitWeight, $length, $quantity) {
+        // 1본 중량 계산
+        $rawWeightPerPiece = $unitWeight * $length;
+        $roundedWeightPerPiece = round($rawWeightPerPiece);
+
+        // 총 중량
+        $totalWeight = $roundedWeightPerPiece * $quantity;
+
+        return [
+            'unit_weight' => $unitWeight,
+            'length' => $length,
+            'quantity' => $quantity,
+            'raw_weight_per_piece' => $rawWeightPerPiece,
+            'rounded_weight_per_piece' => $roundedWeightPerPiece,
+            'total_weight' => $totalWeight,
+            'calculation_steps' => [
+                '1단계' => sprintf("단위중량 %.1fkg/m × 길이 %dm = %.1fkg", $unitWeight, $length, $rawWeightPerPiece),
+                '2단계' => sprintf("소수점 첫째자리 반올림: %.1fkg → %dkg (본당 중량)", $rawWeightPerPiece, $roundedWeightPerPiece),
+                '3단계' => sprintf("본당 중량 %dkg × 수량 %d본 = %s kg (총 중량)",
+                    $roundedWeightPerPiece, $quantity, number_format($totalWeight))
+            ]
+        ];
     }
 }
 ?>

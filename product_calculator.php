@@ -34,6 +34,9 @@ $products = $stmt->fetchAll();
 
 $calculator = new SteelCalculator($pdo);
 
+// 계산 예제 가져오기
+$examples = $calculator->getBeamCalculationExamples($category);
+
 $pageTitle = $categoryInfo['category_name'] . ' 중량 계산기';
 $currentPage = 'calculator';
 $additionalCSS = ['css/calculator.css'];
@@ -44,6 +47,14 @@ require_once 'head.php';
     <div class="calculator-header">
         <h1><?php echo htmlspecialchars($categoryInfo['category_name']); ?> 중량 계산기</h1>
         <p>규격을 선택하고 수량을 입력하면 중량과 예상 금액을 자동으로 계산합니다.</p>
+
+        <?php if (!empty($examples) && $category == 'h-beam'): ?>
+        <div class="calculation-formula">
+            <h4>계산식</h4>
+            <p>단위중량 × 길이 = 1본중량 (소수점 첫째자리 반올림)</p>
+            <p>1본중량 × 총본수 = 총중량</p>
+        </div>
+        <?php endif; ?>
     </div>
 
     <div class="calculator-form">
@@ -112,6 +123,27 @@ require_once 'head.php';
             </button>
         </div>
     </div>
+
+    <?php if (!empty($examples) && $category == 'h-beam'): ?>
+    <div class="calculation-examples">
+        <h3>계산 예제</h3>
+        <?php foreach ($examples as $index => $example): ?>
+        <div class="example-box">
+            <h5>예제 <?php echo $index + 1; ?></h5>
+            <p>규격: <?php echo $example['specification']; ?>,
+               길이: <?php echo $example['length']; ?>미터,
+               수량: <?php echo $example['quantity']; ?>본</p>
+            <div class="example-calculation">
+                <p>① <?php echo $example['unit_weight']; ?> × <?php echo $example['length']; ?> =
+                   <?php echo $example['unit_weight'] * $example['length']; ?>kg
+                   → <?php echo $example['weight_per_piece']; ?>kg (반올림)</p>
+                <p>② <?php echo $example['weight_per_piece']; ?>kg × <?php echo $example['quantity']; ?>본 =
+                   <?php echo number_format($example['total_weight']); ?>kg</p>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
 </div>
 
 <script>
@@ -400,18 +432,75 @@ function requestQuote() {
     .form-row {
         flex-direction: column;
     }
-    
+
     .result-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .result-actions {
         flex-direction: column;
     }
-    
+
     .result-actions .btn {
         width: 100%;
     }
+}
+
+.calculation-formula {
+    background: #e8f4f8;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    border-left: 4px solid #1428A0;
+}
+
+.calculation-formula h4 {
+    color: #1428A0;
+    margin-bottom: 10px;
+}
+
+.calculation-formula p {
+    margin: 5px 0;
+    font-size: 15px;
+    color: #333;
+}
+
+.calculation-examples {
+    background: #f8f9fa;
+    padding: 30px;
+    border-radius: 8px;
+    margin-top: 30px;
+}
+
+.calculation-examples h3 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.example-box {
+    background: #fff;
+    padding: 20px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border: 1px solid #e0e0e0;
+}
+
+.example-box h5 {
+    color: #1428A0;
+    margin-bottom: 10px;
+}
+
+.example-calculation {
+    background: #f0f7ff;
+    padding: 15px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.example-calculation p {
+    margin: 5px 0;
+    font-family: monospace;
+    font-size: 14px;
 }
 </style>
 
