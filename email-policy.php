@@ -66,7 +66,7 @@ include 'head.php';
                 <div class="contact-info">
                     <h3>충남스틸 개인정보보호 담당부서</h3>
                     <ul>
-                        <li><strong>전화:</strong> 032-564-1616</li>
+                        <li><strong>전화:</strong> 032-564-0090</li>
                         <li><strong>팩스:</strong> 032-564-0090</li>
                         <li><strong>이메일:</strong> cn1616@naver.com</li>
                         <li><strong>주소:</strong> 22605 인천 서구 봉수대로 1626 충남스틸 (금곡동)</li>

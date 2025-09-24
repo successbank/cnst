@@ -501,106 +501,8 @@ if ($product_id) {
         }
     }
 
-    /* 철근 계산기 전용 스타일 */
-    .bundle-info {
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-        margin: 20px 0;
-    }
+    /* 철근 계산기도 일반 제품과 동일한 스타일 사용 */
 
-    .bundle-info h4 {
-        margin: 0 0 15px 0;
-        color: #333;
-        font-size: 16px;
-        font-weight: 600;
-    }
-
-    .bundle-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-    }
-
-    .bundle-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px;
-        background: white;
-        border-radius: 6px;
-        border: 1px solid #e0e0e0;
-    }
-
-    .bundle-label {
-        color: #666;
-        font-size: 14px;
-    }
-
-    .bundle-value {
-        font-weight: bold;
-        color: #1976d2;
-        font-size: 16px;
-    }
-
-    .calc-result-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-        margin: 20px 0;
-    }
-
-    .result-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 12px;
-        background: #f5f5f5;
-        border-radius: 6px;
-    }
-
-    .result-label {
-        color: #666;
-        font-size: 14px;
-    }
-
-    .result-value {
-        font-weight: bold;
-        color: #333;
-        font-size: 16px;
-    }
-
-    .btn-add-quote {
-        width: 100%;
-        padding: 12px;
-        background: #1976d2;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .btn-add-quote:hover {
-        background: #1565c0;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
-    }
-
-    #rebarCalcResult {
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        margin-top: 20px;
-        border: 1px solid #e0e0e0;
-    }
-
-    @media (max-width: 768px) {
-        .bundle-grid,
-        .calc-result-grid {
-            grid-template-columns: 1fr;
-        }
-    }
     </style>
     
     <!-- Product Header Section -->
@@ -698,12 +600,17 @@ if ($product_id) {
                     
                     <?php if ($product['has_calculator']): ?>
                     <!-- 실시간 중량 계산기 섹션 -->
-                    <?php if ($product['category_code'] === 'rebar'): ?>
-                    <!-- 철근 전용 계산기 -->
+                    <?php
+                    // 철근 제품 여부 확인 (category_code 또는 제품명으로)
+                    $is_rebar_product = ($product['category_code'] === 'rebar' ||
+                                         preg_match('/(철근|D\d+)/u', $product['product_name']));
+                    if ($is_rebar_product):
+                    ?>
+                    <!-- 철근 계산기 (일반 제품과 동일한 스타일) -->
                     <div class="calculator-section">
                         <h3 class="calculator-title">
                             <span class="calculator-icon">📊</span>
-                            철근 중량 계산기 & 번들 정보
+                            실시간 중량 계산기
                         </h3>
                         <div class="inline-calculator">
                             <div class="calc-form-row">
@@ -753,53 +660,16 @@ if ($product_id) {
                                 </div>
                             </div>
 
-                            <!-- 번들 정보 표시 -->
-                            <div class="bundle-info" id="bundleInfo">
-                                <h4>번들 정보</h4>
-                                <div class="bundle-grid">
-                                    <div class="bundle-item">
-                                        <span class="bundle-label">본중 (kg/본)</span>
-                                        <span class="bundle-value" id="pieceWeight">-</span>
-                                    </div>
-                                    <div class="bundle-item">
-                                        <span class="bundle-label">톤당 본수</span>
-                                        <span class="bundle-value" id="piecesPerTon">-</span>
-                                    </div>
-                                    <div class="bundle-item">
-                                        <span class="bundle-label">번들당 본수</span>
-                                        <span class="bundle-value" id="piecesPerBundle">-</span>
-                                    </div>
-                                    <div class="bundle-item">
-                                        <span class="bundle-label">번들당 중량 (kg)</span>
-                                        <span class="bundle-value" id="bundleWeight">-</span>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <!-- 계산 결과 -->
-                            <div class="calc-result" id="rebarCalcResult">
+                            <!-- 실시간 계산 결과 -->
+                            <div class="calc-result" id="rebarCalcResult" style="display: none;">
                                 <div class="calc-result-header">계산 결과</div>
-                                <div class="calc-result-grid">
-                                    <div class="result-item">
-                                        <span class="result-label">총 중량</span>
-                                        <span class="result-value"><span id="totalWeight">0</span> kg</span>
-                                    </div>
-                                    <div class="result-item">
-                                        <span class="result-label">톤 환산</span>
-                                        <span class="result-value"><span id="totalTon">0</span> TON</span>
-                                    </div>
-                                    <div class="result-item">
-                                        <span class="result-label">필요 번들 수</span>
-                                        <span class="result-value"><span id="bundleCount">0</span> 번들</span>
-                                    </div>
-                                    <div class="result-item">
-                                        <span class="result-label">예상 금액</span>
-                                        <span class="result-value"><span id="estimatedPrice">견적문의</span></span>
-                                    </div>
+                                <div class="calc-result-value">
+                                    <span id="rebarCalcResultValue">0</span>
+                                    <span class="calc-result-unit">kg</span>
                                 </div>
-                                <button type="button" class="btn-add-quote" onclick="addRebarToQuote()">
-                                    견적서에 추가
-                                </button>
+                                <div class="calc-result-price" id="rebarCalcResultPrice">견적금액: 0원</div>
+                                <div class="calc-steps" id="rebarCalcSteps"></div>
                             </div>
                         </div>
                     </div>
@@ -900,7 +770,7 @@ if ($product_id) {
                 </div>
                 <div class="info-item">
                     <div class="info-label">고객센터</div>
-                    <div class="info-value">041-123-4567</div>
+                    <div class="info-value">032-564-0090</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">영업시간</div>
@@ -979,62 +849,41 @@ if ($product_id) {
     </div>
     
     <?php if ($product['has_calculator']): ?>
-    <?php if ($product['category_code'] === 'rebar'): ?>
-    <!-- 철근 전용 JavaScript -->
+    <?php if ($is_rebar_product): ?>
+    <!-- 철근 JavaScript -->
     <script>
     // 철근 데이터베이스에서 가져온 정보
     const rebarSpec = '<?php echo str_replace("철근 ", "", $product['product_name']); ?>';
-    const unitWeight = <?php echo $product['specification_weight']; ?>; // kg/m
+    const unitWeight = <?php echo $product['specification_weight'] ?? 0; ?>; // kg/m
 
-    // 철근 번들 정보 계산
-    function calculateRebarBundle() {
+    // 철근 중량 실시간 계산
+    function calculateRebarWeight() {
         const length = parseFloat(document.getElementById('calc-rebar-length').value) || 0;
         const material = document.getElementById('calc-rebar-material').value;
         const origin = document.getElementById('calc-rebar-origin').value;
         const quantity = parseInt(document.getElementById('calc-rebar-quantity').value) || 0;
 
-        if (length === 0 || quantity === 0) {
+        // 입력값 검증
+        if (length <= 0 || quantity <= 0) {
             document.getElementById('rebarCalcResult').style.display = 'none';
             return;
         }
 
-        // 본중 계산 (kg/본)
-        const pieceWeight = unitWeight * length;
+        // 중량 계산
+        const weightPerPiece = unitWeight * length; // 1본 중량
+        const totalWeight = weightPerPiece * quantity; // 총 중량
 
-        // 톤당 본수 계산
-        const piecesPerTon = Math.floor(1000 / pieceWeight);
+        // 계산 과정 생성
+        let calculationSteps = [];
+        calculationSteps.push(`단위중량: ${unitWeight.toFixed(3)} kg/m`);
+        calculationSteps.push(`1본 중량: ${unitWeight.toFixed(3)} × ${length}m = ${weightPerPiece.toFixed(2)} kg`);
+        calculationSteps.push(`총 중량: ${weightPerPiece.toFixed(2)} × ${quantity}본 = ${totalWeight.toFixed(1)} kg`);
 
-        // 번들당 본수 (일반적으로 톤당 본수의 1/10 정도)
-        let piecesPerBundle;
-        if (rebarSpec <= 'D16') {
-            piecesPerBundle = Math.max(10, Math.floor(piecesPerTon / 10));
-        } else if (rebarSpec <= 'D25') {
-            piecesPerBundle = Math.max(5, Math.floor(piecesPerTon / 15));
-        } else {
-            piecesPerBundle = Math.max(3, Math.floor(piecesPerTon / 20));
-        }
+        // 견적금액 계산 (kg당 1,000원 기준)
+        const pricePerKg = 1000;
+        const basePrice = totalWeight * pricePerKg;
 
-        // 번들당 중량
-        const bundleWeight = pieceWeight * piecesPerBundle;
-
-        // 총 중량 계산
-        const totalWeight = pieceWeight * quantity;
-        const totalTon = totalWeight / 1000;
-
-        // 필요 번들 수 계산
-        const bundleCount = Math.ceil(quantity / piecesPerBundle);
-
-        // 화면에 표시
-        document.getElementById('pieceWeight').textContent = pieceWeight.toFixed(2);
-        document.getElementById('piecesPerTon').textContent = piecesPerTon;
-        document.getElementById('piecesPerBundle').textContent = piecesPerBundle;
-        document.getElementById('bundleWeight').textContent = bundleWeight.toFixed(2);
-
-        document.getElementById('totalWeight').textContent = totalWeight.toFixed(2);
-        document.getElementById('totalTon').textContent = totalTon.toFixed(3);
-        document.getElementById('bundleCount').textContent = bundleCount;
-
-        // 재질별 추가 단가 (kg당)
+        // 재질별 추가 단가
         const materialPrices = {
             'SD300': 30,
             'SD400': 0,
@@ -1047,85 +896,45 @@ if ($product_id) {
             'SD600S': 130
         };
 
-        // 재질 추가 단가 계산
         const materialPrice = materialPrices[material] || 0;
+        let totalPrice = basePrice;
+
         if (materialPrice > 0) {
-            document.getElementById('estimatedPrice').textContent =
-                `재질 추가단가: ${materialPrice}원/kg (견적문의)`;
-        } else {
-            document.getElementById('estimatedPrice').textContent = '견적문의';
+            const materialCost = totalWeight * materialPrice;
+            totalPrice += materialCost;
+            calculationSteps.push(`재질(${material}) 추가비용: ${totalWeight.toFixed(1)}kg × ${materialPrice}원/kg = ${materialCost.toLocaleString()}원`);
         }
 
+        calculationSteps.push(`견적금액: ${totalPrice.toLocaleString()}원`);
+
+        // 결과 표시
+        document.getElementById('rebarCalcResultValue').textContent = totalWeight.toFixed(1);
+        document.getElementById('rebarCalcResultPrice').textContent = '견적금액: ' + totalPrice.toLocaleString() + '원';
+
+        // 계산 과정 표시
+        const stepsHtml = calculationSteps.map(step =>
+            `<div class="calc-step">${step}</div>`
+        ).join('');
+        document.getElementById('rebarCalcSteps').innerHTML = stepsHtml;
+
+        // 결과 영역 표시
         document.getElementById('rebarCalcResult').style.display = 'block';
     }
 
-    // 번들 정보 불러오기 (DB 연동 시)
-    async function loadBundleInfo(length) {
-        try {
-            const response = await fetch('/api/get_rebar_bundle.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    spec: rebarSpec,
-                    length: length
-                })
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                // DB에서 가져온 정보로 업데이트
-                document.getElementById('pieceWeight').textContent = data.piece_weight;
-                document.getElementById('piecesPerTon').textContent = data.pieces_per_ton;
-            }
-        } catch (error) {
-            console.log('번들 정보를 불러올 수 없습니다:', error);
-        }
-    }
-
-    // 견적서에 추가
-    function addRebarToQuote() {
-        const length = document.getElementById('calc-rebar-length').value;
-        const material = document.getElementById('calc-rebar-material').value;
-        const origin = document.getElementById('calc-rebar-origin').value;
-        const quantity = document.getElementById('calc-rebar-quantity').value;
-        const totalWeight = document.getElementById('totalWeight').textContent;
-
-        const quoteItem = {
-            product_id: <?php echo $product['id']; ?>,
-            product_name: '<?php echo $product['product_name']; ?>',
-            specification: `${rebarSpec} ${length}m`,
-            material: material,
-            origin: origin,
-            quantity: quantity,
-            weight: totalWeight,
-            unit: 'kg'
-        };
-
-        // 기존 견적서에 추가
-        let cart = JSON.parse(sessionStorage.getItem('quote_cart') || '[]');
-        cart.push(quoteItem);
-        sessionStorage.setItem('quote_cart', JSON.stringify(cart));
-
-        alert('견적서에 추가되었습니다.');
-
-        // 견적서 페이지로 이동 옵션
-        if (confirm('견적서 페이지로 이동하시겠습니까?')) {
-            window.location.href = '/quote_request.php';
-        }
+    // 디바운스 함수
+    let rebarCalculateTimer;
+    function debouncedRebarCalculate() {
+        clearTimeout(rebarCalculateTimer);
+        rebarCalculateTimer = setTimeout(calculateRebarWeight, 300);
     }
 
     // 이벤트 리스너 등록
     document.addEventListener('DOMContentLoaded', function() {
         // 입력 필드 변경 시 자동 계산
-        document.getElementById('calc-rebar-length').addEventListener('change', calculateRebarBundle);
-        document.getElementById('calc-rebar-material').addEventListener('change', calculateRebarBundle);
-        document.getElementById('calc-rebar-origin').addEventListener('change', calculateRebarBundle);
-        document.getElementById('calc-rebar-quantity').addEventListener('input', calculateRebarBundle);
-
-        // 초기 계산
-        calculateRebarBundle();
+        document.getElementById('calc-rebar-length').addEventListener('change', debouncedRebarCalculate);
+        document.getElementById('calc-rebar-material').addEventListener('change', debouncedRebarCalculate);
+        document.getElementById('calc-rebar-origin').addEventListener('change', debouncedRebarCalculate);
+        document.getElementById('calc-rebar-quantity').addEventListener('input', debouncedRebarCalculate);
     });
     </script>
 

@@ -293,7 +293,7 @@ try {
             
             <div class="form-group">
                 <label for="company_tel">대표전화</label>
-                <input type="tel" id="company_tel" name="company_tel" value="<?php echo htmlspecialchars($companySettings['company_tel'] ?? '032-564-1616'); ?>" required>
+                <input type="tel" id="company_tel" name="company_tel" value="<?php echo htmlspecialchars($companySettings['company_tel'] ?? '032-564-0090'); ?>" required>
             </div>
             
             <div class="form-group">

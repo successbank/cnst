@@ -145,7 +145,7 @@ include 'head.php';
                     <ul>
                         <li>성명: 김영건</li>
                         <li>직책: 대표이사</li>
-                        <li>연락처: 032-564-1616</li>
+                        <li>연락처: 032-564-0090</li>
                         <li>이메일: cn1616@naver.com</li>
                     </ul>
                 </div>
@@ -162,7 +162,7 @@ include 'head.php';
                     <ul>
                         <li>부서명: 관리부</li>
                         <li>담당자: 개인정보보호 담당자</li>
-                        <li>연락처: 032-564-1616</li>
+                        <li>연락처: 032-564-0090</li>
                         <li>이메일: cn1616@naver.com</li>
                     </ul>
                 </div>

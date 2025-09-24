@@ -316,7 +316,7 @@ companySidebar('location');
             </div>
             <div class="info-item">
                 <h4>대표전화</h4>
-                <p>032-564-1616</p>
+                <p>032-564-0090</p>
             </div>
             <div class="info-item">
                 <h4>이메일</h4>
@@ -349,7 +349,7 @@ companySidebar('location');
 <script>
 function openChat() {
     // 32.png 참고 - 채팅 기능 (예시)
-    alert('채팅 기능은 준비 중입니다.\n\n대신 다음 연락처로 문의해 주세요:\n📞 032-564-1616\n📧 cn1616@naver.com');
+    alert('채팅 기능은 준비 중입니다.\n\n대신 다음 연락처로 문의해 주세요:\n📞 032-564-0090\n📧 cn1616@naver.com');
 }
 </script>
 

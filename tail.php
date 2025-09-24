@@ -16,7 +16,7 @@
                         <h3>고객센터</h3>
                         <ul>
                             <li class="footer-label">대표전화</li>
-                            <li class="footer-value">032-564-1616</li>
+                            <li class="footer-value">032-564-0090</li>
                             <li class="footer-label">팩스</li>
                             <li class="footer-value">032-564-0090</li>
                             <li class="footer-label">이메일</li>
