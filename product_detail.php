@@ -195,19 +195,28 @@ if ($product_id) {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(20, 40, 160, 0.3);
     }
-    .origin-badges {
+    .origin-badges, .material-badges {
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
-        margin-top: 8px;
     }
-    
+
     .origin-badge {
         padding: 4px 12px;
-        background: var(--light-blue);
+        background: #e8f0ff;
         border-radius: 16px;
         font-size: 14px;
-        color: var(--primary-blue);
+        color: #1428A0;
+        border: 1px solid #c3d4f7;
+    }
+
+    .material-badge {
+        padding: 4px 12px;
+        background: #e8f8e8;
+        border-radius: 16px;
+        font-size: 14px;
+        color: #2e7d2e;
+        border: 1px solid #b8e6b8;
     }
     
     .origin-select {
@@ -795,6 +804,42 @@ if ($product_id) {
                     <div class="info-value"><?php echo htmlspecialchars($product['quality_cert']); ?></div>
                 </div>
                 <?php endif; ?>
+                <?php if (!empty($product['available_origins'])): ?>
+                <div class="info-item">
+                    <div class="info-label">원산지</div>
+                    <div class="info-value">
+                        <?php
+                        $origins = json_decode($product['available_origins'], true) ?: [];
+                        if (count($origins) > 0) {
+                            echo '<div class="origin-badges">';
+                            foreach ($origins as $index => $origin) {
+                                $isDefault = ($index === 0) ? ' style="font-weight: bold;"' : '';
+                                echo '<span class="origin-badge"' . $isDefault . '>' . htmlspecialchars($origin) . '</span> ';
+                            }
+                            echo '</div>';
+                        }
+                        ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($product['available_materials'])): ?>
+                <div class="info-item">
+                    <div class="info-label">재질</div>
+                    <div class="info-value">
+                        <?php
+                        $materials = json_decode($product['available_materials'], true) ?: [];
+                        if (count($materials) > 0) {
+                            echo '<div class="material-badges">';
+                            foreach ($materials as $index => $material) {
+                                $isDefault = ($index === 0) ? ' style="font-weight: bold;"' : '';
+                                echo '<span class="material-badge"' . $isDefault . '>' . htmlspecialchars($material) . '</span> ';
+                            }
+                            echo '</div>';
+                        }
+                        ?>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <?php if (!empty($product['material'])): ?>
                 <div class="info-item">
                     <div class="info-label">재료</div>
@@ -941,8 +986,14 @@ if ($product_id) {
     <?php else: ?>
     <!-- 일반 제품 JavaScript -->
     <script>
+    // 원산지 및 재질별 가격 데이터 추가
+    const materialPriceData = <?php echo json_encode(json_decode($product['material_price_data'] ?? '{}', true), JSON_UNESCAPED_UNICODE); ?>;
+    const originPriceData = <?php echo json_encode(json_decode($product['origin_price_data'] ?? '{}', true), JSON_UNESCAPED_UNICODE); ?>;
+    const basePrice = <?php echo floatval($product['price'] ?? 1000); ?>; // 기준 단가 (원/kg)
+
     // 실시간 계산 기능
     function calculateWeight() {
+        const origin = document.getElementById('calc-origin')?.value || '';
         const material = document.getElementById('calc-material').value;
         const quantity = parseInt(document.getElementById('calc-quantity').value) || 0;
         const lengthInput = document.getElementById('calc-length');
@@ -999,11 +1050,31 @@ if ($product_id) {
             ];
         }
         
-        // 견적금액 계산 (kg당 1,000원)
-        const pricePerKg = 1000;
+        // 가격 계산
+        let pricePerKg = basePrice || 1000; // 기준 단가
+
+        // 원산지별 추가 비용 적용
+        if (origin && originPriceData[origin]) {
+            const originAdditional = parseFloat(originPriceData[origin]) || 0;
+            if (originAdditional !== 0) {
+                pricePerKg += originAdditional;
+                calculationSteps.push(`원산지(${origin}) 추가 비용: ${originAdditional > 0 ? '+' : ''}${originAdditional}원/kg`);
+            }
+        }
+
+        // 재질별 추가 비용 적용
+        if (material && materialPriceData[material]) {
+            const materialAdditional = parseFloat(materialPriceData[material]) || 0;
+            if (materialAdditional !== 0) {
+                pricePerKg += materialAdditional;
+                calculationSteps.push(`재질(${material}) 추가 비용: ${materialAdditional > 0 ? '+' : ''}${materialAdditional}원/kg`);
+            }
+        }
+
         const totalPrice = calculatedWeight * pricePerKg;
-        
+
         // 계산 과정에 견적금액 추가
+        calculationSteps.push(`최종 단가: ${pricePerKg.toLocaleString()}원/kg`);
         calculationSteps.push(`견적금액: ${calculatedWeight.toFixed(1)}kg × ${pricePerKg.toLocaleString()}원/kg = ${totalPrice.toLocaleString()}원`);
         
         // 결과 표시
