@@ -369,6 +369,36 @@ if ($product_id) {
     .calc-step:last-child {
         border-bottom: none;
     }
+
+    /* 길이 제한 관련 스타일 */
+    .length-error-message {
+        color: #dc3545;
+        font-size: 13px;
+        margin-top: 5px;
+        display: none;
+    }
+
+    .length-error-message.show {
+        display: block;
+        animation: shake 0.3s;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+        20%, 40%, 60%, 80% { transform: translateX(2px); }
+    }
+
+    .calc-control.error {
+        border-color: #dc3545;
+        background-color: #fff5f5;
+    }
+
+    .length-hint {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 5px;
+    }
     
     /* 제품 상세보기 섹션 스타일 */
     .product-detail-info-section {
@@ -627,38 +657,66 @@ if ($product_id) {
                                     <label>길이 선택</label>
                                     <select id="calc-rebar-length" class="calc-control">
                                         <option value="">길이를 선택하세요</option>
-                                        <option value="6" selected>6m</option>
-                                        <option value="6.5">6.5m</option>
-                                        <option value="7">7m</option>
-                                        <option value="7.5">7.5m</option>
-                                        <option value="8">8m</option>
-                                        <option value="9">9m</option>
-                                        <option value="10">10m</option>
-                                        <option value="11">11m</option>
-                                        <option value="12">12m</option>
+                                        <?php
+                                        // 6.0m부터 12.0m까지 0.1m 단위로 생성
+                                        for ($length = 6.0; $length <= 12.0; $length += 0.1):
+                                            $displayLength = number_format($length, 1);
+                                        ?>
+                                        <option value="<?php echo $displayLength; ?>" <?php echo $length == 6.0 ? 'selected' : ''; ?>>
+                                            <?php echo $displayLength; ?>m
+                                        </option>
+                                        <?php endfor; ?>
                                     </select>
                                 </div>
 
                                 <div class="calc-form-group">
                                     <label>재질 선택</label>
                                     <select id="calc-rebar-material" class="calc-control">
-                                        <option value="SD400" selected>SD400 (표준)</option>
-                                        <option value="SD300">SD300</option>
-                                        <option value="SD400W">SD400W</option>
-                                        <option value="SD400S">SD400S</option>
-                                        <option value="SD500">SD500</option>
-                                        <option value="SD500W">SD500W</option>
-                                        <option value="SD500S">SD500S</option>
-                                        <option value="SD600">SD600</option>
-                                        <option value="SD600S">SD600S</option>
+                                        <?php
+                                        // 데이터베이스의 available_materials 사용
+                                        $rebar_materials = [];
+                                        if (!empty($product['available_materials'])) {
+                                            $rebar_materials = json_decode($product['available_materials'], true) ?: [];
+                                        }
+
+                                        // 기본값이 없으면 하드코딩된 값 사용
+                                        if (empty($rebar_materials)) {
+                                            $rebar_materials = ["SD400", "SD300", "SD400W", "SD400S", "SD500", "SD500W", "SD500S", "SD600", "SD600S"];
+                                        }
+
+                                        foreach ($rebar_materials as $index => $material):
+                                        ?>
+                                        <option value="<?php echo htmlspecialchars($material); ?>"
+                                                <?php echo ($index === 0) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($material); ?>
+                                            <?php if ($material === 'SD400'): ?> (표준)<?php endif; ?>
+                                        </option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
 
                                 <div class="calc-form-group">
                                     <label>원산지</label>
                                     <select id="calc-rebar-origin" class="calc-control">
-                                        <option value="국산" selected>국산</option>
-                                        <option value="수입산">수입산</option>
+                                        <?php
+                                        // 데이터베이스의 available_origins 사용
+                                        $rebar_origins = [];
+                                        if (!empty($product['available_origins'])) {
+                                            $rebar_origins = json_decode($product['available_origins'], true) ?: [];
+                                        }
+
+                                        // 기본값이 없으면 하드코딩된 값 사용
+                                        if (empty($rebar_origins)) {
+                                            $rebar_origins = ["국산", "수입산"];
+                                        }
+
+                                        foreach ($rebar_origins as $index => $origin):
+                                        ?>
+                                        <option value="<?php echo htmlspecialchars($origin); ?>"
+                                                <?php echo ($index === 0) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($origin); ?>
+                                        </option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
 
@@ -728,7 +786,15 @@ if ($product_id) {
                                 <div class="calc-form-group">
                                     <label>길이 (미터)</label>
                                     <input type="number" id="calc-length" class="calc-control"
-                                           min="0.1" step="0.1" placeholder="예: 6" value="">
+                                           min="<?php echo $product['min_length'] ?? 0.1; ?>"
+                                           max="<?php echo $product['max_length'] ?? 100; ?>"
+                                           step="0.1"
+                                           placeholder="예: <?php echo $product['standard_length'] ?? 6; ?>"
+                                           value="">
+                                    <div class="length-error-message" id="calc-length-error"></div>
+                                    <?php if (!empty($product['min_length']) && !empty($product['max_length'])): ?>
+                                    <div class="length-hint">입력 가능 범위: <?php echo $product['min_length']; ?>m ~ <?php echo $product['max_length']; ?>m</div>
+                                    <?php endif; ?>
                                 </div>
                                 <?php endif; ?>
 
@@ -901,6 +967,9 @@ if ($product_id) {
     const rebarSpec = '<?php echo str_replace("철근 ", "", $product['product_name']); ?>';
     const unitWeight = <?php echo $product['specification_weight'] ?? 0; ?>; // kg/m
 
+    // 원산지별 가격 데이터 (kg당 추가 비용)
+    const originPriceData = <?php echo json_encode(json_decode($product['origin_price_data'] ?? '{}', true), JSON_UNESCAPED_UNICODE); ?>;
+
     // 철근 중량 실시간 계산
     function calculateRebarWeight() {
         const length = parseFloat(document.getElementById('calc-rebar-length').value) || 0;
@@ -942,12 +1011,22 @@ if ($product_id) {
         };
 
         const materialPrice = materialPrices[material] || 0;
+
+        // 원산지별 추가 단가 (데이터베이스에서 가져온 값 사용)
+        const originPrice = parseFloat(originPriceData[origin]) || 0;
+
         let totalPrice = basePrice;
 
         if (materialPrice > 0) {
             const materialCost = totalWeight * materialPrice;
             totalPrice += materialCost;
             calculationSteps.push(`재질(${material}) 추가비용: ${totalWeight.toFixed(1)}kg × ${materialPrice}원/kg = ${materialCost.toLocaleString()}원`);
+        }
+
+        if (originPrice !== 0) {
+            const originCost = totalWeight * originPrice;
+            totalPrice += originCost;
+            calculationSteps.push(`원산지(${origin}) ${originPrice > 0 ? '추가비용' : '할인'}: ${totalWeight.toFixed(1)}kg × ${Math.abs(originPrice)}원/kg = ${Math.abs(originCost).toLocaleString()}원`);
         }
 
         calculationSteps.push(`견적금액: ${totalPrice.toLocaleString()}원`);
@@ -991,6 +1070,46 @@ if ($product_id) {
     const originPriceData = <?php echo json_encode(json_decode($product['origin_price_data'] ?? '{}', true), JSON_UNESCAPED_UNICODE); ?>;
     const basePrice = <?php echo floatval($product['price'] ?? 1000); ?>; // 기준 단가 (원/kg)
 
+    // 길이 제한값
+    const minLength = <?php echo floatval($product['min_length'] ?? 0.1); ?>;
+    const maxLength = <?php echo floatval($product['max_length'] ?? 100); ?>;
+
+    // 길이 검증 함수
+    function validateLength(value) {
+        const lengthInput = document.getElementById('calc-length');
+        const errorDiv = document.getElementById('calc-length-error');
+
+        if (!lengthInput || !errorDiv) return true;
+
+        const length = parseFloat(value);
+
+        if (isNaN(length) || length === 0) {
+            lengthInput.classList.remove('error');
+            errorDiv.classList.remove('show');
+            errorDiv.textContent = '';
+            return true;
+        }
+
+        if (length < minLength) {
+            lengthInput.classList.add('error');
+            errorDiv.classList.add('show');
+            errorDiv.textContent = `최소 ${minLength}m 이상 입력해주세요.`;
+            return false;
+        }
+
+        if (length > maxLength) {
+            lengthInput.classList.add('error');
+            errorDiv.classList.add('show');
+            errorDiv.textContent = `최대 ${maxLength}m까지 입력 가능합니다.`;
+            return false;
+        }
+
+        lengthInput.classList.remove('error');
+        errorDiv.classList.remove('show');
+        errorDiv.textContent = '';
+        return true;
+    }
+
     // 실시간 계산 기능
     function calculateWeight() {
         const origin = document.getElementById('calc-origin')?.value || '';
@@ -1004,10 +1123,18 @@ if ($product_id) {
             document.getElementById('calcResult').style.display = 'none';
             return;
         }
-        
-        if (calculatorData.calculationType === 'linear' && length <= 0) {
-            document.getElementById('calcResult').style.display = 'none';
-            return;
+
+        if (calculatorData.calculationType === 'linear') {
+            if (length <= 0) {
+                document.getElementById('calcResult').style.display = 'none';
+                return;
+            }
+
+            // 길이 제한 검증
+            if (!validateLength(length)) {
+                document.getElementById('calcResult').style.display = 'none';
+                return;
+            }
         }
         
         // 단위 중량 가져오기
@@ -1111,7 +1238,15 @@ if ($product_id) {
 
         const lengthInput = document.getElementById('calc-length');
         if (lengthInput) {
-            lengthInput.addEventListener('input', debouncedCalculate);
+            lengthInput.addEventListener('input', function() {
+                validateLength(this.value);
+                debouncedCalculate();
+            });
+
+            // blur 이벤트로 최종 검증
+            lengthInput.addEventListener('blur', function() {
+                validateLength(this.value);
+            });
         }
     });
     </script>

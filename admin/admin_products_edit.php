@@ -49,7 +49,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $pdo->query("SHOW COLUMNS FROM products LIKE 'base_length'");
     $has_base_length = $stmt->fetch() !== false;
     $base_length = (int)($_POST['base_length'] ?? 6);
-    
+
+    // 길이 제한 값들
+    $min_length = isset($_POST['min_length']) && $_POST['min_length'] !== '' ? (float)$_POST['min_length'] : null;
+    $max_length = isset($_POST['max_length']) && $_POST['max_length'] !== '' ? (float)$_POST['max_length'] : null;
+    $standard_length = isset($_POST['standard_length']) && $_POST['standard_length'] !== '' ? (float)$_POST['standard_length'] : null;
+
     // min_price, max_price 컬럼이 존재하는지 확인
     $stmt = $pdo->query("SHOW COLUMNS FROM products LIKE 'min_price'");
     $has_price_range = $stmt->fetch() !== false;
@@ -112,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             specifications = ?, specification = ?, description = ?, price = ?,
                             min_price = ?, max_price = ?,
                             unit = ?, min_order_qty = ?, stock_status = ?,
-                            base_length = ?, features = ?,
+                            base_length = ?, min_length = ?, max_length = ?, standard_length = ?, features = ?,
                             available_origins = ?, available_materials = ?, material_price_data = ?,
                             delivery_info = ?, is_featured = ?, is_active = ?,
                             show_on_homepage = ?, homepage_display_order = ?,
@@ -127,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $specifications, $specification, $description, $price,
                         $min_price, $max_price,
                         $unit, $min_order_qty, $stock_status,
-                        $base_length, $features,
+                        $base_length, $min_length, $max_length, $standard_length, $features,
                         $available_origins_json, $available_materials_json, $material_price_data,
                         $delivery_info, $is_featured, $is_active,
                         $show_on_homepage, $homepage_display_order,
@@ -142,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             category_code = ?, product_name = ?, product_code = ?,
                             specifications = ?, specification = ?, description = ?, price = ?,
                             unit = ?, min_order_qty = ?, stock_status = ?,
-                            base_length = ?, features = ?,
+                            base_length = ?, min_length = ?, max_length = ?, standard_length = ?, features = ?,
                             available_origins = ?, available_materials = ?, delivery_info = ?, is_featured = ?, is_active = ?,
                             show_on_homepage = ?, homepage_display_order = ?,
                             detailed_description = ?, key_features = ?, technical_specs = ?,
@@ -155,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $category_code, $product_name, $product_code,
                         $specifications, $specification, $description, $price,
                         $unit, $min_order_qty, $stock_status,
-                        $base_length, $features,
+                        $base_length, $min_length, $max_length, $standard_length, $features,
                         $available_origins_json, $available_materials_json, $delivery_info, $is_featured, $is_active,
                         $show_on_homepage, $homepage_display_order,
                         $detailed_description, $key_features, $technical_specs,
@@ -226,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $specifications, $specification, $description, $price,
                         $min_price, $max_price,
                         $unit, $min_order_qty, $stock_status,
-                        $base_length, $features, $dimensions, $weight,
+                        $base_length, $min_length, $max_length, $standard_length, $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
                         $available_origins_json, $delivery_info, $is_featured, $is_active,
                         $show_on_homepage, $homepage_display_order
@@ -247,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $category_code, $product_name, $product_code,
                         $specifications, $specification, $description, $price,
                         $unit, $min_order_qty, $stock_status,
-                        $base_length, $features, $dimensions, $weight,
+                        $base_length, $min_length, $max_length, $standard_length, $features, $dimensions, $weight,
                         $material, $manufacturer, $origin,
                         $available_origins_json, $delivery_info, $is_featured, $is_active,
                         $show_on_homepage, $homepage_display_order
@@ -945,10 +950,10 @@ include 'admin_head.php';
         </div>
 
         <div class="form-group">
-            <label for="specification">규격(표시용) <span class="required">*</span></label>
+            <label for="specification">규격(표시용)</label>
             <input type="text" id="specification" name="specification"
                    value="<?php echo htmlspecialchars($product['specification'] ?? ''); ?>"
-                   placeholder="예: 200×200×8×12" required>
+                   placeholder="예: 200×200×8×12">
             <div class="help-text">제품 상세 페이지에 표시될 규격입니다</div>
         </div>
         
@@ -1047,10 +1052,10 @@ include 'admin_head.php';
                 </select>
             </div>
             
-            <?php 
+            <?php
             // base_length 컬럼이 존재하는지 확인
             $stmt = $pdo->query("SHOW COLUMNS FROM products LIKE 'base_length'");
-            if ($stmt->fetch()): 
+            if ($stmt->fetch()):
             ?>
             <div class="form-group">
                 <label for="base_length">기준길이(m)</label>
@@ -1064,6 +1069,31 @@ include 'admin_head.php';
                 <div class="help-text">제품 판매 시 기본으로 선택되는 길이입니다</div>
             </div>
             <?php endif; ?>
+
+            <!-- 길이 제한 필드 추가 -->
+            <div class="form-group">
+                <label for="min_length">최소 길이(m)</label>
+                <input type="number" id="min_length" name="min_length" step="0.1" min="0.1"
+                       value="<?php echo $product['min_length'] ?? ''; ?>"
+                       placeholder="예: 2.0">
+                <div class="help-text">계산기에서 입력 가능한 최소 길이</div>
+            </div>
+
+            <div class="form-group">
+                <label for="max_length">최대 길이(m)</label>
+                <input type="number" id="max_length" name="max_length" step="0.1" min="0.1"
+                       value="<?php echo $product['max_length'] ?? ''; ?>"
+                       placeholder="예: 12.0">
+                <div class="help-text">계산기에서 입력 가능한 최대 길이</div>
+            </div>
+
+            <div class="form-group">
+                <label for="standard_length">표준 길이(m)</label>
+                <input type="number" id="standard_length" name="standard_length" step="0.1" min="0.1"
+                       value="<?php echo $product['standard_length'] ?? ''; ?>"
+                       placeholder="예: 6.0">
+                <div class="help-text">계산기 입력창의 기본 예시 값</div>
+            </div>
         </div>
     </div>
     
@@ -1078,16 +1108,16 @@ include 'admin_head.php';
                     <?php
                     // 가능한 원산지 목록
                     $origin_options = [
-                        "국산", "중국산", "일본산", "베트남산", 
+                        "국산", "중국산", "일본산", "베트남산",
                         "바레인산", "수입산", "장기재고", "중고"
                     ];
-                    
+
                     // 현재 선택된 원산지 (JSON 디코드)
                     $selected_origins = [];
                     if (!empty($product['available_origins'])) {
                         $selected_origins = json_decode($product['available_origins'], true) ?: [];
                     }
-                    
+
                     // 선택된 원산지 표시
                     foreach ($selected_origins as $origin):
                     ?>
@@ -1097,7 +1127,7 @@ include 'admin_head.php';
                     </div>
                     <?php endforeach; ?>
                 </div>
-                
+
                 <div class="origin-available">
                     <?php
                     // 선택되지 않은 원산지 표시
@@ -1105,13 +1135,23 @@ include 'admin_head.php';
                         if (!in_array($origin, $selected_origins)):
                     ?>
                     <span class="origin-add" onclick="addOrigin('<?php echo htmlspecialchars($origin); ?>')"><?php echo htmlspecialchars($origin); ?> +</span>
-                    <?php 
+                    <?php
                         endif;
-                    endforeach; 
+                    endforeach;
                     ?>
+
+                    <!-- 사용자 정의 원산지 추가 -->
+                    <div class="custom-origin-add" style="display: inline-block; margin-left: 10px;">
+                        <input type="text" id="custom_origin_input" placeholder="기타 원산지"
+                               style="width: 100px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
+                        <button type="button" onclick="addCustomOrigin()"
+                                style="padding: 4px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                            추가 +
+                        </button>
+                    </div>
                 </div>
-                
-                <input type="hidden" name="available_origins" id="available_origins_input" 
+
+                <input type="hidden" name="available_origins" id="available_origins_input"
                        value='<?php echo json_encode($selected_origins, JSON_UNESCAPED_UNICODE); ?>'>
             </div>
             <div class="help-text" style="margin-top: 10px;">
@@ -1967,6 +2007,43 @@ function removeOriginPriceField(origin) {
     if (item) {
         item.remove();
     }
+}
+
+// 사용자 정의 원산지 추가
+function addCustomOrigin() {
+    const input = document.getElementById('custom_origin_input');
+    const origin = input.value.trim();
+
+    if (!origin) {
+        alert('원산지명을 입력하세요.');
+        return;
+    }
+
+    // 중복 체크
+    const existingOrigins = Array.from(document.querySelectorAll('#origin-sortable .origin-item')).map(item =>
+        item.getAttribute('data-origin')
+    );
+
+    if (existingOrigins.includes(origin)) {
+        alert('이미 추가된 원산지입니다.');
+        return;
+    }
+
+    // 원산지 추가
+    const container = document.getElementById('origin-sortable');
+    const div = document.createElement('div');
+    div.className = 'origin-item';
+    div.setAttribute('data-origin', origin);
+    div.innerHTML = `${origin}<span class="origin-item-remove" onclick="removeOrigin('${origin.replace(/'/g, "\\'")}'')">×</span>`;
+    container.appendChild(div);
+
+    // 가격 입력 필드 추가
+    addOriginPriceField(origin);
+
+    // 입력창 초기화
+    input.value = '';
+
+    updateOriginOrder();
 }
 
 // 재질 관리 함수들

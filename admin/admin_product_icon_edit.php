@@ -1,9 +1,12 @@
 <?php
-$pageTitle = '제품 아이콘 편집';
-require_once 'admin_head.php';
+// 세션 시작 및 데이터베이스 연결
+session_start();
+require_once '../db.php';
+require_once 'admin_check.php';
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $icon = null;
+$error = null;
 
 // 수정 모드인 경우 기존 데이터 가져오기
 if ($id > 0) {
@@ -11,7 +14,7 @@ if ($id > 0) {
         $stmt = $pdo->prepare("SELECT * FROM product_icons WHERE id = ?");
         $stmt->execute([$id]);
         $icon = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if (!$icon) {
             $_SESSION['msg'] = '존재하지 않는 아이콘입니다.';
             $_SESSION['msgType'] = 'error';
@@ -122,12 +125,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['msgType'] = 'success';
             header('Location: admin_product_icons.php');
             exit;
-            
+
         } catch (Exception $e) {
             $error = $e->getMessage();
         }
     }
 }
+
+// HTML 출력 시작
+$pageTitle = '제품 아이콘 편집';
+require_once 'admin_head.php';
 ?>
 
 <style>

@@ -586,7 +586,7 @@ $currentFile = basename($_SERVER['PHP_SELF']);
                 
                 <!-- 영업 관리 드롭다운 -->
                 <div class="nav-dropdown" id="salesDropdown">
-                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_quotes.php', 'admin_quote_view.php', 'admin_consignment.php', 'admin_products_integrated.php', 'admin_products_edit.php', 'admin_unit_weights_edit.php', 'admin_product_quotes.php', 'admin_product_quote_view.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('salesDropdown'); return false;">
+                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_quotes.php', 'admin_quote_view.php', 'admin_consignment.php', 'admin_products_integrated.php', 'admin_products_edit.php', 'admin_unit_weights_edit.php', 'admin_product_quotes.php', 'admin_product_quote_view.php', 'admin_product_categories.php', 'admin_product_categories_tree_v2.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('salesDropdown'); return false;">
                         영업 관리
                     </a>
                     <div class="nav-dropdown-menu">
@@ -594,6 +594,7 @@ $currentFile = basename($_SERVER['PHP_SELF']);
                         <a href="admin_consignment.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_consignment.php' ? 'active' : ''; ?>">위탁판매 관리</a>
                         <a href="admin_products_integrated.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_products_integrated.php' || $currentFile === 'admin_products_edit.php' || $currentFile === 'admin_unit_weights_edit.php' ? 'active' : ''; ?>">제품 관리</a>
                         <a href="admin_product_quotes.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_product_quotes.php' || $currentFile === 'admin_product_quote_view.php' ? 'active' : ''; ?>">제품견적서</a>
+                        <a href="admin_product_categories_tree_v2.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_product_categories_tree_v2.php' || $currentFile === 'admin_product_categories.php' ? 'active' : ''; ?>">카테고리 관리</a>
                     </div>
                 </div>
                 

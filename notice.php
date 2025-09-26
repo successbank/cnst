@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once 'db.php';
 require_once 'board/board_template.php';
 
@@ -88,10 +89,12 @@ $pagination = $result['pagination'];
             </tbody>
         </table>
 
-        <!-- 글쓰기 버튼 (관리자용 - 실제로는 로그인 체크 필요) -->
+        <!-- 글쓰기 버튼 (관리자용) -->
+        <?php if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
         <div class="board-buttons">
             <a href="board_write.php?type=notice" class="write-btn">글쓰기</a>
         </div>
+        <?php endif; ?>
 
         <!-- 페이지네이션 -->
         <?php if ($pagination['totalPages'] > 1): ?>
