@@ -15,10 +15,19 @@ try {
     $category_name = trim($_POST['category_name'] ?? '');
     $display_order = intval($_POST['display_order'] ?? 99);
     $is_active = isset($_POST['is_active']) ? 1 : 0;
+    $custom_url = trim($_POST['custom_url'] ?? '');
+    $url_target = $_POST['url_target'] ?? '_self';
 
     // 유효성 검사
     if (empty($category_code) || empty($category_name)) {
         throw new Exception('카테고리 코드와 이름은 필수입니다.');
+    }
+
+    // URL 유효성 검사 (선택사항)
+    if (!empty($custom_url)) {
+        if (!filter_var($custom_url, FILTER_VALIDATE_URL) && !preg_match('/^\//', $custom_url)) {
+            throw new Exception('유효한 URL을 입력해주세요.');
+        }
     }
 
     // 카테고리 코드 형식 체크
@@ -50,14 +59,16 @@ try {
 
     // 카테고리 추가
     $stmt = $pdo->prepare("
-        INSERT INTO product_categories 
-        (category_code, category_name, parent_id, level, path, display_order, is_active)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO product_categories
+        (category_code, category_name, custom_url, url_target, parent_id, level, path, display_order, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
-    
+
     $stmt->execute([
         $category_code,
         $category_name,
+        $custom_url,
+        $url_target,
         $parent_id,
         $level,
         $path,

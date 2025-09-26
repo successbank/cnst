@@ -15,6 +15,8 @@ try {
     $category_name = trim($_POST['category_name'] ?? '');
     $display_order = intval($_POST['display_order'] ?? 99);
     $is_active = isset($_POST['is_active']) ? 1 : 0;
+    $custom_url = trim($_POST['custom_url'] ?? '');
+    $url_target = $_POST['url_target'] ?? '_self';
 
     if (!$category_id || empty($category_name)) {
         throw new Exception('필수 정보가 누락되었습니다.');
@@ -51,14 +53,21 @@ try {
         }
     }
 
+    // URL 유효성 검사 (선택사항)
+    if (!empty($custom_url)) {
+        if (!filter_var($custom_url, FILTER_VALIDATE_URL) && !preg_match('/^\//', $custom_url)) {
+            throw new Exception('유효한 URL을 입력해주세요.');
+        }
+    }
+
     // 카테고리 업데이트
     $stmt = $pdo->prepare("
-        UPDATE product_categories 
-        SET category_name = ?, parent_id = ?, level = ?, path = ?, 
-            display_order = ?, is_active = ?
+        UPDATE product_categories
+        SET category_name = ?, parent_id = ?, level = ?, path = ?,
+            display_order = ?, is_active = ?, custom_url = ?, url_target = ?
         WHERE id = ?
     ");
-    
+
     $stmt->execute([
         $category_name,
         $parent_id,
@@ -66,6 +75,8 @@ try {
         $path,
         $display_order,
         $is_active,
+        $custom_url,
+        $url_target,
         $category_id
     ]);
 
@@ -77,6 +88,16 @@ try {
         'message' => '카테고리가 수정되었습니다.'
     ]);
 
+} catch (PDOException $e) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Database error: ' . $e->getMessage(),
+        'sql_error' => $e->getCode(),
+        'debug' => [
+            'custom_url' => $custom_url ?? null,
+            'url_target' => $url_target ?? null
+        ]
+    ]);
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,

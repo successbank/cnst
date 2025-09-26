@@ -87,6 +87,18 @@ require_once 'admin_head.php';
                 <input type="number" id="displayOrder" name="display_order" value="99" min="1">
             </div>
             <div class="form-group">
+                <label>커스텀 URL</label>
+                <input type="url" id="customUrl" name="custom_url" placeholder="https://example.com 또는 /page.php">
+                <small>카테고리 클릭 시 이동할 URL (비워두면 기본 제품 목록 페이지로 이동)</small>
+            </div>
+            <div class="form-group">
+                <label>URL 열기 방식</label>
+                <select id="urlTarget" name="url_target">
+                    <option value="_self">현재 창에서 열기</option>
+                    <option value="_blank">새 창에서 열기</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label>
                     <input type="checkbox" id="isActive" name="is_active" value="1" checked> 활성화
                 </label>
@@ -566,6 +578,7 @@ function buildTreeHTML(nodes, level) {
                         </span>
                         <span class="tree-label ${node.is_active ? '' : 'inactive'}">
                             ${node.category_name}
+                            ${node.custom_url ? `<small style="color: #666; margin-left: 8px;">🔗 ${node.custom_url}</small>` : ''}
                         </span>
                         <span class="tree-count">${node.product_count || 0}</span>
                         <span class="modified-indicator" id="mod-${node.id}"></span>
@@ -949,6 +962,8 @@ function editCategory(event, categoryId) {
                 document.getElementById('displayOrder').value = data.category.display_order;
                 document.getElementById('isActive').checked = data.category.is_active == 1;
                 document.getElementById('parentId').value = data.category.parent_id || '';
+                document.getElementById('customUrl').value = data.category.custom_url || '';
+                document.getElementById('urlTarget').value = data.category.url_target || '_self';
 
                 loadParentOptions(categoryId);
                 document.getElementById('categoryModal').style.display = 'flex';
@@ -1018,12 +1033,25 @@ document.getElementById('categoryForm').addEventListener('submit', function(e) {
         ? 'ajax/update_category_tree.php'
         : 'ajax/add_category_tree.php';
 
+    // 디버그: FormData 내용 확인
+    console.log('Form submission:', {
+        categoryId: categoryId,
+        url: url,
+        custom_url: formData.get('custom_url'),
+        url_target: formData.get('url_target'),
+        category_name: formData.get('category_name')
+    });
+
     fetch(url, {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('Response data:', data);
         if (data.success) {
             closeModal();
             loadTreeData();
@@ -1034,7 +1062,7 @@ document.getElementById('categoryForm').addEventListener('submit', function(e) {
     })
     .catch(error => {
         alert('오류가 발생했습니다.');
-        console.error(error);
+        console.error('Fetch error:', error);
     });
 });
 

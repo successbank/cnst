@@ -24,7 +24,14 @@ if ($product_id) {
         SELECT p.*, pc.category_name,
                pp.unit_weight_data as parent_unit_weight_data,
                pp.available_materials as parent_available_materials,
-               pp.calculation_type as parent_calculation_type
+               pp.available_sizes as parent_available_sizes,
+               pp.calculation_type as parent_calculation_type,
+               pp.has_calculator as parent_has_calculator,
+               CASE
+                   WHEN p.has_calculator = 1 THEN 1
+                   WHEN pp.has_calculator = 1 THEN 1
+                   ELSE 0
+               END as effective_has_calculator
         FROM products p
         JOIN product_categories pc ON p.category_code = pc.category_code
         LEFT JOIN products pp ON p.parent_product_id = pp.id
@@ -45,21 +52,31 @@ if ($product_id) {
         $length_pieces_data = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
     }
     
-    // 계산기 데이터 준비
-    if ($product['has_calculator']) {
-        // 부모 제품의 데이터가 있으면 사용, 없으면 현재 제품의 데이터 사용
-        $unit_weight_data = $product['parent_unit_weight_data'] ?? $product['unit_weight_data'];
-        $available_materials = $product['parent_available_materials'] ?? $product['available_materials'];
-        $calculation_type = $product['parent_calculation_type'] ?? $product['calculation_type'];
-        
-        // JSON 파싱 - null 체크 추가
-        $unit_weight_data = !empty($unit_weight_data) ? json_decode($unit_weight_data, true) : [];
-        $available_materials = !empty($available_materials) ? json_decode($available_materials, true) : [];
-    }
-    
     if (!$product) {
         header('Location: products.php');
         exit;
+    }
+
+    // 계산기 데이터 준비 - effective_has_calculator 사용
+    if ($product['effective_has_calculator']) {
+        // 부모 제품의 데이터가 있으면 사용, 없으면 현재 제품의 데이터 사용
+        $unit_weight_data = $product['parent_unit_weight_data'] ?? $product['unit_weight_data'];
+
+        // 경량H형강의 경우 현재 제품의 재질 정보를 우선 사용
+        if ($product['category_code'] === 'light-h-beam' && !empty($product['available_materials'])) {
+            $available_materials = $product['available_materials'];
+        } else {
+            $available_materials = $product['parent_available_materials'] ?? $product['available_materials'];
+        }
+
+        $calculation_type = $product['parent_calculation_type'] ?? $product['calculation_type'];
+
+        // JSON 파싱 - null 체크 추가
+        $unit_weight_data = !empty($unit_weight_data) ? json_decode($unit_weight_data, true) : [];
+        $available_materials = !empty($available_materials) ? json_decode($available_materials, true) : [];
+
+        // 계산기 표시를 위해 has_calculator를 effective 값으로 설정
+        $product['has_calculator'] = $product['effective_has_calculator'];
     }
     
     $pageTitle = $product['product_name'] . ' | 충남스틸';
@@ -229,6 +246,13 @@ if ($product_id) {
         font-size: 14px;
         color: #2e7d2e;
         border: 1px solid #b8e6b8;
+    }
+
+    .unit-weight-display {
+        margin-top: 5px;
+        font-size: 13px;
+        color: #1428A0;
+        font-weight: 500;
     }
     
     .origin-select {
@@ -762,7 +786,34 @@ if ($product_id) {
                         </h3>
                         <div class="inline-calculator">
                             <div class="calc-form-row">
-                                <?php if (!empty($product['available_origins'])): ?>
+                                <?php if ($product['category_code'] !== 'h-beam' && $product['category_code'] !== 'light-h-beam'): ?>
+                                <!-- 규격 선택 추가 (H형강 및 경량H형강 제외) -->
+                                <div class="calc-form-group">
+                                    <label>규격 선택</label>
+                                    <select id="calc-specification" class="calc-control">
+                                        <option value="">규격을 선택하세요</option>
+                                        <?php
+                                        // available_sizes 사용 - null 체크 추가
+                                        $sizes_data = $product['parent_available_sizes'] ?? $product['available_sizes'] ?? null;
+                                        $available_sizes = $sizes_data ? json_decode($sizes_data, true) : [];
+                                        $available_sizes = $available_sizes ?: [];
+                                        foreach ($available_sizes as $size):
+                                        ?>
+                                        <option value="<?php echo htmlspecialchars($size); ?>">
+                                            <?php echo htmlspecialchars($size); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="unit-weight-display" id="unitWeightDisplay" style="display: none;">
+                                        단위중량: <span id="unitWeightValue">0</span> kg/m
+                                    </div>
+                                </div>
+                                <?php else: ?>
+                                <!-- H형강 및 경량H형강의 경우 규격이 고정되어 있으므로 숨김 필드로 처리 -->
+                                <input type="hidden" id="calc-specification" value="<?php echo htmlspecialchars($product['specifications'] ?? $product['specification'] ?? ''); ?>">
+                                <?php endif; ?>
+
+                                <?php if ($product['category_code'] === 'light-h-beam' && !empty($product['available_origins'])): ?>
                                 <?php
                                 $origins = json_decode($product['available_origins'], true) ?: [];
                                 if (count($origins) > 0):
@@ -770,13 +821,18 @@ if ($product_id) {
                                 <div class="calc-form-group">
                                     <label>원산지 선택</label>
                                     <select id="calc-origin" class="calc-control">
-                                        <option value="">원산지를 선택하세요</option>
-                                        <?php foreach ($origins as $index => $origin): ?>
-                                        <option value="<?php echo htmlspecialchars($origin); ?>"
-                                                <?php echo ($index === 0) ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($origin); ?>
-                                        </option>
-                                        <?php endforeach; ?>
+                                        <?php if (count($origins) === 1): ?>
+                                            <option value="<?php echo htmlspecialchars($origins[0]); ?>" selected>
+                                                <?php echo htmlspecialchars($origins[0]); ?>
+                                            </option>
+                                        <?php else: ?>
+                                            <?php foreach ($origins as $origin): ?>
+                                            <option value="<?php echo htmlspecialchars($origin); ?>"
+                                                    <?php echo ($origin === '국산') ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($origin); ?>
+                                            </option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
                                     </select>
                                 </div>
                                 <?php endif; ?>
@@ -785,12 +841,29 @@ if ($product_id) {
                                 <div class="calc-form-group">
                                     <label>재질 선택</label>
                                     <select id="calc-material" class="calc-control">
-                                        <option value="">기본 재질</option>
-                                        <?php foreach ($available_materials as $material): ?>
-                                        <option value="<?php echo htmlspecialchars($material); ?>">
-                                            <?php echo htmlspecialchars($material); ?>
-                                        </option>
-                                        <?php endforeach; ?>
+                                        <?php if ($product['category_code'] === 'light-h-beam'): ?>
+                                            <?php
+                                            // For lightweight H-beam, show all available materials
+                                            // First material in array is default
+                                            ?>
+                                            <?php foreach ($available_materials as $index => $material): ?>
+                                            <option value="<?php echo htmlspecialchars($material); ?>"
+                                                    <?php echo $index === 0 ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($material); ?>
+                                            </option>
+                                            <?php endforeach; ?>
+                                        <?php elseif (count($available_materials) === 1): ?>
+                                            <option value="<?php echo htmlspecialchars($available_materials[0]); ?>" selected>
+                                                <?php echo htmlspecialchars($available_materials[0]); ?>
+                                            </option>
+                                        <?php else: ?>
+                                            <option value="">기본 재질</option>
+                                            <?php foreach ($available_materials as $material): ?>
+                                            <option value="<?php echo htmlspecialchars($material); ?>">
+                                                <?php echo htmlspecialchars($material); ?>
+                                            </option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
                                     </select>
                                 </div>
 
@@ -835,9 +908,17 @@ if ($product_id) {
                     // 계산기 데이터
                     const calculatorData = {
                         unitWeightData: <?php echo json_encode($unit_weight_data, JSON_UNESCAPED_UNICODE); ?>,
-                        specification: '<?php echo htmlspecialchars($product['specification']); ?>',
+                        specification: '<?php echo htmlspecialchars($product['specifications'] ?? ''); ?>',
                         calculationType: '<?php echo $calculation_type; ?>',
-                        unitWeight: <?php echo $product['specification_weight'] ?? 0; ?>
+                        unitWeight: <?php
+                        if ($product['category_code'] === 'light-h-beam' && empty($product['specification_weight'])) {
+                            // 경량H형강의 경우 unitWeightData에서 해당 규격의 단위중량 가져오기
+                            $spec = $product['specifications'] ?? '';
+                            echo isset($unit_weight_data[$spec]) ? $unit_weight_data[$spec] : 0;
+                        } else {
+                            echo $product['specification_weight'] ?? 0;
+                        }
+                        ?>
                     };
                     </script>
                     <?php endif; ?>
@@ -1141,6 +1222,12 @@ if ($product_id) {
 
     // 실시간 계산 기능
     function calculateWeight() {
+        // H형강의 경우 specification이 hidden input에 있음
+        const categoryCode = '<?php echo $product['category_code'] ?? ''; ?>';
+        let specification = document.getElementById('calc-specification')?.value || '';
+        if (categoryCode === 'h-beam' && !specification) {
+            specification = '<?php echo $product['specification'] ?? ''; ?>';
+        }
         const origin = document.getElementById('calc-origin')?.value || '';
         const material = document.getElementById('calc-material').value;
         const quantity = parseInt(document.getElementById('calc-quantity').value) || 0;
@@ -1166,20 +1253,34 @@ if ($product_id) {
             }
         }
         
+        // 규격이 선택되지 않았으면 리턴
+        if (!specification) {
+            document.getElementById('calcResult').style.display = 'none';
+            return;
+        }
+
         // 단위 중량 가져오기
-        let unitWeight = calculatorData.unitWeight;
-        
-        // 계산기 데이터에서 단위 중량 찾기
-        if (calculatorData.unitWeightData && calculatorData.specification) {
-            const specData = calculatorData.unitWeightData[calculatorData.specification];
-            if (specData) {
-                if (material && specData[material]) {
-                    unitWeight = specData[material];
-                } else {
-                    // 첫 번째 재질의 단위중량 사용
-                    unitWeight = Object.values(specData)[0] || unitWeight;
-                }
+        let unitWeight = 0;
+
+        // H형강의 경우 specification_weight 사용
+        if (categoryCode === 'h-beam' && calculatorData.unitWeight > 0) {
+            unitWeight = calculatorData.unitWeight;
+        } else if (calculatorData.unitWeightData && specification) {
+            // 일반 제품: 규격별 단중 데이터에서 가져오기
+            unitWeight = calculatorData.unitWeightData[specification];
+
+            // 만약 재질별로 구분되어 있다면
+            if (typeof unitWeight === 'object' && material && unitWeight[material]) {
+                unitWeight = unitWeight[material];
+            } else if (typeof unitWeight === 'object') {
+                // 첫 번째 재질의 단위중량 사용
+                unitWeight = Object.values(unitWeight)[0] || 0;
             }
+        }
+
+        if (unitWeight <= 0) {
+            document.getElementById('calcResult').style.display = 'none';
+            return;
         }
         
         // 중량 계산
@@ -1256,6 +1357,25 @@ if ($product_id) {
     
     // 이벤트 리스너 등록
     document.addEventListener('DOMContentLoaded', function() {
+        // 규격 선택 이벤트 리스너 (H형강이 아닌 경우에만)
+        const specificationInput = document.getElementById('calc-specification');
+        if (specificationInput && specificationInput.tagName === 'SELECT') {
+            specificationInput.addEventListener('change', function() {
+                const selectedSpec = this.value;
+                if (selectedSpec && calculatorData.unitWeightData[selectedSpec]) {
+                    let unitWeight = calculatorData.unitWeightData[selectedSpec];
+                    if (typeof unitWeight === 'object') {
+                        unitWeight = Object.values(unitWeight)[0];
+                    }
+                    document.getElementById('unitWeightValue').textContent = unitWeight;
+                    document.getElementById('unitWeightDisplay').style.display = 'block';
+                } else {
+                    document.getElementById('unitWeightDisplay').style.display = 'none';
+                }
+                debouncedCalculate();
+            });
+        }
+
         // 입력 필드에 이벤트 리스너 추가
         const originInput = document.getElementById('calc-origin');
         if (originInput) {

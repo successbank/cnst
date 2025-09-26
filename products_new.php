@@ -951,7 +951,18 @@ foreach ($products as &$product) {
     <div class="products-categories">
         <a href="?category=all&view=<?php echo $view_type; ?>&search=<?php echo urlencode($search); ?>" class="category-btn <?php echo $category_filter === 'all' ? 'active' : ''; ?>">전체</a>
         <?php foreach ($categories as $category): ?>
-            <a href="?category=<?php echo $category['category_code']; ?>&view=<?php echo $view_type; ?>&search=<?php echo urlencode($search); ?>"
+            <?php
+            // custom_url이 있으면 그것을 사용, 없으면 기본 URL 사용
+            if (!empty($category['custom_url'])) {
+                $category_url = $category['custom_url'];
+                $target = $category['url_target'] ?? '_self';
+            } else {
+                $category_url = "?category={$category['category_code']}&view={$view_type}&search=" . urlencode($search);
+                $target = '_self';
+            }
+            ?>
+            <a href="<?php echo $category_url; ?>"
+               target="<?php echo $target; ?>"
                class="category-btn <?php echo $category_filter === $category['category_code'] ? 'active' : ''; ?>">
                 <?php echo escape($category['category_name']); ?>
             </a>

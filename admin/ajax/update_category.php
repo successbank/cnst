@@ -13,9 +13,19 @@ try {
     $category_id = $_POST['category_id'] ?? null;
     $category_name = trim($_POST['category_name'] ?? '');
     $display_order = intval($_POST['display_order'] ?? 99);
+    $custom_url = trim($_POST['custom_url'] ?? '');
+    $url_target = $_POST['url_target'] ?? '_self';
 
     if (!$category_id || empty($category_name)) {
         throw new Exception('필수 정보가 누락되었습니다.');
+    }
+
+    // URL 유효성 검사 (선택사항)
+    if (!empty($custom_url)) {
+        // 상대 경로 또는 절대 URL 허용
+        if (!filter_var($custom_url, FILTER_VALIDATE_URL) && !preg_match('/^\//', $custom_url)) {
+            throw new Exception('유효한 URL을 입력해주세요.');
+        }
     }
 
     // 카테고리 존재 확인
@@ -27,12 +37,12 @@ try {
 
     // 카테고리 업데이트
     $stmt = $pdo->prepare("
-        UPDATE product_categories 
-        SET category_name = ?, display_order = ?
+        UPDATE product_categories
+        SET category_name = ?, display_order = ?, custom_url = ?, url_target = ?
         WHERE id = ?
     ");
-    
-    $stmt->execute([$category_name, $display_order, $category_id]);
+
+    $stmt->execute([$category_name, $display_order, $custom_url, $url_target, $category_id]);
 
     echo json_encode([
         'success' => true,
