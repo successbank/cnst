@@ -9,7 +9,7 @@ This is the Chungnam Steel (충남스틸) website - a PHP-based steel products m
 ## 🚨 작업 시 필수 주의사항
 
 ### 항상 지켜야 할 규칙
-1. **경량H형강 제품군 작업 시**
+1. ** I형강 제품군 작업 시**
    - 카테고리 코드: `light-h-beam`만 대상
    - 다른 제품군은 수정하지 않음
    - 재질 데이터는 현재 제품 우선, 부모 제품은 참조용
@@ -23,6 +23,7 @@ This is the Chungnam Steel (충남스틸) website - a PHP-based steel products m
    - WHERE 조건 필수 확인
    - UPDATE/DELETE 전 SELECT로 대상 확인
    - 트랜잭션 사용 권장
+   - DB : project1_db
 
 4. **테스트**
    - 수정 후 반드시 실제 페이지 테스트
@@ -246,6 +247,6 @@ if ($category_code === 'light-h-beam' && !empty($current_product) && !empty($cur
 
 ### 주의사항
 - 경량H형강 카테고리 코드: `light-h-beam`
-- 일반 H형강 카테고리 코드: `h-beam`
+- 일반 H형강 카테고리 코드: `light-h-beam`
 - 제품이 계산기를 가지지 않으면 부모 제품의 데이터를 참조하는 구조
 - 재질 정보는 JSON 배열로 저장되며, 첫 번째 재질이 기본값으로 표시됨

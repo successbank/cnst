@@ -82,7 +82,7 @@ $sql = "SELECT p.*, pc.category_name,
         FROM products p
         JOIN product_categories pc ON p.category_code = pc.category_code
         WHERE {$where_clause}
-        ORDER BY p.id DESC
+        ORDER BY p.id ASC
         LIMIT {$per_page} OFFSET {$offset}";
 
 $stmt = $pdo->prepare($sql);

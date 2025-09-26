@@ -586,12 +586,20 @@ if ($product_id) {
             <div class="product-category"><?php echo htmlspecialchars($product['category_name']); ?></div>
             <h1 class="product-title"><?php
                 $display_name = $product['product_name'];
-                $display_spec = $product['specification'] ?: $product['specifications'];
-                if ($display_spec) {
-                    $display_name .= ' ' . $display_spec;
+                // I형강은 제품명만 표시 (규격은 별도 표시)
+                if ($product['category_code'] !== 'i-beam') {
+                    $display_spec = $product['specification'] ?: $product['specifications'];
+                    if ($display_spec) {
+                        $display_name .= ' ' . $display_spec;
+                    }
                 }
                 echo htmlspecialchars($display_name);
             ?></h1>
+            <?php if ($product['category_code'] === 'i-beam' && !empty($product['specifications'])): ?>
+            <div class="product-spec-badge" style="margin-top: 10px; font-size: 24px; color: #666;">
+                규격: <?php echo htmlspecialchars($product['specifications']); ?>
+            </div>
+            <?php endif; ?>
             <p class="product-subtitle">충남스틸이 공급하는 고품질 <?php echo htmlspecialchars($product['category_name']); ?> 제품입니다</p>
         </div>
         <?php if ($is_admin): ?>
@@ -786,8 +794,11 @@ if ($product_id) {
                         </h3>
                         <div class="inline-calculator">
                             <div class="calc-form-row">
-                                <?php if ($product['category_code'] !== 'h-beam' && $product['category_code'] !== 'light-h-beam'): ?>
-                                <!-- 규격 선택 추가 (H형강 및 경량H형강 제외) -->
+                                <?php if ($product['category_code'] === 'i-beam'): ?>
+                                <!-- I형강의 경우 규격이 고정되어 있으므로 숨김 필드로 처리 -->
+                                <input type="hidden" id="calc-specification" value="<?php echo htmlspecialchars($product['specifications'] ?? ''); ?>">
+                                <?php elseif ($product['category_code'] !== 'h-beam' && $product['category_code'] !== 'light-h-beam'): ?>
+                                <!-- 기타 제품의 규격 선택 (H형강 및 경량H형강 제외) -->
                                 <div class="calc-form-group">
                                     <label>규격 선택</label>
                                     <select id="calc-specification" class="calc-control">
@@ -813,7 +824,7 @@ if ($product_id) {
                                 <input type="hidden" id="calc-specification" value="<?php echo htmlspecialchars($product['specifications'] ?? $product['specification'] ?? ''); ?>">
                                 <?php endif; ?>
 
-                                <?php if ($product['category_code'] === 'light-h-beam' && !empty($product['available_origins'])): ?>
+                                <?php if (in_array($product['category_code'], ['h-beam', 'light-h-beam', 'i-beam']) && !empty($product['available_origins'])): ?>
                                 <?php
                                 $origins = json_decode($product['available_origins'], true) ?: [];
                                 if (count($origins) > 0):
@@ -841,9 +852,9 @@ if ($product_id) {
                                 <div class="calc-form-group">
                                     <label>재질 선택</label>
                                     <select id="calc-material" class="calc-control">
-                                        <?php if ($product['category_code'] === 'light-h-beam'): ?>
+                                        <?php if (in_array($product['category_code'], ['h-beam', 'light-h-beam'])): ?>
                                             <?php
-                                            // For lightweight H-beam, show all available materials
+                                            // For H-beam and lightweight H-beam, show all available materials
                                             // First material in array is default
                                             ?>
                                             <?php foreach ($available_materials as $index => $material): ?>
@@ -867,7 +878,7 @@ if ($product_id) {
                                     </select>
                                 </div>
 
-                                <?php if ($calculation_type === 'linear'): ?>
+                                <?php if ($calculation_type === 'linear' || ($calculation_type === 'piece' && $product['category_code'] === 'h-beam')): ?>
                                 <div class="calc-form-group">
                                     <label>길이 (미터)</label>
                                     <input type="number" id="calc-length" class="calc-control"
@@ -877,14 +888,24 @@ if ($product_id) {
                                            placeholder="예: <?php echo $product['standard_length'] ?? 6; ?>"
                                            value="">
                                     <div class="length-error-message" id="calc-length-error"></div>
-                                    <?php if (!empty($product['min_length']) && !empty($product['max_length'])): ?>
+                                    <?php if ($calculation_type === 'piece' && $product['category_code'] === 'h-beam'): ?>
+                                    <div class="length-hint">표준 길이: <?php echo $product['standard_length'] ?? 6; ?>m (사용자 지정 가능)</div>
+                                    <?php elseif (!empty($product['min_length']) && !empty($product['max_length'])): ?>
                                     <div class="length-hint">입력 가능 범위: <?php echo $product['min_length']; ?>m ~ <?php echo $product['max_length']; ?>m</div>
                                     <?php endif; ?>
                                 </div>
                                 <?php endif; ?>
 
                                 <div class="calc-form-group">
-                                    <label>수량 (<?php echo $calculation_type === 'linear' ? '본' : '장'; ?>)</label>
+                                    <label>수량 (<?php
+                                        if ($calculation_type === 'piece') {
+                                            echo '개';
+                                        } elseif ($calculation_type === 'linear') {
+                                            echo '본';
+                                        } else {
+                                            echo '장';
+                                        }
+                                    ?>)</label>
                                     <input type="number" id="calc-quantity" class="calc-control"
                                            min="1" placeholder="예: 10" value="">
                                 </div>
@@ -1240,7 +1261,7 @@ if ($product_id) {
             return;
         }
 
-        if (calculatorData.calculationType === 'linear') {
+        if (calculatorData.calculationType === 'linear' || (calculatorData.calculationType === 'piece' && (categoryCode === 'h-beam' || categoryCode === 'light-h-beam'))) {
             if (length <= 0) {
                 document.getElementById('calcResult').style.display = 'none';
                 return;
@@ -1253,17 +1274,20 @@ if ($product_id) {
             }
         }
         
-        // 규격이 선택되지 않았으면 리턴
-        if (!specification) {
-            document.getElementById('calcResult').style.display = 'none';
-            return;
+        // I형강과 H형강, 경량H형강이 아닌 경우에만 규격 체크
+        if (categoryCode !== 'h-beam' && categoryCode !== 'i-beam' && categoryCode !== 'light-h-beam') {
+            // 규격이 선택되지 않았으면 리턴
+            if (!specification) {
+                document.getElementById('calcResult').style.display = 'none';
+                return;
+            }
         }
 
         // 단위 중량 가져오기
         let unitWeight = 0;
 
-        // H형강의 경우 specification_weight 사용
-        if (categoryCode === 'h-beam' && calculatorData.unitWeight > 0) {
+        // H형강과 I형강, 경량H형강의 경우 specification_weight 사용
+        if ((categoryCode === 'h-beam' || categoryCode === 'i-beam' || categoryCode === 'light-h-beam') && calculatorData.unitWeight > 0) {
             unitWeight = calculatorData.unitWeight;
         } else if (calculatorData.unitWeightData && specification) {
             // 일반 제품: 규격별 단중 데이터에서 가져오기
@@ -1286,12 +1310,32 @@ if ($product_id) {
         // 중량 계산
         let calculatedWeight = 0;
         let calculationSteps = [];
-        
-        if (calculatorData.calculationType === 'linear') {
+
+        if (calculatorData.calculationType === 'piece' && (categoryCode === 'h-beam' || categoryCode === 'light-h-beam')) {
+            // H형강 및 경량H형강: 낱개 계산 (단위중량 × 길이 × 수량)
+            const inputLength = parseFloat(document.getElementById('calc-length')?.value || 0);
+
+            // 길이가 입력되지 않으면 계산하지 않음
+            if (inputLength <= 0) {
+                document.getElementById('calcResult').style.display = 'none';
+                return;
+            }
+
+            const weightPerPiece = unitWeight * inputLength;
+            calculatedWeight = weightPerPiece * quantity;
+
+            calculationSteps = [
+                `규격: ${calculatorData.specification || ''}`,
+                `단위중량: ${unitWeight} kg/m`,
+                `길이: ${inputLength}m`,
+                `1개 중량: ${unitWeight} kg/m × ${inputLength}m = ${weightPerPiece.toFixed(1)} kg`,
+                `총 중량: ${weightPerPiece.toFixed(1)} kg/개 × ${quantity}개 = ${calculatedWeight.toFixed(1)} kg`
+            ];
+        } else if (calculatorData.calculationType === 'linear') {
             // 선형 제품: 단위중량 × 길이 × 수량
             const weightPerPiece = unitWeight * length;
             calculatedWeight = weightPerPiece * quantity;
-            
+
             calculationSteps = [
                 `단위중량: ${unitWeight} kg/m`,
                 `1본 중량: ${unitWeight} × ${length}m = ${weightPerPiece.toFixed(2)} kg`,
@@ -1300,7 +1344,7 @@ if ($product_id) {
         } else {
             // 판재 제품: 단위중량(장) × 수량
             calculatedWeight = unitWeight * quantity;
-            
+
             calculationSteps = [
                 `단위중량(장): ${unitWeight} kg`,
                 `총 중량: ${unitWeight} × ${quantity}장 = ${calculatedWeight.toFixed(1)} kg`
