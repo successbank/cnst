@@ -25,13 +25,25 @@ if ($product_id) {
                pp.unit_weight_data as parent_unit_weight_data,
                pp.available_materials as parent_available_materials,
                pp.calculation_type as parent_calculation_type
-        FROM products p 
-        JOIN product_categories pc ON p.category_code = pc.category_code 
+        FROM products p
+        JOIN product_categories pc ON p.category_code = pc.category_code
         LEFT JOIN products pp ON p.parent_product_id = pp.id
         WHERE p.id = ? AND p.is_active = 1
     ");
     $stmt->execute([$product_id]);
     $product = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // 철근 제품인 경우 길이별 본수 데이터 조회
+    $length_pieces_data = [];
+    if ($product && strpos($product['product_name'], '철근') === 0) {
+        // 제품명에서 규격 추출 (예: "철근 D10" → "D10")
+        $spec_name = trim(str_replace('철근', '', $product['product_name']));
+
+        // 길이별 본수 데이터 조회
+        $stmt = $pdo->prepare("SELECT length, pieces_per_length FROM rebar_length_data WHERE spec_name = ? ORDER BY length");
+        $stmt->execute([$spec_name]);
+        $length_pieces_data = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    }
     
     // 계산기 데이터 준비
     if ($product['has_calculator']) {
@@ -40,9 +52,9 @@ if ($product_id) {
         $available_materials = $product['parent_available_materials'] ?? $product['available_materials'];
         $calculation_type = $product['parent_calculation_type'] ?? $product['calculation_type'];
         
-        // JSON 파싱
-        $unit_weight_data = json_decode($unit_weight_data, true) ?? [];
-        $available_materials = json_decode($available_materials, true) ?? [];
+        // JSON 파싱 - null 체크 추가
+        $unit_weight_data = !empty($unit_weight_data) ? json_decode($unit_weight_data, true) : [];
+        $available_materials = !empty($available_materials) ? json_decode($available_materials, true) : [];
     }
     
     if (!$product) {
@@ -721,9 +733,9 @@ if ($product_id) {
                                 </div>
 
                                 <div class="calc-form-group">
-                                    <label>수량 (본)</label>
+                                    <label>수량</label>
                                     <input type="number" id="calc-rebar-quantity" class="calc-control"
-                                           min="1" placeholder="예: 100" value="100">
+                                           min="1" placeholder="예: 1" value="1">
                                 </div>
                             </div>
 
@@ -970,6 +982,9 @@ if ($product_id) {
     // 원산지별 가격 데이터 (kg당 추가 비용)
     const originPriceData = <?php echo json_encode(json_decode($product['origin_price_data'] ?? '{}', true), JSON_UNESCAPED_UNICODE); ?>;
 
+    // 길이별 본수 데이터
+    const lengthPiecesData = <?php echo json_encode($length_pieces_data, JSON_UNESCAPED_UNICODE); ?>;
+
     // 철근 중량 실시간 계산
     function calculateRebarWeight() {
         const length = parseFloat(document.getElementById('calc-rebar-length').value) || 0;
@@ -983,15 +998,29 @@ if ($product_id) {
             return;
         }
 
+        // 해당 길이의 본수 가져오기
+        const lengthKey = length.toFixed(1); // 소수점 1자리로 키 생성
+        const piecesPerLength = lengthPiecesData[lengthKey] || 0;
+
+        if (piecesPerLength === 0) {
+            document.getElementById('rebarCalcResult').style.display = 'none';
+            return;
+        }
+
+        // 실제 본수 계산 (수량 × 길이당 본수)
+        const actualPieces = quantity * piecesPerLength;
+
         // 중량 계산
         const weightPerPiece = unitWeight * length; // 1본 중량
-        const totalWeight = weightPerPiece * quantity; // 총 중량
+        const totalWeight = weightPerPiece * actualPieces; // 총 중량
 
         // 계산 과정 생성
         let calculationSteps = [];
+        calculationSteps.push(`선택 길이: ${length}m (길이당 ${piecesPerLength}본)`);
         calculationSteps.push(`단위중량: ${unitWeight.toFixed(3)} kg/m`);
         calculationSteps.push(`1본 중량: ${unitWeight.toFixed(3)} × ${length}m = ${weightPerPiece.toFixed(2)} kg`);
-        calculationSteps.push(`총 중량: ${weightPerPiece.toFixed(2)} × ${quantity}본 = ${totalWeight.toFixed(1)} kg`);
+        calculationSteps.push(`총 본수: ${quantity}개 × ${piecesPerLength}본/개 = ${actualPieces.toLocaleString()}본`);
+        calculationSteps.push(`총 중량: ${weightPerPiece.toFixed(2)} × ${actualPieces.toLocaleString()}본 = ${totalWeight.toFixed(1)} kg`);
 
         // 견적금액 계산 (kg당 1,000원 기준)
         const pricePerKg = 1000;

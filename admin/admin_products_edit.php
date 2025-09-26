@@ -37,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $product_code = trim($_POST['product_code'] ?? '');
     $product_code = $product_code === '' ? null : $product_code;
     $specifications = trim($_POST['specifications'] ?? '');
+    $specifications = $specifications === '' ? null : $specifications;
     $specification = trim($_POST['specification'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $price = isset($_POST['price']) && $_POST['price'] !== '' ? (float)$_POST['price'] : null;
@@ -96,7 +97,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $errors = [];
     if (!$category_code) $errors[] = "카테고리를 선택해주세요.";
     if (!$product_name) $errors[] = "제품명을 입력해주세요.";
-    if (!$specifications) $errors[] = "규격을 입력해주세요.";
     
     if (!$errors) {
         try {

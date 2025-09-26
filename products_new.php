@@ -93,9 +93,9 @@ $products = $stmt->fetchAll();
 $rebar_bundle_data = [];
 if ($category_filter === 'rebar' || $category_filter === 'all') {
     $bundle_stmt = $pdo->query("
-        SELECT spec_name, length, piece_weight, pieces_per_ton, weight_per_ton
+        SELECT spec_name, length, piece_weight, pieces_per_length as pieces_per_ton, weight_per_ton
         FROM rebar_length_data
-        WHERE pieces_per_ton > 0 AND weight_per_ton > 0
+        WHERE pieces_per_length > 0 AND weight_per_ton > 0
     ");
     while ($row = $bundle_stmt->fetch(PDO::FETCH_ASSOC)) {
         $key = $row['spec_name'];
