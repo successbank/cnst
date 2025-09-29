@@ -8,16 +8,17 @@ This is the Chungnam Steel (충남스틸) website - a PHP-based steel products m
 
 ## 🚨 작업 시 필수 주의사항
 
-### 항상 지켜야 할 규칙
-1. ** I형강 제품군 작업 시**
-   - 카테고리 코드: `light-h-beam`만 대상
-   - 다른 제품군은 수정하지 않음
-   - 재질 데이터는 현재 제품 우선, 부모 제품은 참조용
+## 판매제품 계산식 개발 주의사항
+- 진행중인 개발 제품군외에는 절대 수정 변경하지 말것
+- 별도의 요청이 있을경우 별도요청 진행
 
-2. **파일 수정 시**
-   - 백업 먼저 생성: `cp original.php original.php.bak`
-   - 루트와 html 디렉토리에 중복 파일 확인
-   - 두 파일 모두 수정 필요한지 확인
+
+## claude code와의 소통언어
+- 한국어
+
+### 항상 지켜야 할 규칙
+1. ** 개발 요청한 제품군만 개발 진행**
+
 
 3. **데이터베이스 작업 시**
    - WHERE 조건 필수 확인
@@ -35,10 +36,7 @@ This is the Chungnam Steel (충남스틸) website - a PHP-based steel products m
 # 1. 제품 데이터 확인
 php -r "require_once 'db.php'; \$pdo = getDB(); \$stmt = \$pdo->prepare('SELECT * FROM products WHERE id = ?'); \$stmt->execute([ID]); print_r(\$stmt->fetch());"
 
-# 2. 경량H형강 제품만 조회
-mysql -u root -pWNtl@akdnj12 bridge -e "SELECT * FROM products WHERE category_code = 'light-h-beam';"
-
-# 3. 파일 백업
+# 2. 파일 백업
 cp /path/to/file.php /path/to/file.php.bak.$(date +%Y%m%d_%H%M%S)
 ```
 
