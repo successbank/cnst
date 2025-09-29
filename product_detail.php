@@ -148,6 +148,17 @@ require_once 'head.php';
     color: #666;
 }
 
+.help-text {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.form-control.error {
+    border-color: #dc3545;
+    background-color: #fff5f5;
+}
+
 .step {
     padding: 8px 0;
     color: #333;
@@ -230,7 +241,27 @@ require_once 'head.php';
                     단위중량: <span id="unitWeightValue">0</span> kg
                 </span>
             </div>
-            
+
+            <?php
+            // 원산지 정보 가져오기
+            $available_origins = [];
+            if (!empty($product['available_origins'])) {
+                $available_origins = json_decode($product['available_origins'], true) ?: [];
+            }
+            ?>
+            <?php if (count($available_origins) > 0): ?>
+            <div class="form-group">
+                <label for="origin">원산지 선택</label>
+                <select class="form-control" id="origin">
+                    <?php foreach ($available_origins as $index => $origin): ?>
+                        <option value="<?php echo htmlspecialchars($origin); ?>" <?php echo $index === 0 ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($origin); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <?php endif; ?>
+
             <div class="form-group">
                 <label for="material">재질 선택</label>
                 <select class="form-control" id="material">
@@ -248,7 +279,15 @@ require_once 'head.php';
         <div class="form-row">
             <div class="form-group">
                 <label for="length">길이 (미터)</label>
-                <input type="number" class="form-control" id="length" min="0.1" step="0.1" placeholder="예: 6" required>
+                <input type="number" class="form-control" id="length"
+                       min="<?php echo $product['min_length'] ?? 0.1; ?>"
+                       max="<?php echo $product['max_length'] ?? 100; ?>"
+                       step="0.1"
+                       placeholder="예: <?php echo $product['standard_length'] ?? 6; ?>" required>
+                <div class="length-error-message" id="length-error"></div>
+                <?php if (!empty($product['min_length']) && !empty($product['max_length'])): ?>
+                <div class="help-text">입력 가능 범위: <?php echo $product['min_length']; ?>m ~ <?php echo $product['max_length']; ?>m</div>
+                <?php endif; ?>
             </div>
             
             <div class="form-group">
@@ -282,6 +321,46 @@ require_once 'head.php';
 const unitWeightData = <?php echo json_encode($unit_weight_data, JSON_UNESCAPED_UNICODE); ?>;
 const calculationType = '<?php echo $product['calculation_type']; ?>';
 
+// 길이 제한값
+const minLength = <?php echo floatval($product['min_length'] ?? 0.1); ?>;
+const maxLength = <?php echo floatval($product['max_length'] ?? 100); ?>;
+
+// 길이 검증 함수
+function validateLength(value) {
+    const lengthInput = document.getElementById('length');
+    const errorDiv = document.getElementById('length-error');
+
+    if (!lengthInput || !errorDiv) return true;
+
+    const length = parseFloat(value);
+
+    if (isNaN(length) || length === 0) {
+        lengthInput.classList.remove('error');
+        errorDiv.classList.remove('show');
+        errorDiv.textContent = '';
+        return true;
+    }
+
+    if (length < minLength) {
+        lengthInput.classList.add('error');
+        errorDiv.classList.add('show');
+        errorDiv.textContent = `최소 ${minLength}m 이상 입력해주세요.`;
+        return false;
+    }
+
+    if (length > maxLength) {
+        lengthInput.classList.add('error');
+        errorDiv.classList.add('show');
+        errorDiv.textContent = `최대 ${maxLength}m까지 입력 가능합니다.`;
+        return false;
+    }
+
+    lengthInput.classList.remove('error');
+    errorDiv.classList.remove('show');
+    errorDiv.textContent = '';
+    return true;
+}
+
 // 규격 선택 시 단위중량 표시
 document.getElementById('specification').addEventListener('change', function() {
     const specification = this.value;
@@ -314,17 +393,28 @@ document.getElementById('material').addEventListener('change', function() {
 // 폼 제출 처리
 document.getElementById('calculatorForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
+
+    const lengthInput = document.getElementById('length');
+    const lengthValue = lengthInput ? parseFloat(lengthInput.value) : 0;
+
+    // 선형 제품인 경우 길이 검증
+    if (calculationType === 'linear' && lengthInput) {
+        if (!validateLength(lengthValue)) {
+            return; // 검증 실패 시 제출 중단
+        }
+    }
+
     const btn = document.getElementById('calculateBtn');
     btn.disabled = true;
     btn.textContent = '계산 중...';
-    
+
     try {
         const formData = {
             category: document.getElementById('categoryCode').value,
             specification: document.getElementById('specification').value,
+            origin: document.getElementById('origin')?.value || '',
             material: document.getElementById('material').value,
-            length: parseFloat(document.getElementById('length')?.value || 0),
+            length: lengthValue,
             quantity: parseInt(document.getElementById('quantity').value)
         };
         
@@ -374,6 +464,18 @@ if (calculationType !== 'linear') {
     if (lengthField) {
         lengthField.closest('.form-group').style.display = 'none';
     }
+}
+
+// 길이 입력 이벤트 리스너
+const lengthInput = document.getElementById('length');
+if (lengthInput) {
+    lengthInput.addEventListener('input', function() {
+        validateLength(this.value);
+    });
+
+    lengthInput.addEventListener('blur', function() {
+        validateLength(this.value);
+    });
 }
 
 // 페이지 로드 시 선택된 규격이 있으면 단위중량 표시

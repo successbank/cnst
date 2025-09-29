@@ -594,8 +594,6 @@ $currentFile = basename($_SERVER['PHP_SELF']);
                         <a href="admin_consignment.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_consignment.php' ? 'active' : ''; ?>">위탁판매 관리</a>
                         <a href="admin_products_integrated.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_products_integrated.php' || $currentFile === 'admin_products_edit.php' || $currentFile === 'admin_unit_weights_edit.php' ? 'active' : ''; ?>">제품 관리</a>
                         <a href="admin_origin_stock.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_origin_stock.php' ? 'active' : ''; ?>">원산지 재고 형식</a>
-                        <a href="admin_rebar_products.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_rebar_products.php' ? 'active' : ''; ?>">철근 관리</a>
-                        <a href="admin_rebar_materials.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_rebar_materials.php' ? 'active' : ''; ?>">철근 재질/단가</a>
                         <a href="admin_product_quotes.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_product_quotes.php' || $currentFile === 'admin_product_quote_view.php' ? 'active' : ''; ?>">제품견적서</a>
                     </div>
                 </div>
