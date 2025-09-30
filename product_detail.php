@@ -629,9 +629,13 @@ if ($product_id) {
                                 <div class="calc-form-group">
                                     <label>재질 선택</label>
                                     <select id="calc-material" class="calc-control">
-                                        <option value="SS400" selected>SS400</option>
+                                        <?php
+                                        // Set default material for unequal-angle products
+                                        $default_material = ($product['category_code'] === 'unequal-angle') ? 'SS400' : 'SS400';
+                                        ?>
                                         <?php foreach ($available_materials as $material): ?>
-                                        <option value="<?php echo htmlspecialchars($material); ?>">
+                                        <option value="<?php echo htmlspecialchars($material); ?>"
+                                                <?php echo ($material === $default_material) ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($material); ?>
                                         </option>
                                         <?php endforeach; ?>
@@ -657,6 +661,21 @@ if ($product_id) {
                                         <div class="input-help">선택 가능 범위: 6.0m ~ 12.0m</div>
                                     <?php elseif ($product['category_code'] === 'unequal-angle'): ?>
                                         <!-- 부등변ㄱ형강: 6m-12m 드롭다운 선택 (0.1m 단위) -->
+                                        <select id="calc-length" class="calc-control">
+                                            <option value="0" selected>선택하세요</option>
+                                            <?php
+                                            // 6.0m부터 12.0m까지 0.1m 단위로 생성
+                                            for ($i = 60; $i <= 120; $i++):
+                                                $length_value = $i / 10;
+                                            ?>
+                                                <option value="<?php echo $length_value; ?>">
+                                                    <?php echo number_format($length_value, 1); ?>m
+                                                </option>
+                                            <?php endfor; ?>
+                                        </select>
+                                        <div class="input-help">선택 가능 범위: 6.0m ~ 12.0m (0.1m 단위)</div>
+                                    <?php elseif ($product['category_code'] === 'h-beam'): ?>
+                                        <!-- H형강: 6m-12m 드롭다운 선택 (0.1m 단위) -->
                                         <select id="calc-length" class="calc-control">
                                             <option value="0" selected>선택하세요</option>
                                             <?php
