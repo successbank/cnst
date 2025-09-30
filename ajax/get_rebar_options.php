@@ -13,12 +13,33 @@ require_once '../db.php';
 require_once '../includes/RebarPriceCalculator.php';
 
 try {
-    $type = $_GET['type'] ?? 'specs';
+    $type = $_GET['type'] ?? 'all';
     $specName = $_GET['spec_name'] ?? null;
 
     $calculator = new RebarPriceCalculator($pdo);
 
     switch ($type) {
+        case 'all':
+            // 모든 데이터를 한 번에 반환 (가격 정보가 있는 규격만)
+            $specsWithPrice = $calculator->getSpecsWithPrice();
+
+            // 모든 규격 정보 (rebar_length_data 기준)
+            $allSpecs = $calculator->getAvailableSpecs();
+
+            // 각 규격별 사용 가능한 길이 정보
+            $lengthsBySpec = [];
+            foreach ($allSpecs as $spec) {
+                $lengthsBySpec[$spec] = $calculator->getAvailableLengths($spec);
+            }
+
+            $data = [
+                'specs' => $specsWithPrice,  // 가격 정보가 있는 규격 (D10, D13, D16)
+                'all_specs' => $allSpecs,    // 모든 규격
+                'origins' => $calculator->getAvailableOrigins(),
+                'lengths' => $lengthsBySpec  // 규격별 길이 배열
+            ];
+            break;
+
         case 'specs':
             $data = $calculator->getAvailableSpecs();
             break;

@@ -28,9 +28,13 @@ class RebarPriceCalculator {
      */
     public function calculate($specName, $length, $quantity = 1, $origin = '포항', $material = 'SD400') {
         // 1. 기준단가 조회
-        $basePrice = $this->getBasePrice($specName, $origin);
-        if (!$basePrice) {
-            throw new Exception("기준단가를 찾을 수 없습니다: {$specName}, {$origin}");
+        try {
+            $basePrice = $this->getBasePrice($specName, $origin);
+            if (!$basePrice) {
+                throw new Exception("기준단가를 찾을 수 없습니다: {$specName}, {$origin}");
+            }
+        } catch (Exception $e) {
+            throw $e;
         }
 
         // 2. 원산지 추가 단가 (현재는 기준단가에 포함되어 있음)
@@ -96,6 +100,19 @@ class RebarPriceCalculator {
         ");
         $stmt->execute([$specName, $origin]);
         $result = $stmt->fetch();
+
+        // 가격 정보가 없으면 다른 원산지도 확인
+        if (!$result) {
+            $stmt = $this->pdo->prepare("
+                SELECT COUNT(*) FROM rebar_prices WHERE spec_name = ? AND is_active = 1
+            ");
+            $stmt->execute([$specName]);
+            $count = $stmt->fetchColumn();
+
+            if ($count == 0) {
+                throw new Exception("해당 규격({$specName})의 가격 정보가 없습니다. 전화 문의: 010-9820-0495");
+            }
+        }
 
         return $result ? floatval($result['price']) : null;
     }
@@ -163,9 +180,28 @@ class RebarPriceCalculator {
     }
 
     /**
-     * 규격 목록
+     * 규격 목록 (모든 규격 반환)
      */
     public function getAvailableSpecs() {
+        $stmt = $this->pdo->query("
+            SELECT DISTINCT spec_name
+            FROM rebar_length_data
+            ORDER BY
+                CAST(SUBSTRING(spec_name, 2) AS UNSIGNED)
+        ");
+
+        $specs = [];
+        while ($row = $stmt->fetch()) {
+            $specs[] = $row['spec_name'];
+        }
+
+        return $specs;
+    }
+
+    /**
+     * 가격 정보가 있는 규격만 반환
+     */
+    public function getSpecsWithPrice() {
         $stmt = $this->pdo->query("
             SELECT DISTINCT spec_name
             FROM rebar_prices

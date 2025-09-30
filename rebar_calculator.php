@@ -210,6 +210,114 @@ $calculator = new RebarPriceCalculator($pdo);
     margin-top: 20px;
     display: none;
 }
+
+/* 모달 스타일 */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-overlay.show {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    animation: slideUp 0.3s ease;
+    text-align: center;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.modal-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+.modal-message {
+    font-size: 16px;
+    color: #6c757d;
+    margin-bottom: 25px;
+    line-height: 1.6;
+}
+
+.modal-phone {
+    font-size: 28px;
+    font-weight: 700;
+    color: #007bff;
+    margin-bottom: 25px;
+    letter-spacing: 1px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.modal-btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modal-btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.modal-btn-primary:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+}
+
+.modal-btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.modal-btn-secondary:hover {
+    background: #545b62;
+}
 </style>
 
 <div class="calculator-container">
@@ -341,7 +449,51 @@ $calculator = new RebarPriceCalculator($pdo);
     </div>
 </div>
 
+<!-- 가격 정보 없음 모달 -->
+<div class="modal-overlay" id="priceUnavailableModal">
+    <div class="modal-content">
+        <div class="modal-icon">📞</div>
+        <div class="modal-title">가격 정보가 없습니다</div>
+        <div class="modal-message">
+            선택하신 규격은 현재 가격 정보가 등록되어 있지 않습니다.<br>
+            정확한 가격은 아래 전화번호로 문의해주세요.
+        </div>
+        <div class="modal-phone">☎ 010-9820-0495</div>
+        <div class="modal-buttons">
+            <a href="tel:010-9820-0495" class="modal-btn modal-btn-primary">전화 걸기</a>
+            <button class="modal-btn modal-btn-secondary" onclick="closeModal()">닫기</button>
+        </div>
+    </div>
+</div>
+
 <script>
+// 가격 정보가 있는 규격 목록 (D10, D13, D16만 가격 정보 있음)
+const specsWithPrice = ['D10', 'D13', 'D16'];
+
+// 모달 열기
+function showModal() {
+    document.getElementById('priceUnavailableModal').classList.add('show');
+}
+
+// 모달 닫기
+function closeModal() {
+    document.getElementById('priceUnavailableModal').classList.remove('show');
+}
+
+// 모달 외부 클릭 시 닫기
+document.getElementById('priceUnavailableModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+
+// ESC 키로 모달 닫기
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+
 // 길이 목록 로드
 async function loadLengths() {
     const spec = document.getElementById('spec').value;
@@ -378,8 +530,16 @@ async function loadLengths() {
 document.getElementById('calculatorForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
+    const specName = document.getElementById('spec').value;
+
+    // 가격 정보가 없는 규격인지 확인
+    if (!specsWithPrice.includes(specName)) {
+        showModal();
+        return;
+    }
+
     const data = {
-        spec_name: document.getElementById('spec').value,
+        spec_name: specName,
         length: parseFloat(document.getElementById('length').value),
         quantity: parseInt(document.getElementById('quantity').value),
         origin: document.getElementById('origin').value,

@@ -46,8 +46,8 @@ if ($product_id) {
         // 제품명에서 규격 추출 (예: "철근 D10" → "D10")
         $spec_name = trim(str_replace('철근', '', $product['product_name']));
 
-        // 길이별 본수 데이터 조회
-        $stmt = $pdo->prepare("SELECT length, pieces_per_length FROM rebar_length_data WHERE spec_name = ? ORDER BY length");
+        // 길이별 본수 데이터 조회 (NULL 값도 포함)
+        $stmt = $pdo->prepare("SELECT length, IFNULL(pieces_per_length, 0) as pieces_per_length FROM rebar_length_data WHERE spec_name = ? ORDER BY length");
         $stmt->execute([$spec_name]);
         $length_pieces_data = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
     }
@@ -782,6 +782,20 @@ if ($product_id) {
                                 <div class="calc-result-price" id="rebarCalcResultPrice">견적금액: 0원</div>
                                 <div class="calc-steps" id="rebarCalcSteps"></div>
                             </div>
+
+                            <!-- 가격 문의 모달 -->
+                            <div class="modal-overlay" id="rebarContactModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); z-index: 9999; justify-content: center; align-items: center;">
+                                <div class="modal-content" style="background: white; border-radius: 16px; padding: 40px; max-width: 500px; width: 90%; text-align: center; animation: slideUp 0.3s ease; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);">
+                                    <div style="font-size: 64px; margin-bottom: 20px;">📞</div>
+                                    <h3 style="font-size: 24px; color: #333; margin-bottom: 15px;">문의 전화 주세요</h3>
+                                    <p style="font-size: 16px; color: #666; margin-bottom: 30px; line-height: 1.6;">해당 제품의 가격 정보가 없습니다.<br>자세한 상담은 전화로 문의해 주세요.</p>
+                                    <div style="font-size: 28px; font-weight: 700; color: #1428A0; margin: 20px 0 30px; letter-spacing: 1px;">010-9820-0495</div>
+                                    <div style="display: flex; gap: 15px; justify-content: center;">
+                                        <a href="tel:010-9820-0495" style="padding: 14px 32px; background: #1428A0; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; text-decoration: none; display: inline-block; flex: 1; max-width: 200px;">전화 걸기</a>
+                                        <button onclick="closeRebarModal()" style="padding: 14px 32px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; flex: 1; max-width: 120px;">닫기</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1087,8 +1101,44 @@ if ($product_id) {
     // 길이별 본수 데이터
     const lengthPiecesData = <?php echo json_encode($length_pieces_data, JSON_UNESCAPED_UNICODE); ?>;
 
+    // 모달 함수
+    function showRebarModal() {
+        const modal = document.getElementById('rebarContactModal');
+        modal.style.display = 'flex';
+    }
+
+    function closeRebarModal() {
+        const modal = document.getElementById('rebarContactModal');
+        modal.style.display = 'none';
+    }
+
+    // 모달 오버레이 클릭 시 닫기
+    document.getElementById('rebarContactModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeRebarModal();
+        }
+    });
+
+    // 철근 가격/길이 데이터 확인 (비동기)
+    let rebarAvailabilityCache = null;
+    async function checkRebarPriceAvailability() {
+        if (rebarAvailabilityCache) return rebarAvailabilityCache;
+
+        try {
+            const response = await fetch('/ajax/get_rebar_options.php?type=all');
+            const data = await response.json();
+            if (data.success) {
+                rebarAvailabilityCache = data.data;
+                return data.data;
+            }
+        } catch (error) {
+            console.error('Error fetching rebar options:', error);
+        }
+        return null;
+    }
+
     // 철근 중량 실시간 계산
-    function calculateRebarWeight() {
+    async function calculateRebarWeight() {
         const length = parseFloat(document.getElementById('calc-rebar-length').value) || 0;
         const material = document.getElementById('calc-rebar-material').value;
         const origin = document.getElementById('calc-rebar-origin').value;
@@ -1100,12 +1150,32 @@ if ($product_id) {
             return;
         }
 
+        // 가격 정보 확인 (비동기)
+        const availability = await checkRebarPriceAvailability();
+        if (availability) {
+            const hasPrice = availability.specs.includes(rebarSpec);
+            const lengthsForSpec = availability.lengths[rebarSpec] || [];
+            const hasLength = lengthsForSpec.some(l =>
+                Math.abs(parseFloat(l.length) - length) < 0.01
+            );
+
+            // 가격 정보나 길이 정보가 없으면 모달 표시
+            if (!hasPrice || !hasLength) {
+                document.getElementById('rebarCalcResult').style.display = 'none';
+                showRebarModal();
+                return;
+            }
+        }
+
         // 해당 길이의 본수 가져오기
         const lengthKey = length.toFixed(1); // 소수점 1자리로 키 생성
-        const piecesPerLength = lengthPiecesData[lengthKey] || 0;
+        const piecesPerLength = lengthPiecesData[lengthKey];
 
-        if (piecesPerLength === 0) {
+        // 본수 데이터가 없거나 0이거나 null인 경우 (엑셀 빈칸 처리)
+        if (piecesPerLength === undefined || piecesPerLength === null || piecesPerLength === 0 || piecesPerLength === '') {
+            console.log(`D32 길이 ${lengthKey}m: 본수 데이터 없음 - 모달 표시`);
             document.getElementById('rebarCalcResult').style.display = 'none';
+            showRebarModal();
             return;
         }
 
@@ -1630,17 +1700,134 @@ if ($product_id) {
         cursor: not-allowed;
     }
     
+    /* Modal styles */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal-overlay.show {
+        display: flex;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        max-width: 500px;
+        width: 90%;
+        text-align: center;
+        animation: slideUp 0.3s ease;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+    }
+
+    .modal-content h3 {
+        font-size: 24px;
+        color: #333;
+        margin-bottom: 15px;
+    }
+
+    .modal-content p {
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+
+    .modal-phone {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1428A0;
+        margin: 20px 0 30px;
+        letter-spacing: 1px;
+    }
+
+    .modal-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .btn-call, .btn-close {
+        padding: 14px 32px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-call {
+        background: #1428A0;
+        color: white;
+        flex: 1;
+        max-width: 200px;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-call:hover {
+        background: #0F1F7A;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(20, 40, 160, 0.3);
+    }
+
+    .btn-close {
+        background: #e0e0e0;
+        color: #666;
+        flex: 1;
+        max-width: 120px;
+    }
+
+    .btn-close:hover {
+        background: #d0d0d0;
+    }
+
     @media (max-width: 768px) {
         .form-row {
             grid-template-columns: 1fr;
         }
-        
+
         .calculator-container {
             padding: 10px;
         }
-        
+
         .calculator-form {
             padding: 20px;
+        }
+
+        .modal-content {
+            padding: 30px 20px;
+        }
+
+        .modal-phone {
+            font-size: 24px;
         }
     }
     </style>
@@ -1709,19 +1896,91 @@ if ($product_id) {
         <div class="calculation-result" id="calculationResult">
             <div class="result-header">계산 결과</div>
             <div class="result-value" id="resultValue">0 kg</div>
-            
+
             <div class="calculation-steps">
                 <h4>계산 과정</h4>
                 <div id="calculationSteps"></div>
             </div>
         </div>
     </div>
-    
+
+    <!-- Modal for contact -->
+    <div class="modal-overlay" id="contactModal">
+        <div class="modal-content">
+            <div class="modal-icon">📞</div>
+            <h3>문의 전화 주세요</h3>
+            <p>해당 제품의 가격 정보가 없습니다.<br>자세한 상담은 전화로 문의해 주세요.</p>
+            <div class="modal-phone">010-9820-0495</div>
+            <div class="modal-buttons">
+                <a href="tel:010-9820-0495" class="btn-call">전화 걸기</a>
+                <button class="btn-close" onclick="closeModal()">닫기</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     // 단위중량 데이터
     const unitWeightData = <?php echo json_encode($unit_weight_data, JSON_UNESCAPED_UNICODE); ?>;
     const calculationType = '<?php echo $product['calculation_type']; ?>';
-    
+    const categoryCode = '<?php echo $product['category_code']; ?>';
+    const productName = '<?php echo $product['product_name']; ?>';
+
+    // Modal functions
+    function showModal() {
+        document.getElementById('contactModal').classList.add('show');
+    }
+
+    function closeModal() {
+        document.getElementById('contactModal').classList.remove('show');
+    }
+
+    // Close modal on overlay click
+    document.getElementById('contactModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+
+    // 철근 제품 가격/길이 확인 함수
+    async function checkRebarAvailability(specName, length) {
+        try {
+            const response = await fetch('/ajax/get_rebar_options.php?type=all');
+            const data = await response.json();
+
+            if (!data.success) return { hasPrice: false, hasLength: false };
+
+            // 스펙에 가격 정보가 있는지 확인
+            const hasPrice = data.data.specs.includes(specName);
+
+            // 해당 스펙의 길이 데이터가 존재하는지 확인
+            const lengthsForSpec = data.data.lengths[specName] || [];
+            const hasLength = lengthsForSpec.some(l =>
+                Math.abs(parseFloat(l.length) - parseFloat(length)) < 0.01
+            );
+
+            return { hasPrice, hasLength };
+        } catch (error) {
+            console.error('Error checking rebar availability:', error);
+            return { hasPrice: false, hasLength: false };
+        }
+    }
+
+    // 철근 가격 계산 함수
+    async function calculateRebarPrice(specName, length, quantity, origin, material) {
+        const response = await fetch('/ajax/calculate_rebar_price.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                spec_name: specName,
+                length: length,
+                quantity: quantity,
+                origin: origin || '포항',
+                material: material || 'SD400'
+            })
+        });
+        return await response.json();
+    }
+
     // 규격 선택 시 단위중량 표시
     document.getElementById('specification').addEventListener('change', function() {
         const specification = this.value;
@@ -1754,50 +2013,106 @@ if ($product_id) {
     // 폼 제출 처리
     document.getElementById('calculatorForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         const btn = document.getElementById('calculateBtn');
         btn.disabled = true;
         btn.textContent = '계산 중...';
-        
+
         try {
-            const formData = {
-                category: document.getElementById('categoryCode').value,
-                specification: document.getElementById('specification').value,
-                material: document.getElementById('material').value,
-                length: parseFloat(document.getElementById('length')?.value || 0),
-                quantity: parseInt(document.getElementById('quantity').value)
-            };
-            
-            const response = await fetch('/api/calculate_weight.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                // 결과 표시
-                document.getElementById('resultValue').textContent = result.data.calculated_weight + ' kg';
-                
-                // 계산 과정 표시
-                const stepsHtml = result.data.calculation_steps.map(step => 
-                    `<div class="step">${step}</div>`
-                ).join('');
-                document.getElementById('calculationSteps').innerHTML = stepsHtml;
-                
-                // 결과 영역 표시
-                document.getElementById('calculationResult').classList.add('show');
-                
-                // 스크롤 이동
-                document.getElementById('calculationResult').scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'start' 
-                });
+            const specification = document.getElementById('specification').value;
+            const material = document.getElementById('material').value;
+            const length = parseFloat(document.getElementById('length')?.value || 0);
+            const quantity = parseInt(document.getElementById('quantity').value);
+
+            // 철근 제품인 경우 별도 처리
+            if (categoryCode === 'rebar') {
+                // 제품명에서 규격 추출 (예: "철근 D35" -> "D35")
+                const specMatch = productName.match(/D\d+/);
+                const rebarSpec = specMatch ? specMatch[0] : specification;
+
+                // 철근 가격/길이 데이터 확인
+                const availability = await checkRebarAvailability(rebarSpec, length);
+
+                if (!availability.hasPrice || !availability.hasLength) {
+                    // 가격 정보나 길이 정보가 없으면 모달 표시
+                    showModal();
+                    btn.disabled = false;
+                    btn.textContent = '중량 계산하기';
+                    return;
+                }
+
+                // 철근 가격 계산
+                const result = await calculateRebarPrice(rebarSpec, length, quantity, '포항', material || 'SD400');
+
+                if (result.success) {
+                    const data = result.data;
+                    document.getElementById('resultValue').textContent =
+                        data.total_price.toLocaleString() + ' 원 (' + data.total_weight + ' kg)';
+
+                    const stepsHtml = [
+                        `규격: ${data.spec_name}`,
+                        `길이: ${data.length}m × 수량: ${data.quantity}번들`,
+                        `번들당 중량: ${data.weight_per_bundle}kg`,
+                        `총 중량: ${data.total_weight}kg`,
+                        `단가: ${data.unit_price.toLocaleString()}원/톤`,
+                        `총 가격: ${data.total_price.toLocaleString()}원`
+                    ].map(step => `<div class="step">${step}</div>`).join('');
+
+                    document.getElementById('calculationSteps').innerHTML = stepsHtml;
+                    document.getElementById('calculationResult').classList.add('show');
+                    document.getElementById('calculationResult').scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                } else {
+                    // 에러 메시지에 "가격 정보가 없습니다" 또는 "전화 문의" 포함 시 모달 표시
+                    if (result.error.includes('가격 정보') || result.error.includes('전화 문의') || result.error.includes('010-9820-0495')) {
+                        showModal();
+                    } else {
+                        alert('계산 중 오류가 발생했습니다: ' + result.error);
+                    }
+                }
             } else {
-                alert('계산 중 오류가 발생했습니다: ' + result.error);
+                // 일반 제품 계산 (기존 로직)
+                const formData = {
+                    category: categoryCode,
+                    specification: specification,
+                    material: material,
+                    length: length,
+                    quantity: quantity
+                };
+
+                const response = await fetch('/api/calculate_weight.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 결과 표시
+                    document.getElementById('resultValue').textContent = result.data.calculated_weight + ' kg';
+
+                    // 계산 과정 표시
+                    const stepsHtml = result.data.calculation_steps.map(step =>
+                        `<div class="step">${step}</div>`
+                    ).join('');
+                    document.getElementById('calculationSteps').innerHTML = stepsHtml;
+
+                    // 결과 영역 표시
+                    document.getElementById('calculationResult').classList.add('show');
+
+                    // 스크롤 이동
+                    document.getElementById('calculationResult').scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                } else {
+                    alert('계산 중 오류가 발생했습니다: ' + result.error);
+                }
             }
         } catch (error) {
             alert('서버 연결 오류가 발생했습니다.');
