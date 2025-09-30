@@ -675,8 +675,8 @@ if ($product_id) {
                                             <?php endfor; ?>
                                         </select>
                                         <div class="input-help">선택 가능 범위: 6.0m ~ 12.0m (0.1m 단위)</div>
-                                    <?php elseif ($product['category_code'] === 'h-beam' || $product['category_code'] === 'light-h-beam'): ?>
-                                        <!-- H형강/경량H형강: 6m-12m 드롭다운 선택 (0.1m 단위) -->
+                                    <?php elseif ($product['category_code'] === 'h-beam' || $product['category_code'] === 'light-h-beam' || $product['category_code'] === 'i-beam'): ?>
+                                        <!-- H형강/경량H형강/I형강: 6m-12m 드롭다운 선택 (0.1m 단위) -->
                                         <select id="calc-length" class="calc-control">
                                             <option value="0" selected>선택하세요</option>
                                             <?php
