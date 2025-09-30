@@ -502,7 +502,7 @@ if (!empty($featured_products)):
                                     <span class="price-label">기준단가</span>
                                     <span class="price-value"><?php echo number_format($product['price']); ?>원</span>
                                 </div>
-                                <?php if ($product['min_price'] && $product['max_price']): ?>
+                                <?php if (isset($product['min_price']) && isset($product['max_price']) && $product['min_price'] && $product['max_price']): ?>
                                 <div class="price-range">
                                     <?php echo number_format($product['min_price']); ?>원 ~ <?php echo number_format($product['max_price']); ?>원
                                 </div>

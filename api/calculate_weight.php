@@ -48,12 +48,18 @@ try {
     // 단위중량 가져오기
     $unit_weight_data = json_decode($product['unit_weight_data'], true);
     $unit_weight = 0;
-    
+
     if (isset($unit_weight_data[$specification])) {
-        if (!empty($material) && isset($unit_weight_data[$specification][$material])) {
-            $unit_weight = $unit_weight_data[$specification][$material];
+        // 단위중량이 재질별로 구분되어 있는 경우 (객체 형태)
+        if (is_array($unit_weight_data[$specification])) {
+            if (!empty($material) && isset($unit_weight_data[$specification][$material])) {
+                $unit_weight = $unit_weight_data[$specification][$material];
+            } else {
+                $unit_weight = reset($unit_weight_data[$specification]);
+            }
         } else {
-            $unit_weight = reset($unit_weight_data[$specification]);
+            // 단위중량이 단순 값인 경우 (부등변ㄱ형강 등)
+            $unit_weight = $unit_weight_data[$specification];
         }
     } else {
         throw new Exception('해당 규격의 단위중량을 찾을 수 없습니다.');
@@ -64,14 +70,15 @@ try {
     $calculation_steps = [];
     
     if ($product['calculation_type'] === 'linear') {
-        // 선형 제품: 단위중량 × 길이 × 수량
+        // 선형 제품
         if ($length <= 0) {
             throw new Exception('선형 제품은 길이가 필요합니다.');
         }
-        
+
+        // 모든 선형 제품: 단위중량 × 길이 × 수량
         $weight_per_piece = $unit_weight * $length;
         $calculated_weight = $weight_per_piece * $quantity;
-        
+
         $calculation_steps = [
             "단위중량: {$unit_weight} kg/m",
             "1본 중량: {$unit_weight} × {$length}m = " . round($weight_per_piece, 2) . " kg",

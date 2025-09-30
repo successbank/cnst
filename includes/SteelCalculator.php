@@ -73,12 +73,22 @@ class SteelCalculator {
     /**
      * 앵글(ㄱ형강) 중량 계산
      * /114/5/ㄱ형강.txt 계산식 적용: 소수점 둘째자리까지 계산
+     * @param mixed $unitWeight 단위중량 또는 width1
+     * @param float $length 길이
+     * @param int $quantity 수량
+     * @param bool $useUnitWeight 단위중량 사용 여부
+     * @param bool $isUnequal 부등변 여부 (true면 길이제곱 사용)
      */
-    public function calculateAngleWeight($unitWeight, $length, $quantity = 1, $useUnitWeight = true) {
+    public function calculateAngleWeight($unitWeight, $length, $quantity = 1, $useUnitWeight = true, $isUnequal = false) {
         if ($useUnitWeight) {
             // 단위중량이 주어진 경우 (데이터베이스 방식)
-            // 1본 중량 = 단위중량 × 길이 (소수점 둘째자리까지)
-            $weightPerPiece = round($unitWeight * $length, 2);
+            if ($isUnequal) {
+                // 부등변ㄱ형강: 단위중량 × 길이² × 수량
+                $weightPerPiece = round($unitWeight * $length * $length, 2);
+            } else {
+                // 일반 ㄱ형강: 단위중량 × 길이 × 수량
+                $weightPerPiece = round($unitWeight * $length, 2);
+            }
             // 총 중량 = 본당중량 × 수량 (소수점 둘째자리 올림)
             $totalWeight = $weightPerPiece * $quantity;
             return round($totalWeight, 2);
@@ -88,7 +98,12 @@ class SteelCalculator {
             $width2 = func_get_arg(1);
             $thickness = func_get_arg(2);
             $weight_per_meter = ($width1 + $width2 - $thickness) * $thickness * 0.00785;
-            $weightPerPiece = round($weight_per_meter * $length, 2);
+            if ($isUnequal) {
+                // 부등변ㄱ형강: 길이제곱 사용
+                $weightPerPiece = round($weight_per_meter * $length * $length, 2);
+            } else {
+                $weightPerPiece = round($weight_per_meter * $length, 2);
+            }
             $totalWeight = $weightPerPiece * $quantity;
             return round($totalWeight, 2);
         }
@@ -159,14 +174,14 @@ class SteelCalculator {
                 );
                 
             case 'angle':
-            case 'unequal-angle':
-                // ㄱ형강 및 부등변ㄱ형강 - 단위중량 방식 사용
+                // 일반 ㄱ형강 - 단위중량 방식 사용
                 if (isset($specifications['unit_weight'])) {
                     return $this->calculateAngleWeight(
                         $specifications['unit_weight'],
                         $length,
                         $quantity,
-                        true
+                        true,
+                        false // 일반 ㄱ형강
                     );
                 } else {
                     return $this->calculateAngleWeight(
@@ -175,7 +190,31 @@ class SteelCalculator {
                         $specifications['thickness'] ?? 0,
                         $length,
                         $quantity,
-                        false
+                        false,
+                        false // 일반 ㄱ형강
+                    );
+                }
+                break;
+
+            case 'unequal-angle':
+                // 부등변ㄱ형강 - 길이제곱 사용
+                if (isset($specifications['unit_weight'])) {
+                    return $this->calculateAngleWeight(
+                        $specifications['unit_weight'],
+                        $length,
+                        $quantity,
+                        true,
+                        true // 부등변ㄱ형강
+                    );
+                } else {
+                    return $this->calculateAngleWeight(
+                        $specifications['width1'] ?? 0,
+                        $specifications['width2'] ?? $specifications['width1'] ?? 0,
+                        $specifications['thickness'] ?? 0,
+                        $length,
+                        $quantity,
+                        false,
+                        true // 부등변ㄱ형강
                     );
                 }
                 
@@ -291,14 +330,14 @@ class SteelCalculator {
                 'total_weight' => 125.44     // 8.96 × 14 = 125.44
             ];
         } elseif ($categoryCode == 'unequal-angle') {
-            // 부등변ㄱ형강 예제
+            // 부등변ㄱ형강 예제 (길이제곱 사용)
             $examples[] = [
                 'specification' => '50×30×3T',
                 'unit_weight' => 1.83,
                 'length' => 9,
                 'quantity' => 9,
-                'weight_per_piece' => 16.47,  // 1.83 × 9 = 16.47
-                'total_weight' => 148.23      // 16.47 × 9 = 148.23
+                'weight_per_piece' => 148.23,  // 1.83 × 9² = 1.83 × 81 = 148.23
+                'total_weight' => 1334.07      // 148.23 × 9 = 1334.07
             ];
         }
 
