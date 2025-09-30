@@ -32,7 +32,13 @@ if ($product_id) {
     ");
     $stmt->execute([$product_id]);
     $product = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
+    // 제품이 없으면 즉시 리다이렉트
+    if (!$product) {
+        header('Location: products.php');
+        exit;
+    }
+
     // 계산기 데이터 준비
     if ($product['has_calculator']) {
         // 부모 제품의 데이터가 있으면 사용, 없으면 현재 제품의 데이터 사용
@@ -71,12 +77,7 @@ if ($product_id) {
             }
         }
     }
-    
-    if (!$product) {
-        header('Location: products.php');
-        exit;
-    }
-    
+
     $pageTitle = $product['product_name'] . ' | 충남스틸';
     $additionalCSS = [];
     require_once 'head.php';
@@ -674,8 +675,8 @@ if ($product_id) {
                                             <?php endfor; ?>
                                         </select>
                                         <div class="input-help">선택 가능 범위: 6.0m ~ 12.0m (0.1m 단위)</div>
-                                    <?php elseif ($product['category_code'] === 'h-beam'): ?>
-                                        <!-- H형강: 6m-12m 드롭다운 선택 (0.1m 단위) -->
+                                    <?php elseif ($product['category_code'] === 'h-beam' || $product['category_code'] === 'light-h-beam'): ?>
+                                        <!-- H형강/경량H형강: 6m-12m 드롭다운 선택 (0.1m 단위) -->
                                         <select id="calc-length" class="calc-control">
                                             <option value="0" selected>선택하세요</option>
                                             <?php
