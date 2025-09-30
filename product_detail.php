@@ -39,10 +39,37 @@ if ($product_id) {
         $unit_weight_data = $product['parent_unit_weight_data'] ?? $product['unit_weight_data'];
         $available_materials = $product['parent_available_materials'] ?? $product['available_materials'];
         $calculation_type = $product['parent_calculation_type'] ?? $product['calculation_type'];
-        
+
         // JSON 파싱
         $unit_weight_data = json_decode($unit_weight_data, true) ?? [];
         $available_materials = json_decode($available_materials, true) ?? [];
+
+        // 철근 제품인 경우 길이별 본수 데이터 조회
+        $pieces_per_length_data = [];
+        $available_lengths = [];
+        $spec_name = '';
+        if ($product['category_code'] === 'rebar') {
+            // 제품명에서 규격 추출 (예: "철근 D10" → "D10")
+            $spec_name = str_replace('철근 ', '', $product['product_name']);
+
+            $stmt = $pdo->prepare("
+                SELECT length, pieces_per_length
+                FROM rebar_length_data
+                WHERE spec_name = ?
+                AND length BETWEEN 6 AND 12
+                ORDER BY length
+            ");
+            $stmt->execute([$spec_name]);
+
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                // 길이를 문자열 키로 변환 (JavaScript에서 사용하기 위해)
+                $length_key = number_format($row['length'], 1, '.', '');
+                $pieces_per_length_data[$length_key] = $row['pieces_per_length'];
+
+                // 사용 가능한 길이 목록 저장
+                $available_lengths[] = $row['length'];
+            }
+        }
     }
     
     if (!$product) {
@@ -567,32 +594,7 @@ if ($product_id) {
                         </div>
                     </div>
                     <?php endif; ?>
-                    
-                    <?php if (!empty($product['available_origins'])): ?>
-                    <div class="detail-item">
-                        <div class="detail-label">원산지 선택</div>
-                        <div class="detail-value">
-                            <?php 
-                            $origins = json_decode($product['available_origins'], true) ?: [];
-                            if (count($origins) > 0): 
-                            ?>
-                            <select id="origin-select" class="origin-select">
-                                <option value="">원산지를 선택하세요</option>
-                                <?php foreach ($origins as $index => $origin): ?>
-                                <option value="<?php echo htmlspecialchars($origin); ?>"
-                                        <?php echo ($index === 0) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($origin); ?>
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <?php else: ?>
-                            <span style="color: #999;">원산지 정보가 없습니다</span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                    
-                    
+
                     <?php if ($product['has_calculator']): ?>
                     <!-- 실시간 중량 계산기 섹션 -->
                     <div class="calculator-section">
@@ -642,9 +644,38 @@ if ($product_id) {
                             <div class="calc-form-row">
                                 <div class="calc-form-group">
                                     <label>길이 (미터)</label>
-                                    <input type="number" id="calc-length" class="calc-control"
-                                           min="10" max="10" step="0.01" value="10">
-                                    <div class="input-help">입력 가능 범위: 10.00m ~ 10.00m</div>
+                                    <?php if ($product['category_code'] === 'rebar' && !empty($available_lengths)): ?>
+                                        <!-- 철근 제품: DB 기반 드롭다운 선택 -->
+                                        <select id="calc-length" class="calc-control">
+                                            <option value="0" selected>선택하세요</option>
+                                            <?php foreach ($available_lengths as $length): ?>
+                                                <option value="<?php echo $length; ?>">
+                                                    <?php echo number_format($length, 1); ?>m
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <div class="input-help">선택 가능 범위: 6.0m ~ 12.0m</div>
+                                    <?php elseif ($product['category_code'] === 'unequal-angle'): ?>
+                                        <!-- 부등변ㄱ형강: 6m-12m 드롭다운 선택 (0.1m 단위) -->
+                                        <select id="calc-length" class="calc-control">
+                                            <option value="0" selected>선택하세요</option>
+                                            <?php
+                                            // 6.0m부터 12.0m까지 0.1m 단위로 생성
+                                            for ($i = 60; $i <= 120; $i++):
+                                                $length_value = $i / 10;
+                                            ?>
+                                                <option value="<?php echo $length_value; ?>">
+                                                    <?php echo number_format($length_value, 1); ?>m
+                                                </option>
+                                            <?php endfor; ?>
+                                        </select>
+                                        <div class="input-help">선택 가능 범위: 6.0m ~ 12.0m (0.1m 단위)</div>
+                                    <?php else: ?>
+                                        <!-- 기타 제품: 수동 입력 -->
+                                        <input type="number" id="calc-length" class="calc-control"
+                                               min="0" step="0.01" value="0" placeholder="길이를 입력하세요">
+                                        <div class="input-help">길이를 입력하세요 (미터 단위)</div>
+                                    <?php endif; ?>
                                 </div>
 
                                 <div class="calc-form-group">
@@ -677,7 +708,10 @@ if ($product_id) {
                         unitWeightData: <?php echo json_encode($unit_weight_data, JSON_UNESCAPED_UNICODE); ?>,
                         specification: '<?php echo htmlspecialchars($product['specification'] ?? ''); ?>',
                         calculationType: '<?php echo $calculation_type ?? ''; ?>',
-                        unitWeight: <?php echo $product['specification_weight'] ?? 0; ?>
+                        unitWeight: <?php echo $product['specification_weight'] ?? 0; ?>,
+                        piecesPerLengthData: <?php echo json_encode($pieces_per_length_data); ?>,
+                        specName: '<?php echo htmlspecialchars($spec_name ?? ''); ?>',
+                        categoryCode: '<?php echo htmlspecialchars($product['category_code'] ?? ''); ?>'
                     };
                     </script>
                     <?php endif; ?>
@@ -819,12 +853,34 @@ if ($product_id) {
             // 선형 제품: 단위중량 × 길이 × 수량
             const weightPerPiece = unitWeight * length;
             calculatedWeight = weightPerPiece * quantity;
-            
+
             calculationSteps = [
                 `단위중량: ${unitWeight} kg/m`,
-                `1본 중량: ${unitWeight} × ${length}m = ${weightPerPiece.toFixed(2)} kg`,
-                `총 중량: ${weightPerPiece.toFixed(2)} × ${quantity}본 = ${calculatedWeight.toFixed(1)} kg`
+                `1본 중량: ${unitWeight} × ${length}m = ${weightPerPiece.toFixed(2)} kg`
             ];
+
+            // 철근 제품인 경우 본수 계산 추가
+            if (calculatorData.categoryCode === 'rebar' && calculatorData.piecesPerLengthData) {
+                // 길이를 문자열 키로 변환 (소수점 1자리)
+                const lengthKey = length.toFixed(1);
+                const piecesPerLength = calculatorData.piecesPerLengthData[lengthKey] || 0;
+
+                if (piecesPerLength > 0) {
+                    const totalPieces = piecesPerLength * quantity;
+                    calculationSteps.push(
+                        `톤당 본수: ${piecesPerLength}본 (${length}m 기준)`,
+                        `총 본수: ${piecesPerLength}본 × ${quantity}톤 = ${totalPieces}본`
+                    );
+                } else {
+                    calculationSteps.push(`본수: ${quantity}본`);
+                }
+            } else {
+                calculationSteps.push(`본수: ${quantity}본`);
+            }
+
+            calculationSteps.push(
+                `총 중량: ${weightPerPiece.toFixed(2)} × ${quantity}본 = ${calculatedWeight.toFixed(1)} kg`
+            );
         } else {
             // 판재 제품: 단위중량(장) × 수량
             calculatedWeight = unitWeight * quantity;
@@ -843,7 +899,13 @@ if ($product_id) {
         calculationSteps.push(`견적금액: ${calculatedWeight.toFixed(1)}kg × ${pricePerKg.toLocaleString()}원/kg = ${totalPrice.toLocaleString()}원`);
         
         // 결과 표시
-        document.getElementById('calcResultValue').textContent = calculatedWeight.toFixed(1) + ' kg';
+        let resultText = calculatedWeight.toFixed(1) + ' kg';
+        if (calculatorData.calculationType === 'linear') {
+            resultText += ' (' + quantity + '본)';
+        } else {
+            resultText += ' (' + quantity + '장)';
+        }
+        document.getElementById('calcResultValue').textContent = resultText;
         document.getElementById('calcResultPrice').textContent = '견적금액: ' + totalPrice.toLocaleString() + '원';
         
         // 계산 과정 표시
@@ -868,10 +930,16 @@ if ($product_id) {
         // 입력 필드에 이벤트 리스너 추가
         document.getElementById('calc-material').addEventListener('change', debouncedCalculate);
         document.getElementById('calc-quantity').addEventListener('input', debouncedCalculate);
-        
+
         const lengthInput = document.getElementById('calc-length');
         if (lengthInput) {
-            lengthInput.addEventListener('input', debouncedCalculate);
+            // Check if it's a select or input element
+            if (lengthInput.tagName === 'SELECT') {
+                lengthInput.addEventListener('change', debouncedCalculate);
+                // 초기 계산은 수행하지 않음 (기본값이 0이므로)
+            } else {
+                lengthInput.addEventListener('input', debouncedCalculate);
+            }
         }
     });
     </script>
