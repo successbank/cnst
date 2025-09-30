@@ -675,8 +675,8 @@ if ($product_id) {
                                             <?php endfor; ?>
                                         </select>
                                         <div class="input-help">선택 가능 범위: 6.0m ~ 12.0m (0.1m 단위)</div>
-                                    <?php elseif ($product['category_code'] === 'h-beam' || $product['category_code'] === 'light-h-beam' || $product['category_code'] === 'i-beam'): ?>
-                                        <!-- H형강/경량H형강/I형강: 6m-12m 드롭다운 선택 (0.1m 단위) -->
+                                    <?php elseif ($product['category_code'] === 'h-beam' || $product['category_code'] === 'light-h-beam' || $product['category_code'] === 'i-beam' || $product['category_code'] === 'angle' || $product['category_code'] === 'channel' || $product['category_code'] === 'flat-bar' || $product['category_code'] === 'round-bar' || $product['category_code'] === 'c-beam' || $product['category_code'] === 'rail' || $product['category_code'] === 'square-pipe' || $product['category_code'] === 'bs-pipe' || $product['category_code'] === 'ks-pipe' || $product['category_code'] === 'conduit' || $product['category_code'] === 'structural-pipe' || $product['category_code'] === 'steel-pipe-pile' || $product['category_code'] === 'deck-plate' || $product['category_code'] === 'sheet-pile' || $product['category_code'] === 'scaffold-pipe' || $product['category_code'] === 'pressure-pipe'): ?>
+                                        <!-- H형강/경량H형강/I형강/ㄱ형강/ㄷ형강/평철/환봉/C형강/레일/사각파이프/BS파이프/KS파이프/전선관/구조관/강관파일/데크플레이트/쉬트파일/단관비계/압력배관: 6m-12m 드롭다운 선택 (0.1m 단위) -->
                                         <select id="calc-length" class="calc-control">
                                             <option value="0" selected>선택하세요</option>
                                             <?php
