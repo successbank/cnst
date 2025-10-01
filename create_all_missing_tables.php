@@ -169,7 +169,7 @@ try {
     try {
         $pdo->exec("INSERT IGNORE INTO site_settings (setting_key, setting_value, description) VALUES
             ('site_name', '충남스틸', '사이트 이름'),
-            ('company_phone', '041-123-4567', '대표 전화번호'),
+            ('company_phone', '032-564-1616', '대표 전화번호'),
             ('company_email', 'info@chungnamsteel.com', '대표 이메일'),
             ('business_hours', '평일 08:00 ~ 18:00', '영업 시간')");
         echo "✓ 완료\n";
