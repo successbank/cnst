@@ -1,6 +1,55 @@
 <?php
 session_start();
 require_once 'db.php';
+require_once 'includes/auth_tokens.php';
+
+// Remember Me 토큰 확인 (세션이 없는 경우)
+if(!isset($_SESSION['member_id']) && isset($_COOKIE['remember_me'])) {
+    $token = parseRememberCookie();
+    if($token) {
+        $member_id = verifyRememberToken($token['selector'], $token['validator']);
+        if($member_id) {
+            // 토큰이 유효한 경우 자동 로그인
+            try {
+                $stmt = $pdo->prepare("SELECT id, user_id, name, email FROM members WHERE id = ? AND is_active = 1");
+                $stmt->execute([$member_id]);
+                $member = $stmt->fetch();
+
+                if($member) {
+                    $_SESSION['member_id'] = $member['id'];
+                    $_SESSION['user_id'] = $member['user_id'];
+                    $_SESSION['member_name'] = $member['name'];
+                    $_SESSION['member_email'] = $member['email'];
+
+                    // 새 토큰 생성 (단일 사용 원칙)
+                    $prefs = getMemberSessionPreferences($member_id);
+                    $duration = $prefs['session_duration'];
+
+                    // 종일 옵션 처리
+                    if($duration == -1) {
+                        $duration = calculateAllDayDuration();
+                    } else if($duration == 0) {
+                        $duration = 2592000; // 기본 30일
+                    }
+
+                    $new_token = createRememberToken($member_id, $duration);
+                    if($new_token) {
+                        setRememberCookie($new_token['selector'], $new_token['validator'], $duration);
+                    }
+
+                    header('Location: index.php');
+                    exit;
+                }
+            } catch(PDOException $e) {
+                // 오류 발생 시 토큰 삭제
+                deleteRememberCookie();
+            }
+        } else {
+            // 토큰이 유효하지 않은 경우 쿠키 삭제
+            deleteRememberCookie();
+        }
+    }
+}
 
 // 이미 로그인한 경우 메인으로 리다이렉트
 if(isset($_SESSION['member_id'])) {
@@ -33,18 +82,43 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['member_name'] = $member['name'];
                     $_SESSION['member_email'] = $member['email'];
                     
+                    // Remember Me 기능 처리
+                    $remember_me = isset($_POST['remember']) && $_POST['remember'] == 'on';
+                    if($remember_me) {
+                        // 세션 설정 가져오기
+                        $prefs = getMemberSessionPreferences($member['id']);
+
+                        // 기능이 활성화된 경우에만 토큰 생성
+                        if($prefs['remember_me_enabled']) {
+                            $duration = $prefs['session_duration'];
+
+                            // 종일 옵션 처리
+                            if($duration == -1) {
+                                $duration = calculateAllDayDuration();
+                            } else if($duration == 0) {
+                                $duration = 2592000; // 기본 30일
+                            }
+
+                            // 토큰 생성 및 쿠키 설정
+                            $token = createRememberToken($member['id'], $duration);
+                            if($token) {
+                                setRememberCookie($token['selector'], $token['validator'], $duration);
+                            }
+                        }
+                    }
+
                     // 마지막 로그인 시간 업데이트
                     $stmt = $pdo->prepare("UPDATE members SET last_login = NOW() WHERE id = ?");
                     $stmt->execute([$member['id']]);
-                    
+
                     // 로그인 로그 기록
                     try {
                         $ip_address = $_SERVER['REMOTE_ADDR'] ?? '';
                         $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-                        
+
                         // 로그인 로그 추가
-                        $stmt = $pdo->prepare("INSERT INTO member_login_logs 
-                            (member_id, login_date, login_ip, user_agent, login_status) 
+                        $stmt = $pdo->prepare("INSERT INTO member_login_logs
+                            (member_id, login_date, login_ip, user_agent, login_status)
                             VALUES (?, NOW(), ?, ?, 'success')");
                         $stmt->execute([$member['id'], $ip_address, $user_agent]);
                         

@@ -114,15 +114,20 @@ if ($category_filter === 'rebar' || $category_filter === 'all') {
 foreach ($products as &$product) {
     if (!empty($product['available_origins'])) {
         $product['available_origins_array'] = json_decode($product['available_origins'], true);
+        // json_decode가 실패하거나 빈 배열인 경우 처리
+        if (!is_array($product['available_origins_array']) || empty($product['available_origins_array'])) {
+            $product['available_origins_array'] = [$product['origin'] ?? '국산'];
+            $product['display_origin'] = $product['origin'] ?? '국산';
+        }
         // 국산이 포함되어 있으면 국산을 기본값으로 설정
-        if (in_array('국산', $product['available_origins_array'])) {
+        else if (in_array('국산', $product['available_origins_array'])) {
             $product['display_origin'] = '국산';
         } else {
             $product['display_origin'] = $product['available_origins_array'][0];
         }
     } else {
-        $product['available_origins_array'] = [$product['origin']];
-        $product['display_origin'] = $product['origin'];
+        $product['available_origins_array'] = [$product['origin'] ?? '국산'];
+        $product['display_origin'] = $product['origin'] ?? '국산';
     }
     
     // 철근 제품인 경우 번들 정보 추가

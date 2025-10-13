@@ -603,8 +603,12 @@ if ($product_id) {
                         <div class="price-range-box">
                             <div class="price-range-title">가격 범위</div>
                             <div class="price-range-values">
-                                <span class="price-min">최저: 900원</span>
-                                <span class="price-max">최대: 1,100원</span>
+                                <?php
+                                $display_min_price = $product['min_price'] ?? ($product['price'] * 0.9);
+                                $display_max_price = $product['max_price'] ?? ($product['price'] * 1.1);
+                                ?>
+                                <span class="price-min">최저: <?php echo number_format($display_min_price); ?>원</span>
+                                <span class="price-max">최대: <?php echo number_format($display_max_price); ?>원</span>
                             </div>
                         </div>
 
@@ -615,15 +619,22 @@ if ($product_id) {
                                 <div class="calc-form-group">
                                     <label>원산지</label>
                                     <select id="calc-origin" class="calc-control">
-                                        <option value="베트남산" selected>베트남산</option>
                                         <?php
                                         $origins = json_decode($product['available_origins'] ?? '[]', true) ?: [];
-                                        foreach ($origins as $origin):
+                                        if (empty($origins)) {
+                                            // 기본값이 없으면 "선택하세요" 표시
+                                            echo '<option value="" selected>선택하세요</option>';
+                                        } else {
+                                            // DB의 첫 번째 원산지를 기본값으로 사용
+                                            foreach ($origins as $index => $origin):
                                         ?>
-                                        <option value="<?php echo htmlspecialchars($origin); ?>">
+                                        <option value="<?php echo htmlspecialchars($origin); ?>" <?php echo $index === 0 ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($origin); ?>
                                         </option>
-                                        <?php endforeach; ?>
+                                        <?php
+                                            endforeach;
+                                        }
+                                        ?>
                                     </select>
                                 </div>
 
@@ -731,7 +742,11 @@ if ($product_id) {
                         unitWeight: <?php echo $product['specification_weight'] ?? 0; ?>,
                         piecesPerLengthData: <?php echo json_encode($pieces_per_length_data); ?>,
                         specName: '<?php echo htmlspecialchars($spec_name ?? ''); ?>',
-                        categoryCode: '<?php echo htmlspecialchars($product['category_code'] ?? ''); ?>'
+                        categoryCode: '<?php echo htmlspecialchars($product['category_code'] ?? ''); ?>',
+                        // 가격 데이터 추가
+                        price: <?php echo floatval($product['price'] ?? 1000); ?>,
+                        minPrice: <?php echo floatval($product['min_price'] ?? 0); ?>,
+                        maxPrice: <?php echo floatval($product['max_price'] ?? 0); ?>
                     };
                     </script>
                     <?php endif; ?>
@@ -751,7 +766,7 @@ if ($product_id) {
                 </div>
                 <div class="info-item">
                     <div class="info-label">고객센터</div>
-                    <div class="info-value">041-123-4567</div>
+                    <div class="info-value">032-564-1616</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">영업시간</div>
@@ -911,10 +926,10 @@ if ($product_id) {
             ];
         }
         
-        // 견적금액 계산 (kg당 1,000원)
-        const pricePerKg = 1000;
+        // 견적금액 계산 (DB의 기준단가 사용)
+        const pricePerKg = calculatorData.price || 1000;
         const totalPrice = calculatedWeight * pricePerKg;
-        
+
         // 계산 과정에 견적금액 추가
         calculationSteps.push(`견적금액: ${calculatedWeight.toFixed(1)}kg × ${pricePerKg.toLocaleString()}원/kg = ${totalPrice.toLocaleString()}원`);
         
@@ -1196,7 +1211,14 @@ if ($product_id) {
         <!-- 가격 범위 표시 -->
         <div class="price-range-section">
             <h3>가격 범위</h3>
-            <p><span style="color: #1E90FF;">최저: 900원</span>&nbsp;&nbsp;&nbsp;<span style="color: #FF6347;">최대: 1,100원</span></p>
+            <p>
+                <?php
+                $display_min_price = $product['min_price'] ?? ($product['price'] * 0.9);
+                $display_max_price = $product['max_price'] ?? ($product['price'] * 1.1);
+                ?>
+                <span style="color: #1E90FF;">최저: <?php echo number_format($display_min_price); ?>원</span>&nbsp;&nbsp;&nbsp;
+                <span style="color: #FF6347;">최대: <?php echo number_format($display_max_price); ?>원</span>
+            </p>
         </div>
 
         <div class="product-header">
@@ -1212,15 +1234,22 @@ if ($product_id) {
                 <div class="form-group">
                     <label for="origin">원산지</label>
                     <select class="form-control" id="origin">
-                        <option value="">베트남산</option>
                         <?php
                         $available_origins = json_decode($product['available_origins'] ?? '[]', true) ?: [];
-                        foreach ($available_origins as $origin):
+                        if (empty($available_origins)) {
+                            // 기본값이 없으면 "선택하세요" 표시
+                            echo '<option value="" selected>선택하세요</option>';
+                        } else {
+                            // DB의 첫 번째 원산지를 기본값으로 사용
+                            foreach ($available_origins as $index => $origin):
                         ?>
-                            <option value="<?php echo htmlspecialchars($origin); ?>">
+                            <option value="<?php echo htmlspecialchars($origin); ?>" <?php echo $index === 0 ? 'selected' : ''; ?>>
                                 <?php echo htmlspecialchars($origin); ?>
                             </option>
-                        <?php endforeach; ?>
+                        <?php
+                            endforeach;
+                        }
+                        ?>
                     </select>
                 </div>
 

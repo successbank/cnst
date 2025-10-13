@@ -17,6 +17,7 @@ try {
     $product_code = trim($_POST['product_code'] ?? '');
     $product_code = $product_code === '' ? null : $product_code;
     $specifications = trim($_POST['specifications'] ?? '');
+    $specification = trim($_POST['specification'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $price = isset($_POST['price']) && $_POST['price'] !== '' ? (float)$_POST['price'] : null;
     $min_price = isset($_POST['min_price']) && $_POST['min_price'] !== '' ? (float)$_POST['min_price'] : null;
@@ -25,6 +26,12 @@ try {
     $min_order_qty = (int)($_POST['min_order_qty'] ?? 1);
     $stock_status = $_POST['stock_status'] ?? 'in_stock';
     $base_length = (int)($_POST['base_length'] ?? 6);
+
+    // 길이 제한 값들
+    $min_length = isset($_POST['min_length']) && $_POST['min_length'] !== '' ? (float)$_POST['min_length'] : null;
+    $max_length = isset($_POST['max_length']) && $_POST['max_length'] !== '' ? (float)$_POST['max_length'] : null;
+    $standard_length = isset($_POST['standard_length']) && $_POST['standard_length'] !== '' ? (float)$_POST['standard_length'] : null;
+
     $features = trim($_POST['features'] ?? '');
     $dimensions = trim($_POST['dimensions'] ?? '');
     $weight = trim($_POST['weight'] ?? '');
@@ -70,6 +77,14 @@ try {
     $certifications = trim($_POST['certifications'] ?? '');
     $brochure_url = trim($_POST['brochure_url'] ?? '');
     $show_details = isset($_POST['show_details']) ? 1 : 0;
+
+    // 제품 상세보기용 필드들
+    $quality_cert = trim($_POST['quality_cert'] ?? '');
+    $product_features = trim($_POST['product_features'] ?? '');
+
+    // 메인페이지 노출 필드
+    $show_on_homepage = isset($_POST['show_on_homepage']) ? 1 : 0;
+    $homepage_display_order = isset($_POST['homepage_display_order']) ? (int)$_POST['homepage_display_order'] : 0;
     
     // 유효성 검사
     $errors = [];
@@ -87,6 +102,10 @@ try {
         'base_length' => false,
         'min_price' => false,
         'max_price' => false,
+        'min_length' => false,
+        'max_length' => false,
+        'standard_length' => false,
+        'specification' => false,
         'detailed_description' => false,
         'key_features' => false,
         'technical_specs' => false,
@@ -97,7 +116,11 @@ try {
         'details_updated_at' => false,
         'origin_price_data' => false,
         'material_price_data' => false,
-        'available_materials' => false
+        'available_materials' => false,
+        'quality_cert' => false,
+        'product_features' => false,
+        'show_on_homepage' => false,
+        'homepage_display_order' => false
     ];
     
     foreach ($columns_check as $column => &$exists) {
@@ -107,7 +130,7 @@ try {
     
     if ($id > 0) {
         // 수정
-        $sql = "UPDATE products SET 
+        $sql = "UPDATE products SET
                 category_code = :category_code,
                 product_name = :product_name,
                 product_code = :product_code,
@@ -127,7 +150,7 @@ try {
                 delivery_info = :delivery_info,
                 is_featured = :is_featured,
                 is_active = :is_active";
-        
+
         $params = [
             ':category_code' => $category_code,
             ':product_name' => $product_name,
@@ -149,6 +172,12 @@ try {
             ':is_featured' => $is_featured,
             ':is_active' => $is_active
         ];
+
+        // specification 필드는 선택적으로 처리 (컬럼이 있는 경우에만)
+        if ($columns_check['specification']) {
+            $sql .= ", specification = :specification";
+            $params[':specification'] = $specification;
+        }
         
         // 선택적 컬럼 추가
         if ($columns_check['base_length']) {
@@ -206,7 +235,35 @@ try {
             $sql .= ", available_materials = :available_materials";
             $params[':available_materials'] = $available_materials_json;
         }
-        
+        if ($columns_check['min_length']) {
+            $sql .= ", min_length = :min_length";
+            $params[':min_length'] = $min_length;
+        }
+        if ($columns_check['max_length']) {
+            $sql .= ", max_length = :max_length";
+            $params[':max_length'] = $max_length;
+        }
+        if ($columns_check['standard_length']) {
+            $sql .= ", standard_length = :standard_length";
+            $params[':standard_length'] = $standard_length;
+        }
+        if ($columns_check['quality_cert']) {
+            $sql .= ", quality_cert = :quality_cert";
+            $params[':quality_cert'] = $quality_cert;
+        }
+        if ($columns_check['product_features']) {
+            $sql .= ", product_features = :product_features";
+            $params[':product_features'] = $product_features;
+        }
+        if ($columns_check['show_on_homepage']) {
+            $sql .= ", show_on_homepage = :show_on_homepage";
+            $params[':show_on_homepage'] = $show_on_homepage;
+        }
+        if ($columns_check['homepage_display_order']) {
+            $sql .= ", homepage_display_order = :homepage_display_order";
+            $params[':homepage_display_order'] = $homepage_display_order;
+        }
+
         $sql .= " WHERE id = :id";
         $params[':id'] = $id;
         
@@ -323,7 +380,47 @@ try {
             $values[] = ':available_materials';
             $params[':available_materials'] = $available_materials_json;
         }
-        
+        if ($columns_check['min_length']) {
+            $columns[] = 'min_length';
+            $values[] = ':min_length';
+            $params[':min_length'] = $min_length;
+        }
+        if ($columns_check['max_length']) {
+            $columns[] = 'max_length';
+            $values[] = ':max_length';
+            $params[':max_length'] = $max_length;
+        }
+        if ($columns_check['standard_length']) {
+            $columns[] = 'standard_length';
+            $values[] = ':standard_length';
+            $params[':standard_length'] = $standard_length;
+        }
+        if ($columns_check['specification']) {
+            $columns[] = 'specification';
+            $values[] = ':specification';
+            $params[':specification'] = $specification;
+        }
+        if ($columns_check['quality_cert']) {
+            $columns[] = 'quality_cert';
+            $values[] = ':quality_cert';
+            $params[':quality_cert'] = $quality_cert;
+        }
+        if ($columns_check['product_features']) {
+            $columns[] = 'product_features';
+            $values[] = ':product_features';
+            $params[':product_features'] = $product_features;
+        }
+        if ($columns_check['show_on_homepage']) {
+            $columns[] = 'show_on_homepage';
+            $values[] = ':show_on_homepage';
+            $params[':show_on_homepage'] = $show_on_homepage;
+        }
+        if ($columns_check['homepage_display_order']) {
+            $columns[] = 'homepage_display_order';
+            $values[] = ':homepage_display_order';
+            $params[':homepage_display_order'] = $homepage_display_order;
+        }
+
         $sql = "INSERT INTO products (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";
         
         $stmt = $pdo->prepare($sql);
