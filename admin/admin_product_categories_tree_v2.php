@@ -88,8 +88,13 @@ require_once 'admin_head.php';
             </div>
             <div class="form-group">
                 <label>커스텀 URL</label>
-                <input type="url" id="customUrl" name="custom_url" placeholder="https://example.com 또는 /page.php">
-                <small>카테고리 클릭 시 이동할 URL (비워두면 기본 제품 목록 페이지로 이동)</small>
+                <input type="text" id="customUrl" name="custom_url" placeholder="예: ?category=code 또는 https://example.com">
+                <small style="display: block; color: #666; margin-top: 5px;">
+                    <strong>사용 예시:</strong><br>
+                    • 내부 페이지: <code>?category=light-h-beam</code><br>
+                    • 외부 링크: <code>https://example.com</code><br>
+                    • 비워두면 기본 제품 목록 페이지로 이동합니다
+                </small>
             </div>
             <div class="form-group">
                 <label>URL 열기 방식</label>

@@ -121,6 +121,13 @@ $top_3_categories = array_slice(array_column($categories_by_clicks, 'category_co
     display: block;
 }
 
+.category-icon img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
 .category-name {
     font-size: 20px;
     font-weight: 700;
@@ -240,11 +247,15 @@ $top_3_categories = array_slice(array_column($categories_by_clicks, 'category_co
                 $categoryLink = 'products_new.php?category=' . $category['category_code'] . '&view=tile';
             }
             ?>
-            <a href="<?php echo $categoryLink; ?>" 
+            <a href="<?php echo $categoryLink; ?>"
                class="category-card <?php echo $isEmpty ? 'empty' : ''; ?> <?php echo $isFeatured ? 'featured' : ''; ?> <?php echo $category['has_calculator'] ? 'has-calculator' : ''; ?>"
                <?php echo $isEmpty ? 'onclick="return false;"' : ''; ?>>
                 <span class="category-icon">
-                    <?php echo isset($icons[$category['category_code']]) ? $icons[$category['category_code']] : '📦'; ?>
+                    <?php if ($category['category_code'] === 'rebar'): ?>
+                        <img src="img/철근.jpg" alt="철근">
+                    <?php else: ?>
+                        <?php echo isset($icons[$category['category_code']]) ? $icons[$category['category_code']] : '📦'; ?>
+                    <?php endif; ?>
                 </span>
                 <h3 class="category-name"><?php echo htmlspecialchars($category['category_name']); ?></h3>
                 <?php if ($category['has_calculator']): ?>

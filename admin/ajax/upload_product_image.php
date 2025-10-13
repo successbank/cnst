@@ -27,9 +27,9 @@ if (!in_array($file['type'], $allowed_types)) {
     exit;
 }
 
-// 파일 크기 제한 (5MB)
-if ($file['size'] > 5 * 1024 * 1024) {
-    echo json_encode(['success' => false, 'message' => '파일 크기는 5MB 이하여야 합니다.']);
+// 파일 크기 제한 (상향: 25MB)
+if ($file['size'] > 25 * 1024 * 1024) {
+    echo json_encode(['success' => false, 'message' => '파일 크기는 25MB 이하여야 합니다.']);
     exit;
 }
 
@@ -67,6 +67,18 @@ try {
     
     // 파일 업로드
     if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+        // 2MB 이상인 경우 600KB 목표로 압축/리사이즈 시도
+        $two_mb = 2 * 1024 * 1024;
+        $target_size = 600 * 1024; // 600KB
+        
+        if (filesize($upload_path) >= $two_mb && extension_loaded('gd')) {
+            $imageInfo = @getimagesize($upload_path);
+            if ($imageInfo !== false) {
+                $mime = $imageInfo['mime'] ?? '';
+                // 최대 1600px 리사이즈 후 포맷별 재인코딩으로 용량 감축
+                compress_image_to_target($upload_path, $mime, $target_size);
+            }
+        }
         // 기존 이미지 삭제
         if ($product['main_image']) {
             $old_file_path = dirname(dirname(__DIR__)) . $product['main_image'];
@@ -109,5 +121,108 @@ try {
 } catch (Exception $e) {
     error_log('Upload error: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => '오류가 발생했습니다: ' . $e->getMessage()]);
+}
+?>
+<?php
+// 이미지 압축/리사이즈 유틸리티
+if (!function_exists('compress_image_to_target')) {
+    function compress_image_to_target(string $path, string $mime, int $targetSizeBytes): void {
+        $info = @getimagesize($path);
+        if ($info === false) return;
+        list($width, $height) = $info;
+
+        // 로드
+        switch ($mime) {
+            case 'image/jpeg':
+            case 'image/jpg':
+                $src = @imagecreatefromjpeg($path);
+                break;
+            case 'image/png':
+                $src = @imagecreatefrompng($path);
+                break;
+            case 'image/gif':
+                $src = @imagecreatefromgif($path);
+                break;
+            case 'image/webp':
+                if (function_exists('imagecreatefromwebp')) {
+                    $src = @imagecreatefromwebp($path);
+                } else { $src = null; }
+                break;
+            default:
+                $src = null;
+        }
+        if (!$src) return;
+
+        // 1) 최대 변 1600px로 축소
+        $maxDim = 1600;
+        $scale = min(1.0, $maxDim / max($width, $height));
+        $newW = (int)max(1, round($width * $scale));
+        $newH = (int)max(1, round($height * $scale));
+        $dst = imagecreatetruecolor($newW, $newH);
+
+        // 알파 처리 (PNG/GIF)
+        if ($mime === 'image/png' || $mime === 'image/gif') {
+            imagealphablending($dst, false);
+            imagesavealpha($dst, true);
+            $transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
+            imagefilledrectangle($dst, 0, 0, $newW, $newH, $transparent);
+        }
+        imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $width, $height);
+
+        // 2) 포맷별 저장 및 목표 용량까지 품질 단계 조정
+        $tmpPath = $path . '.tmp';
+        @unlink($tmpPath);
+
+        $ok = false;
+        if ($mime === 'image/jpeg' || $mime === 'image/jpg') {
+            foreach ([85, 80, 75, 70, 65, 60, 55, 50, 45, 40] as $q) {
+                @imagejpeg($dst, $tmpPath, $q);
+                if (file_exists($tmpPath) && filesize($tmpPath) <= $targetSizeBytes) { $ok = true; break; }
+            }
+        } elseif ($mime === 'image/webp' && function_exists('imagewebp')) {
+            foreach ([80, 75, 70, 65, 60, 55, 50, 45, 40] as $q) {
+                @imagewebp($dst, $tmpPath, $q);
+                if (file_exists($tmpPath) && filesize($tmpPath) <= $targetSizeBytes) { $ok = true; break; }
+            }
+        } elseif ($mime === 'image/png') {
+            // PNG는 용량 제어가 어렵기 때문에 우선 최대 압축으로 저장
+            @imagepng($dst, $tmpPath, 9);
+            if (file_exists($tmpPath) && filesize($tmpPath) <= $targetSizeBytes) { $ok = true; }
+            // 그래도 크면 한 번 더 축소(최대변 1000px) 후 재시도
+            if (!$ok) {
+                $maxDim2 = 1000;
+                $scale2 = min(1.0, $maxDim2 / max($newW, $newH));
+                $w2 = (int)max(1, round($newW * $scale2));
+                $h2 = (int)max(1, round($newH * $scale2));
+                $dst2 = imagecreatetruecolor($w2, $h2);
+                imagealphablending($dst2, false);
+                imagesavealpha($dst2, true);
+                $transparent2 = imagecolorallocatealpha($dst2, 0, 0, 0, 127);
+                imagefilledrectangle($dst2, 0, 0, $w2, $h2, $transparent2);
+                imagecopyresampled($dst2, $dst, 0, 0, 0, 0, $w2, $h2, $newW, $newH);
+                @imagepng($dst2, $tmpPath, 9);
+                imagedestroy($dst2);
+                if (file_exists($tmpPath) && filesize($tmpPath) <= $targetSizeBytes) { $ok = true; }
+            }
+        } elseif ($mime === 'image/gif') {
+            @imagegif($dst, $tmpPath);
+            if (file_exists($tmpPath) && filesize($tmpPath) <= $targetSizeBytes) { $ok = true; }
+        }
+
+        // 성공 시 원본 대체, 실패 시 그래도 리사이즈/재인코딩본이 더 작으면 교체
+        if (file_exists($tmpPath)) {
+            $orig = @filesize($path) ?: PHP_INT_MAX;
+            $cand = @filesize($tmpPath) ?: PHP_INT_MAX;
+            if ($ok || $cand < $orig) {
+                @rename($tmpPath, $path);
+            } else {
+                @unlink($tmpPath);
+            }
+        }
+
+        // 정리
+        imagedestroy($dst);
+        imagedestroy($src);
+    }
 }
 ?>

@@ -55,8 +55,17 @@ try {
 
     // URL 유효성 검사 (선택사항)
     if (!empty($custom_url)) {
-        if (!filter_var($custom_url, FILTER_VALIDATE_URL) && !preg_match('/^\//', $custom_url)) {
-            throw new Exception('유효한 URL을 입력해주세요.');
+        // 외부 URL (http/https로 시작) 또는 내부 경로 (/, ? 로 시작) 허용
+        $is_external = preg_match('/^https?:\/\//', $custom_url);
+        $is_internal = preg_match('/^[\/\?]/', $custom_url);
+
+        if (!$is_external && !$is_internal) {
+            throw new Exception('유효한 URL을 입력해주세요. (예: ?category=code 또는 https://example.com)');
+        }
+
+        // 외부 URL인 경우 유효성 검사
+        if ($is_external && !filter_var($custom_url, FILTER_VALIDATE_URL)) {
+            throw new Exception('유효한 외부 URL을 입력해주세요.');
         }
     }
 

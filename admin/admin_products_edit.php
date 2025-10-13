@@ -78,7 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 제품 상세보기용 필드들
     $quality_cert = trim($_POST['quality_cert'] ?? '');
     $product_features = trim($_POST['product_features'] ?? '');
-    
+
+    // 대표 이미지 처리
+    $main_image = trim($_POST['main_image'] ?? '');
+    $main_image = $main_image === '' ? null : $main_image;
+
     // 원산지 선택 처리 - JSON 형식으로 받음
     $available_origins_json = $_POST['available_origins'] ?? '[]';
     $available_origins = json_decode($available_origins_json, true);
@@ -124,6 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             detailed_description = ?, key_features = ?, technical_specs = ?,
                             applications = ?, certifications = ?, brochure_url = ?,
                             show_details = ?, quality_cert = ?, product_features = ?,
+                            main_image = ?,
                             details_updated_at = NOW()
                         WHERE id = ?
                     ");
@@ -139,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $detailed_description, $key_features, $technical_specs,
                         $applications, $certifications, $brochure_url,
                         $show_details, $quality_cert, $product_features,
+                        $main_image,
                         $id
                     ]);
                 } else if ($has_base_length) {
@@ -153,6 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             detailed_description = ?, key_features = ?, technical_specs = ?,
                             applications = ?, certifications = ?, brochure_url = ?,
                             show_details = ?, quality_cert = ?, product_features = ?,
+                            main_image = ?,
                             details_updated_at = NOW()
                         WHERE id = ?
                     ");
@@ -166,6 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $detailed_description, $key_features, $technical_specs,
                         $applications, $certifications, $brochure_url,
                         $show_details, $quality_cert, $product_features,
+                        $main_image,
                         $id
                     ]);
                 } else if ($has_price_range) {
@@ -177,7 +185,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             features = ?,
                             available_origins = ?, available_materials = ?, material_price_data = ?, delivery_info = ?, is_featured = ?, is_active = ?,
-                            show_on_homepage = ?, homepage_display_order = ?
+                            show_on_homepage = ?, homepage_display_order = ?,
+                            main_image = ?
                         WHERE id = ?
                     ");
                     $stmt->execute([
@@ -188,6 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $features,
                         $available_origins_json, $available_materials_json, $material_price_data, $delivery_info, $is_featured, $is_active,
                         $show_on_homepage, $homepage_display_order,
+                        $main_image,
                         $id
                     ]);
                 } else {
@@ -198,7 +208,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unit = ?, min_order_qty = ?, stock_status = ?,
                             features = ?,
                             available_origins = ?, available_materials = ?, material_price_data = ?, delivery_info = ?, is_featured = ?, is_active = ?,
-                            show_on_homepage = ?, homepage_display_order = ?
+                            show_on_homepage = ?, homepage_display_order = ?,
+                            main_image = ?
                         WHERE id = ?
                     ");
                     $stmt->execute([
@@ -208,6 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $features,
                         $available_origins_json, $available_materials_json, $material_price_data, $delivery_info, $is_featured, $is_active,
                         $show_on_homepage, $homepage_display_order,
+                        $main_image,
                         $id
                     ]);
                 }
@@ -632,6 +644,21 @@ include 'admin_head.php';
     object-fit: cover;
 }
 
+/* 대표 이미지 배지 */
+.image-preview-item .main-badge {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: linear-gradient(135deg, #1428A0 0%, #0F1F7A 100%);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
 .image-preview-item .delete-btn {
     position: absolute;
     top: 5px;
@@ -961,7 +988,34 @@ include 'admin_head.php';
             <label for="description">제품 설명</label>
             <textarea id="description" name="description" rows="4"
                       placeholder="제품에 대한 상세한 설명을 입력하세요"><?php echo htmlspecialchars($product['description'] ?? ''); ?></textarea>
-            
+
+            <?php if ($id > 0): ?>
+            <!-- 대표 이미지 관리 섹션 (제품 저장 후에만 표시) -->
+            <div class="form-section" id="main-image-section" style="margin-top:16px;">
+                <h3 class="section-title">대표 이미지</h3>
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1 1 260px;">
+                        <div id="mainImagePreview" style="border:1px solid #eee;border-radius:8px;overflow:hidden;background:#f8f9fa;display:flex;align-items:center;justify-content:center;min-height:180px;">
+                            <?php if (!empty($product['main_image'])): ?>
+                                <img id="currentMainImage" src="<?php echo htmlspecialchars($product['main_image']); ?>" alt="대표 이미지" style="max-width:100%;max-height:280px;display:block;">
+                            <?php else: ?>
+                                <div id="noMainImage" style="color:#6c757d;">등록된 대표 이미지가 없습니다</div>
+                            <?php endif; ?>
+                        </div>
+                        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+                            <input type="file" id="mainImageFile" accept="image/*" style="display:none;">
+                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('mainImageFile').click();">대표 이미지 업로드/변경</button>
+                            <button type="button" class="btn btn-secondary" id="btnDeleteMainImage">대표 이미지 삭제</button>
+                            <span class="help-text">JPG, PNG, GIF, WEBP, 최대 25MB (2MB 초과 시 자동 압축)</span>
+                        </div>
+                        <div id="mainImageMsg" class="help-text" style="margin-top:6px;display:none;"></div>
+                    </div>
+                </div>
+            </div>
+            <?php else: ?>
+            <div class="help-text" style="margin-top:8px;">대표 이미지 관리는 제품 등록 후 가능합니다.</div>
+            <?php endif; ?>
+
             <!-- 이미지 업로드 영역 -->
             <div id="imageDropZone" class="image-drop-zone">
                 <div class="drop-zone-content">
@@ -985,10 +1039,14 @@ include 'admin_head.php';
                 <h4>업로드된 이미지 (드래그하여 순서 변경 가능)</h4>
                 <div id="imagePreviewList" class="image-preview-list"></div>
                 <div class="preview-help-text">
+                    • 첫 번째 이미지가 상세 페이지의 대표 이미지로 표시됩니다<br>
                     • 이미지를 드래그하여 순서를 변경할 수 있습니다<br>
                     • X 버튼을 클릭하여 이미지를 삭제할 수 있습니다
                 </div>
             </div>
+
+            <!-- Hidden input for main_image -->
+            <input type="hidden" id="mainImageInput" name="main_image" value="<?php echo htmlspecialchars($product['main_image'] ?? ''); ?>">
         </div>
     </div>
     
@@ -1764,15 +1822,19 @@ function parseExistingImages() {
 
 // 이미지 미리보기 업데이트
 function updateImagePreview() {
+    console.log('updateImagePreview called, imagePaths:', imagePaths);
+
     if (imagePaths.length === 0) {
         imagePreviewContainer.style.display = 'none';
         return;
     }
-    
+
     imagePreviewContainer.style.display = 'block';
     imagePreviewList.innerHTML = '';
-    
+
     imagePaths.forEach((path, index) => {
+        console.log(`Creating preview for image ${index}:`, path);
+
         const item = document.createElement('div');
         item.className = 'image-preview-item';
         item.draggable = true;
@@ -1781,13 +1843,25 @@ function updateImagePreview() {
         const img = document.createElement('img');
         img.src = path;
         img.alt = `이미지 ${index + 1}`;
-        
+
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
         deleteBtn.innerHTML = '×';
         deleteBtn.onclick = () => removeImage(index);
-        
+
         item.appendChild(img);
+
+        // 첫 번째 이미지에 대표 배지 추가
+        if (index === 0) {
+            console.log('Adding main badge to first image');
+            const mainBadge = document.createElement('div');
+            mainBadge.className = 'main-badge';
+            mainBadge.textContent = '대표';
+            mainBadge.style.cssText = 'position: absolute; top: 5px; left: 5px; background: linear-gradient(135deg, #1428A0 0%, #0F1F7A 100%); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2);';
+            item.appendChild(mainBadge);
+            console.log('Main badge added:', mainBadge);
+        }
+
         item.appendChild(deleteBtn);
         
         // 드래그 이벤트 추가
@@ -1831,7 +1905,107 @@ function updateDescriptionTextarea() {
     }
     
     descriptionTextarea.value = finalText;
+
+    // main_image 업데이트 (첫 번째 이미지를 대표 이미지로)
+    updateMainImage();
 }
+
+// 대표 이미지 업데이트
+function updateMainImage() {
+    const mainImageInput = document.getElementById('mainImageInput');
+    if (imagePaths.length > 0) {
+        mainImageInput.value = imagePaths[0];
+    } else {
+        mainImageInput.value = '';
+    }
+}
+
+// ===== 대표 이미지 업로드/삭제 (제품 ID 필요) =====
+<?php if ($id > 0): ?>
+(function() {
+    const productId = <?php echo (int)$id; ?>;
+    const fileInput = document.getElementById('mainImageFile');
+    const deleteBtn = document.getElementById('btnDeleteMainImage');
+    const previewBox = document.getElementById('mainImagePreview');
+    const helpMsg = document.getElementById('mainImageMsg');
+    const hiddenMainInput = document.getElementById('mainImageInput');
+
+    function setMsg(text, ok) {
+        helpMsg.style.display = 'block';
+        helpMsg.style.color = ok ? '#155724' : '#721c24';
+        helpMsg.style.background = ok ? '#d4edda' : '#f8d7da';
+        helpMsg.style.padding = '6px 8px';
+        helpMsg.style.borderRadius = '4px';
+        helpMsg.textContent = (ok ? '✓ ' : '✗ ') + text;
+        setTimeout(() => { helpMsg.style.display = 'none'; }, 3000);
+    }
+
+    fileInput && fileInput.addEventListener('change', async (e) => {
+        if (!e.target.files || !e.target.files[0]) return;
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append('product_id', String(productId));
+        formData.append('image', file);
+
+        try {
+            const res = await fetch('ajax/upload_product_image.php', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data && data.success) {
+                // 미리보기 갱신
+                const existingImg = document.getElementById('currentMainImage');
+                const noImg = document.getElementById('noMainImage');
+                if (noImg) noImg.remove();
+                if (existingImg) {
+                    existingImg.src = data.image_url;
+                } else {
+                    const img = document.createElement('img');
+                    img.id = 'currentMainImage';
+                    img.alt = '대표 이미지';
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '280px';
+                    img.style.display = 'block';
+                    img.src = data.image_url;
+                    previewBox.innerHTML = '';
+                    previewBox.appendChild(img);
+                }
+
+                // hidden input 동기화
+                if (hiddenMainInput) hiddenMainInput.value = data.image_url;
+                setMsg('대표 이미지를 업데이트했습니다.', true);
+            } else {
+                setMsg((data && data.message) ? data.message : '업로드 실패', false);
+            }
+        } catch (err) {
+            console.error(err);
+            setMsg('업로드 중 오류가 발생했습니다.', false);
+        } finally {
+            // 파일 입력 초기화 (같은 파일 재업로드 허용)
+            e.target.value = '';
+        }
+    });
+
+    deleteBtn && deleteBtn.addEventListener('click', async () => {
+        if (!confirm('대표 이미지를 삭제하시겠습니까?')) return;
+        const formData = new FormData();
+        formData.append('product_id', String(productId));
+        try {
+            const res = await fetch('ajax/delete_product_image.php', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data && data.success) {
+                // 미리보기 초기화
+                previewBox.innerHTML = '<div id="noMainImage" style="color:#6c757d;">등록된 대표 이미지가 없습니다</div>';
+                if (hiddenMainInput) hiddenMainInput.value = '';
+                setMsg('대표 이미지를 삭제했습니다.', true);
+            } else {
+                setMsg((data && data.message) ? data.message : '삭제 실패', false);
+            }
+        } catch (err) {
+            console.error(err);
+            setMsg('삭제 중 오류가 발생했습니다.', false);
+        }
+    });
+})();
+<?php endif; ?>
 
 // 드래그 앤 드롭 핸들러
 let draggedElement = null;

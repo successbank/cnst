@@ -959,14 +959,22 @@ foreach ($products as &$product) {
             <?php
             // custom_url이 있으면 그것을 사용, 없으면 기본 URL 사용
             if (!empty($category['custom_url'])) {
-                $category_url = $category['custom_url'];
-                $target = $category['url_target'] ?? '_self';
+                // custom_url이 외부 URL (http/https로 시작)인 경우
+                if (preg_match('/^https?:\/\//', $category['custom_url'])) {
+                    $category_url = $category['custom_url'];
+                    $target = $category['url_target'] ?? '_blank'; // 외부 링크는 기본적으로 새 창
+                } else {
+                    // 내부 경로인 경우 (/ 또는 ? 로 시작)
+                    $category_url = $category['custom_url'];
+                    $target = $category['url_target'] ?? '_self';
+                }
             } else {
+                // custom_url이 없으면 기본 카테고리 필터 URL 사용
                 $category_url = "?category={$category['category_code']}&view={$view_type}&search=" . urlencode($search);
                 $target = '_self';
             }
             ?>
-            <a href="<?php echo $category_url; ?>"
+            <a href="<?php echo htmlspecialchars($category_url); ?>"
                target="<?php echo $target; ?>"
                class="category-btn <?php echo $category_filter === $category['category_code'] ? 'active' : ''; ?>">
                 <?php echo escape($category['category_name']); ?>
@@ -1056,26 +1064,10 @@ foreach ($products as &$product) {
                     </div>
                     <div class="product-info">
                         <h3><?php echo escape($product['display_name'] ?? $product['product_name']); ?></h3>
-                        <?php if ($product['category_code'] === 'rebar'): ?>
-                            <?php
-                            // 이미 계산된 단중 사용
-                            $unitWeight = isset($product['unit_weight']) ? $product['unit_weight'] : getRebarUnitWeightFromProductName($product['product_name']);
-                            if ($unitWeight):
-                            ?>
-                            <?php endif; ?>
-                            <?php if (isset($product['default_bundle'])): ?>
-                            <p style="color: #666; font-size: 13px; margin: 5px 0;">
-                                8m 기준: <?php echo $product['default_bundle']['bd_count']; ?>본/번들, <?php echo $product['default_bundle']['bd_weight']; ?>kg/번들
-                            </p>
-                            <?php endif; ?>
-                            <p class="calculator-link" style="color: #0066cc; font-size: 13px; font-weight: 600;">
-                                📊 번들 계산하기
-                            </p>
-                        <?php endif; ?>
                         <?php if ($product['category_code'] !== 'rebar'): ?>
                         <p class="description"><?php echo escape($product['description']); ?></p>
                         <?php endif; ?>
-                        <?php if ($product['price'] && $product['price'] > 0 && $product['category_code'] !== 'rebar'): ?>
+                        <?php if ($product['price'] && $product['price'] > 0): ?>
                         <?php 
                         $min_price = isset($product['min_price']) && $product['min_price'] > 0 
                             ? $product['min_price'] 
