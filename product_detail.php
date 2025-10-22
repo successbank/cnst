@@ -748,7 +748,7 @@ if ($product_id) {
                                 </div>
 
                                 <div class="calc-form-group">
-                                    <label>수량 (본)</label>
+                                    <label>단위 (<?php echo ($product['category_code'] === 'rebar') ? 'TON/BD' : '본'; ?>)</label>
                                     <input type="number" id="calc-quantity" class="calc-control"
                                            min="1" value="1">
                                 </div>
@@ -764,7 +764,7 @@ if ($product_id) {
                             <!-- 실시간 계산 결과 -->
                             <div class="calc-result" id="calcResult" style="display: none;">
                                 <div class="calc-result-header">계산 결과</div>
-                                <div class="calc-result-value" id="calcResultValue">0 kg</div>
+                                <div class="calc-result-value" id="calcResultValue" style="display: none;">0 kg</div>
                                 <div class="calc-result-price" id="calcResultPrice">견적금액: 0원</div>
                                 <div class="calc-steps" id="calcSteps"></div>
                             </div>
@@ -925,7 +925,6 @@ if ($product_id) {
         if (calculatorData.calculationType === 'linear') {
             // 선형 제품: 단위중량 × 길이 × 수량
             const weightPerPiece = unitWeight * length;
-            calculatedWeight = weightPerPiece * quantity;
 
             calculationSteps = [
                 `단위중량: ${unitWeight} kg/m`,
@@ -940,27 +939,34 @@ if ($product_id) {
 
                 if (piecesPerLength > 0) {
                     const totalPieces = piecesPerLength * quantity;
+                    calculatedWeight = weightPerPiece * totalPieces;
+
                     calculationSteps.push(
                         `톤당 본수: ${piecesPerLength}본 (${length}m 기준)`,
-                        `총 본수: ${piecesPerLength}본 × ${quantity}톤 = ${totalPieces}본`
+                        `총 본수: ${piecesPerLength}본 × ${quantity}톤 = ${totalPieces}본`,
+                        `총 중량: ${weightPerPiece.toFixed(2)} × ${totalPieces}본 = ${calculatedWeight.toFixed(2)} kg`
                     );
                 } else {
-                    calculationSteps.push(`본수: ${quantity}본`);
+                    calculatedWeight = weightPerPiece * quantity;
+                    calculationSteps.push(
+                        `본수: ${quantity}본`,
+                        `총 중량: ${weightPerPiece.toFixed(2)} × ${quantity}본 = ${calculatedWeight.toFixed(2)} kg`
+                    );
                 }
             } else {
-                calculationSteps.push(`본수: ${quantity}본`);
+                calculatedWeight = weightPerPiece * quantity;
+                calculationSteps.push(
+                    `본수: ${quantity}본`,
+                    `총 중량: ${weightPerPiece.toFixed(2)} × ${quantity}본 = ${calculatedWeight.toFixed(2)} kg`
+                );
             }
-
-            calculationSteps.push(
-                `총 중량: ${weightPerPiece.toFixed(2)} × ${quantity}본 = ${calculatedWeight.toFixed(1)} kg`
-            );
         } else {
             // 판재 제품: 단위중량(장) × 수량
             calculatedWeight = unitWeight * quantity;
             
             calculationSteps = [
                 `단위중량(장): ${unitWeight} kg`,
-                `총 중량: ${unitWeight} × ${quantity}장 = ${calculatedWeight.toFixed(1)} kg`
+                `총 중량: ${unitWeight} × ${quantity}장 = ${calculatedWeight.toFixed(2)} kg`
             ];
         }
         
@@ -969,10 +975,10 @@ if ($product_id) {
         const totalPrice = calculatedWeight * pricePerKg;
 
         // 계산 과정에 견적금액 추가
-        calculationSteps.push(`견적금액: ${calculatedWeight.toFixed(1)}kg × ${pricePerKg.toLocaleString()}원/kg = ${totalPrice.toLocaleString()}원`);
+        calculationSteps.push(`견적금액: ${calculatedWeight.toFixed(2)}kg × ${pricePerKg.toLocaleString()}원/kg = ${totalPrice.toLocaleString()}원`);
         
         // 결과 표시
-        let resultText = calculatedWeight.toFixed(1) + ' kg';
+        let resultText = calculatedWeight.toFixed(2) + ' kg';
         if (calculatorData.calculationType === 'linear') {
             resultText += ' (' + quantity + '본)';
         } else {
