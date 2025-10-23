@@ -783,8 +783,10 @@ if ($product_id) {
                         categoryCode: '<?php echo htmlspecialchars($product['category_code'] ?? ''); ?>',
                         // 가격 데이터 추가
                         price: <?php echo floatval($product['price'] ?? 1000); ?>,
+                        priceUnit: '<?php echo htmlspecialchars($product['price_unit'] ?? 'kg'); ?>',
                         minPrice: <?php echo floatval($product['min_price'] ?? 0); ?>,
-                        maxPrice: <?php echo floatval($product['max_price'] ?? 0); ?>
+                        maxPrice: <?php echo floatval($product['max_price'] ?? 0); ?>,
+                        standardLength: <?php echo floatval($product['standard_length'] ?? 0); ?>
                     };
                     </script>
                     <?php endif; ?>
@@ -926,26 +928,55 @@ if ($product_id) {
             // 선형 제품: 단위중량 × 길이 × 수량
             const weightPerPiece = unitWeight * length;
 
-            calculationSteps = [
-                `단위중량: ${unitWeight} kg/m`,
-                `1본 중량: ${unitWeight} × ${length}m = ${weightPerPiece.toFixed(2)} kg`
-            ];
+            // price_unit='piece'인 경우 1본 중량은 표준길이 기준으로 표시
+            if (calculatorData.priceUnit === 'piece' && calculatorData.standardLength > 0) {
+                const standardLength = calculatorData.standardLength;
+                const standardWeightPerPiece = unitWeight * standardLength;
 
-            // 철근 제품인 경우 본수 계산 추가
-            if (calculatorData.categoryCode === 'rebar' && calculatorData.piecesPerLengthData) {
-                // 길이를 문자열 키로 변환 (소수점 1자리)
-                const lengthKey = length.toFixed(1);
-                const piecesPerLength = calculatorData.piecesPerLengthData[lengthKey] || 0;
+                calculationSteps = [
+                    `단위중량: ${unitWeight} kg/m`,
+                    `1본 중량: ${unitWeight} × ${standardLength}m = ${standardWeightPerPiece.toFixed(2)} kg (기준 길이)`
+                ];
 
-                if (piecesPerLength > 0) {
-                    const totalPieces = piecesPerLength * quantity;
-                    calculatedWeight = weightPerPiece * totalPieces;
+                // 선택한 길이가 표준길이와 다른 경우
+                if (length !== standardLength) {
+                    calculationSteps.push(`선택 길이: ${length}m`);
+                }
 
-                    calculationSteps.push(
-                        `톤당 본수: ${piecesPerLength}본 (${length}m 기준)`,
-                        `총 본수: ${piecesPerLength}본 × ${quantity}톤 = ${totalPieces}본`,
-                        `총 중량: ${weightPerPiece.toFixed(2)} × ${totalPieces}본 = ${calculatedWeight.toFixed(2)} kg`
-                    );
+                calculatedWeight = weightPerPiece * quantity;
+                calculationSteps.push(
+                    `본수: ${quantity}본`,
+                    `총 중량: ${unitWeight} × ${length}m × ${quantity}본 = ${calculatedWeight.toFixed(2)} kg`
+                );
+            } else {
+                // 기존 로직 (kg 단위 등)
+                calculationSteps = [
+                    `단위중량: ${unitWeight} kg/m`,
+                    `1본 중량: ${unitWeight} × ${length}m = ${weightPerPiece.toFixed(2)} kg`
+                ];
+
+                // 철근 제품인 경우 본수 계산 추가
+                if (calculatorData.categoryCode === 'rebar' && calculatorData.piecesPerLengthData) {
+                    // 길이를 문자열 키로 변환 (소수점 1자리)
+                    const lengthKey = length.toFixed(1);
+                    const piecesPerLength = calculatorData.piecesPerLengthData[lengthKey] || 0;
+
+                    if (piecesPerLength > 0) {
+                        const totalPieces = piecesPerLength * quantity;
+                        calculatedWeight = weightPerPiece * totalPieces;
+
+                        calculationSteps.push(
+                            `톤당 본수: ${piecesPerLength}본 (${length}m 기준)`,
+                            `총 본수: ${piecesPerLength}본 × ${quantity}톤 = ${totalPieces}본`,
+                            `총 중량: ${weightPerPiece.toFixed(2)} × ${totalPieces}본 = ${calculatedWeight.toFixed(2)} kg`
+                        );
+                    } else {
+                        calculatedWeight = weightPerPiece * quantity;
+                        calculationSteps.push(
+                            `본수: ${quantity}본`,
+                            `총 중량: ${weightPerPiece.toFixed(2)} × ${quantity}본 = ${calculatedWeight.toFixed(2)} kg`
+                        );
+                    }
                 } else {
                     calculatedWeight = weightPerPiece * quantity;
                     calculationSteps.push(
@@ -953,29 +984,45 @@ if ($product_id) {
                         `총 중량: ${weightPerPiece.toFixed(2)} × ${quantity}본 = ${calculatedWeight.toFixed(2)} kg`
                     );
                 }
-            } else {
-                calculatedWeight = weightPerPiece * quantity;
-                calculationSteps.push(
-                    `본수: ${quantity}본`,
-                    `총 중량: ${weightPerPiece.toFixed(2)} × ${quantity}본 = ${calculatedWeight.toFixed(2)} kg`
-                );
             }
         } else {
             // 판재 제품: 단위중량(장) × 수량
             calculatedWeight = unitWeight * quantity;
-            
+
             calculationSteps = [
                 `단위중량(장): ${unitWeight} kg`,
                 `총 중량: ${unitWeight} × ${quantity}장 = ${calculatedWeight.toFixed(2)} kg`
             ];
         }
         
-        // 견적금액 계산 (DB의 기준단가 사용)
-        const pricePerKg = calculatorData.price || 1000;
-        const totalPrice = calculatedWeight * pricePerKg;
+        // 견적금액 계산 (가격 단위에 따라 분기)
+        let totalPrice;
+        if (calculatorData.priceUnit === 'piece') {
+            // 본당 가격인 경우: 1m당 단가 기반 계산
+            const basePrice = calculatorData.price || 1000;
+            const standardLength = calculatorData.standardLength || 6.0;
 
-        // 계산 과정에 견적금액 추가
-        calculationSteps.push(`견적금액: ${calculatedWeight.toFixed(2)}kg × ${pricePerKg.toLocaleString()}원/kg = ${totalPrice.toLocaleString()}원`);
+            // 1m당 단가 계산
+            const pricePerMeter = basePrice / standardLength;
+
+            // 선택한 길이의 본당가격 계산
+            const adjustedPricePerPiece = pricePerMeter * length;
+
+            // 최종 견적금액
+            totalPrice = adjustedPricePerPiece * quantity;
+
+            calculationSteps.push(
+                `기준: ${standardLength}m = ${basePrice.toLocaleString()}원`,
+                `1m당 단가: ${basePrice.toLocaleString()}원 ÷ ${standardLength}m = ${Math.round(pricePerMeter).toLocaleString()}원/m`,
+                `${length}m 본당가격: ${Math.round(pricePerMeter).toLocaleString()}원/m × ${length}m = ${Math.round(adjustedPricePerPiece).toLocaleString()}원`,
+                `견적금액: ${Math.round(adjustedPricePerPiece).toLocaleString()}원 × ${quantity}본 = ${Math.round(totalPrice).toLocaleString()}원`
+            );
+        } else {
+            // kg당 가격인 경우 (기본)
+            const pricePerKg = calculatorData.price || 1000;
+            totalPrice = calculatedWeight * pricePerKg;
+            calculationSteps.push(`견적금액: ${calculatedWeight.toFixed(2)}kg × ${pricePerKg.toLocaleString()}원/kg = ${totalPrice.toLocaleString()}원`);
+        }
         
         // 결과 표시
         let resultText = calculatedWeight.toFixed(2) + ' kg';
