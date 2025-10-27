@@ -696,20 +696,34 @@ if ($product_id) {
                                         </select>
                                         <div class="input-help">선택 가능 범위: 6.0m ~ 12.0m</div>
                                     <?php elseif ($product['category_code'] === 'unequal-angle'): ?>
-                                        <!-- 부등변ㄱ형강: 6m-12m 드롭다운 선택 (0.1m 단위) -->
+                                        <!-- 부등변ㄱ형강: 드롭다운 선택 (0.1m 단위) -->
                                         <select id="calc-length" class="calc-control">
-                                            <option value="0" selected>선택하세요</option>
                                             <?php
-                                            // 6.0m부터 12.0m까지 0.1m 단위로 생성
-                                            for ($i = 60; $i <= 120; $i++):
+                                            // 표준길이가 설정되어 있는지 확인
+                                            $has_standard_length = !empty($product['standard_length']);
+                                            $standard_length = $has_standard_length ? floatval($product['standard_length']) : 0;
+
+                                            // 최소/최대 길이 설정 (기본값: 6.0m ~ 12.0m)
+                                            $min_len = !empty($product['min_length']) ? floatval($product['min_length']) : 6.0;
+                                            $max_len = !empty($product['max_length']) ? floatval($product['max_length']) : 12.0;
+
+                                            // 표준길이가 없으면 "선택하세요" 옵션 추가
+                                            if (!$has_standard_length):
+                                            ?>
+                                                <option value="0" selected>선택하세요</option>
+                                            <?php endif; ?>
+
+                                            <?php
+                                            // 최소길이부터 최대길이까지 0.1m 단위로 생성
+                                            for ($i = intval($min_len * 10); $i <= intval($max_len * 10); $i++):
                                                 $length_value = $i / 10;
                                             ?>
-                                                <option value="<?php echo $length_value; ?>">
+                                                <option value="<?php echo $length_value; ?>" <?php echo ($has_standard_length && $length_value == $standard_length) ? 'selected' : ''; ?>>
                                                     <?php echo number_format($length_value, 1); ?>m
                                                 </option>
                                             <?php endfor; ?>
                                         </select>
-                                        <div class="input-help">선택 가능 범위: 6.0m ~ 12.0m (0.1m 단위)</div>
+                                        <div class="input-help">선택 가능 범위: <?php echo number_format($min_len, 1); ?>m ~ <?php echo number_format($max_len, 1); ?>m (0.1m 단위)</div>
                                     <?php elseif ($product['category_code'] === 'h-beam' || $product['category_code'] === 'light-h-beam' || $product['category_code'] === 'i-beam' || $product['category_code'] === 'angle' || $product['category_code'] === 'channel' || $product['category_code'] === 'flat-bar' || $product['category_code'] === 'round-bar' || $product['category_code'] === 'c-beam' || $product['category_code'] === 'rail' || $product['category_code'] === 'square-pipe' || $product['category_code'] === 'bs-pipe' || $product['category_code'] === 'ks-pipe' || $product['category_code'] === 'conduit' || $product['category_code'] === 'structural-pipe' || $product['category_code'] === 'steel-pipe-pile' || $product['category_code'] === 'deck-plate' || $product['category_code'] === 'sheet-pile' || $product['category_code'] === 'scaffold-pipe' || $product['category_code'] === 'pressure-pipe'): ?>
                                         <!-- H형강/경량H형강/I형강/ㄱ형강/ㄷ형강/평철/환봉/C형강/레일/사각파이프/BS파이프/KS파이프/전선관/구조관/강관파일/데크플레이트/쉬트파일/단관비계/압력배관: 드롭다운 선택 (0.1m 단위) -->
                                         <select id="calc-length" class="calc-control">
