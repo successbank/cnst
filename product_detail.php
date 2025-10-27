@@ -605,12 +605,8 @@ if ($product_id) {
                         <div class="price-range-box">
                             <div class="price-range-title">가격 범위</div>
                             <div class="price-range-values">
-                                <?php
-                                $display_min_price = $product['min_price'] ?? ($product['price'] * 0.9);
-                                $display_max_price = $product['max_price'] ?? ($product['price'] * 1.1);
-                                ?>
-                                <span class="price-min">최저: <?php echo number_format($display_min_price); ?>원</span>
-                                <span class="price-max">최대: <?php echo number_format($display_max_price); ?>원</span>
+                                <span class="price-min" id="priceMin">최저: 0원</span>
+                                <span class="price-max" id="priceMax">최대: 0원</span>
                             </div>
                         </div>
 
@@ -1047,13 +1043,19 @@ if ($product_id) {
         }
         document.getElementById('calcResultValue').textContent = resultText;
         document.getElementById('calcResultPrice').textContent = '견적금액: ' + totalPrice.toLocaleString() + '원';
-        
+
+        // 가격 범위 업데이트 (견적금액의 ±10%)
+        const minPrice = Math.round(totalPrice * 0.9);
+        const maxPrice = Math.round(totalPrice * 1.1);
+        document.getElementById('priceMin').textContent = '최저: ' + minPrice.toLocaleString() + '원';
+        document.getElementById('priceMax').textContent = '최대: ' + maxPrice.toLocaleString() + '원';
+
         // 계산 과정 표시
-        const stepsHtml = calculationSteps.map(step => 
+        const stepsHtml = calculationSteps.map(step =>
             `<div class="calc-step">${step}</div>`
         ).join('');
         document.getElementById('calcSteps').innerHTML = stepsHtml;
-        
+
         // 결과 영역 표시
         document.getElementById('calcResult').style.display = 'block';
     }
