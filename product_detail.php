@@ -610,7 +610,6 @@ if ($product_id) {
                             </div>
                         </div>
 
-                        <h3 class="calculator-title">📊 실시간 중량 계산기</h3>
                         <div class="inline-calculator">
                             <!-- 원산지와 재질 선택 (첫 번째 줄) -->
                             <div class="calc-form-row">
