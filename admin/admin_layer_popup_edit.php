@@ -123,11 +123,6 @@ $additionalStyles = '
     border-bottom: 1px solid #e0e0e0;
 }
 
-/* TinyMCE 커스텀 스타일 */
-.tox-tinymce {
-    border-radius: 8px !important;
-}
-
 .form-container {
     background: white;
     padding: 32px;
@@ -311,37 +306,6 @@ textarea.form-control {
     border-bottom: 2px solid #e3f2fd;
 }
 
-.preview-box {
-    background: #f5f5f5;
-    border-radius: 8px;
-    padding: 20px;
-    margin-top: 16px;
-    position: relative;
-    min-height: 200px;
-    overflow: hidden;
-}
-
-.preview-popup-sample {
-    position: absolute;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-    transition: all 0.3s;
-}
-
-.preview-popup-header {
-    background: #1A237E;
-    color: white;
-    padding: 8px 12px;
-    font-size: 12px;
-    border-radius: 8px 8px 0 0;
-}
-
-.preview-popup-body {
-    padding: 12px;
-    font-size: 11px;
-    color: #666;
-}
 ';
 
 // 추가 스크립트
@@ -364,34 +328,6 @@ function previewImage(input) {
     }
 }
 
-function updatePositionPreview() {
-    const top = parseInt(document.getElementById("position_top").value) || 100;
-    const left = parseInt(document.getElementById("position_left").value) || 100;
-    const width = parseInt(document.getElementById("width").value) || 400;
-    const height = parseInt(document.getElementById("height").value) || 500;
-
-    const previewPopup = document.getElementById("previewPopupSample");
-    if (previewPopup) {
-        // 미리보기 박스 내에서 비율 조정
-        const scale = 0.15;
-        previewPopup.style.top = (top * scale) + "px";
-        previewPopup.style.left = (left * scale) + "px";
-        previewPopup.style.width = (width * scale) + "px";
-        previewPopup.style.height = (height * scale) + "px";
-    }
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    // 위치/크기 입력 필드에 이벤트 리스너 추가
-    ["position_top", "position_left", "width", "height"].forEach(function(id) {
-        const input = document.getElementById(id);
-        if (input) {
-            input.addEventListener("input", updatePositionPreview);
-        }
-    });
-
-    updatePositionPreview();
-});
 ';
 
 require_once 'admin_head.php';
@@ -457,7 +393,7 @@ require_once 'admin_head.php';
                 </button>
             </div>
 
-            <!-- 비주얼 에디터 (TinyMCE) -->
+            <!-- 비주얼 에디터 (Summernote) -->
             <div class="visual-editor-container" id="visualEditorContainer">
                 <textarea id="content" name="content"><?php echo $isEdit ? htmlspecialchars($popup['content'] ?? '') : ''; ?></textarea>
             </div>
@@ -534,14 +470,6 @@ require_once 'admin_head.php';
             <i class="fas fa-info-circle"></i> 팝업이 화면에 표시될 위치와 크기를 설정합니다. 여러 개의 팝업이 있을 경우 서로 겹치지 않도록 위치를 조정하세요.
         </div>
 
-        <div class="preview-box">
-            <div style="font-size: 12px; color: #666; margin-bottom: 8px;">위치 미리보기 (축소)</div>
-            <div id="previewPopupSample" class="preview-popup-sample">
-                <div class="preview-popup-header">팝업</div>
-                <div class="preview-popup-body">미리보기</div>
-            </div>
-        </div>
-
         <!-- 노출 기간 -->
         <h3 class="section-title" style="margin-top: 32px;"><i class="fas fa-calendar-alt"></i> 노출 기간</h3>
 
@@ -600,84 +528,139 @@ require_once 'admin_head.php';
     </form>
 </div>
 
-<!-- TinyMCE CDN -->
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<!-- jQuery (Summernote 의존성) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- Summernote CDN (MIT 라이선스 - 완전 무료) -->
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/lang/summernote-ko-KR.min.js"></script>
+
+<style>
+/* Summernote 커스텀 스타일 */
+.note-editor.note-frame {
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+}
+
+.note-editor .note-toolbar {
+    background: #f8f9fa !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+    padding: 8px !important;
+}
+
+.note-editor .note-editing-area {
+    background: white;
+}
+
+.note-editor .note-editing-area .note-editable {
+    padding: 16px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333;
+}
+
+.note-editor .note-statusbar {
+    background: #f8f9fa !important;
+    border-top: 1px solid #e0e0e0 !important;
+}
+
+.note-btn {
+    border-radius: 4px !important;
+}
+
+.note-btn:hover {
+    background: #e9ecef !important;
+}
+
+/* 코드뷰 스타일 */
+.note-editor .note-codable {
+    background: #1e1e1e !important;
+    color: #d4d4d4 !important;
+    font-family: "Consolas", "Monaco", "Courier New", monospace !important;
+    font-size: 14px !important;
+    padding: 16px !important;
+}
+</style>
+
 <script>
 // 현재 에디터 모드
 let currentEditorMode = 'visual';
-let tinymceEditor = null;
 
-// TinyMCE 초기화
+// Summernote 초기화
 document.addEventListener('DOMContentLoaded', function() {
-    initTinyMCE();
+    initSummernote();
 });
 
-function initTinyMCE() {
-    tinymce.init({
-        selector: '#content',
+function initSummernote() {
+    $('#content').summernote({
+        lang: 'ko-KR',
         height: 400,
-        language: 'ko_KR',
-        plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'media', 'table', 'help', 'wordcount', 'emoticons'
+        placeholder: '팝업 내용을 입력하세요...',
+        tabsize: 2,
+        toolbar: [
+            ['style', ['style']],
+            ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+            ['fontname', ['fontname']],
+            ['fontsize', ['fontsize']],
+            ['color', ['forecolor', 'backcolor']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['height', ['height']],
+            ['table', ['table']],
+            ['insert', ['link', 'picture', 'video', 'hr']],
+            ['view', ['fullscreen', 'codeview', 'help']]
         ],
-        toolbar: 'undo redo | blocks | ' +
-            'bold italic forecolor backcolor | alignleft aligncenter ' +
-            'alignright alignjustify | bullist numlist outdent indent | ' +
-            'link image table emoticons | removeformat code | help',
-        menubar: 'file edit view insert format tools table help',
-        content_style: `
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                font-size: 16px;
-                line-height: 1.6;
-                color: #333;
-                padding: 10px;
+        fontNames: ['맑은 고딕', '굴림', '돋움', '바탕', 'Arial', 'Arial Black', 'Comic Sans MS', 'Courier New', 'Helvetica', 'Impact', 'Tahoma', 'Times New Roman', 'Verdana'],
+        fontNamesIgnoreCheck: ['맑은 고딕', '굴림', '돋움', '바탕'],
+        styleTags: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+        callbacks: {
+            onInit: function() {
+                console.log('Summernote initialized');
+            },
+            onImageUpload: function(files) {
+                // 이미지 업로드 처리
+                for (let i = 0; i < files.length; i++) {
+                    uploadImage(files[i]);
+                }
+            },
+            onChange: function(contents) {
+                // 변경 시 숨겨진 textarea 동기화
+                $('#content').val(contents);
+            },
+            onCodeviewChange: function(contents) {
+                // 코드뷰 변경 시에도 동기화
+                $('#content').val(contents);
             }
-            img { max-width: 100%; height: auto; }
-            a { color: #1A237E; }
-        `,
-        branding: false,
-        promotion: false,
-        statusbar: true,
-        resize: true,
-        automatic_uploads: true,
-        file_picker_types: 'image',
-        // 이미지 업로드 핸들러
-        images_upload_handler: function(blobInfo, progress) {
-            return new Promise((resolve, reject) => {
-                const formData = new FormData();
-                formData.append('image', blobInfo.blob(), blobInfo.filename());
-
-                fetch('upload_popup_image.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        resolve(result.url);
-                    } else {
-                        reject({ message: result.message || '이미지 업로드 실패', remove: true });
-                    }
-                })
-                .catch(error => {
-                    reject({ message: '이미지 업로드 중 오류가 발생했습니다.', remove: true });
-                });
-            });
-        },
-        setup: function(editor) {
-            tinymceEditor = editor;
-
-            editor.on('init', function() {
-                console.log('TinyMCE initialized');
-            });
-
-            editor.on('change', function() {
-                editor.save();
-            });
         }
+    });
+}
+
+// 이미지 업로드 함수
+function uploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    fetch('upload_popup_image.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // 에디터에 이미지 삽입
+            $('#content').summernote('insertImage', result.url, function($image) {
+                $image.css('max-width', '100%');
+                $image.attr('alt', file.name);
+            });
+        } else {
+            alert('이미지 업로드 실패: ' + (result.message || '알 수 없는 오류'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('이미지 업로드 중 오류가 발생했습니다.');
     });
 }
 
@@ -693,11 +676,10 @@ function switchEditorMode(mode) {
 
     if (mode === 'html') {
         // 비주얼 -> HTML 모드
-        if (tinymceEditor) {
-            const htmlContent = tinymceEditor.getContent();
-            htmlCodeEditor.value = formatHTML(htmlContent);
-            previewContent.innerHTML = htmlContent;
-        }
+        const htmlContent = $('#content').summernote('code');
+        htmlCodeEditor.value = formatHTML(htmlContent);
+        previewContent.innerHTML = htmlContent;
+        contentTextarea.value = htmlContent;
 
         visualBtn.classList.remove('active');
         htmlBtn.classList.add('active');
@@ -709,12 +691,8 @@ function switchEditorMode(mode) {
         // HTML -> 비주얼 모드
         const htmlContent = htmlCodeEditor.value;
 
-        // TinyMCE에 HTML 내용 설정
-        if (tinymceEditor) {
-            tinymceEditor.setContent(htmlContent);
-        }
-
-        // 숨겨진 textarea 동기화
+        // Summernote에 HTML 내용 설정
+        $('#content').summernote('code', htmlContent);
         contentTextarea.value = htmlContent;
 
         visualBtn.classList.add('active');
@@ -768,19 +746,15 @@ function formatHTML(html) {
 
 // 폼 제출 전 동기화
 document.querySelector('form').addEventListener('submit', function(e) {
-    // HTML 모드일 때 TinyMCE와 동기화
+    // HTML 모드일 때 동기화
     if (currentEditorMode === 'html') {
         const htmlContent = document.getElementById('htmlCodeEditor').value;
         document.getElementById('content').value = htmlContent;
-
-        if (tinymceEditor) {
-            tinymceEditor.setContent(htmlContent);
-        }
+        $('#content').summernote('code', htmlContent);
     } else {
-        // 비주얼 모드일 때 TinyMCE 내용 저장
-        if (tinymceEditor) {
-            tinymceEditor.save();
-        }
+        // 비주얼 모드일 때 Summernote 내용 저장
+        const content = $('#content').summernote('code');
+        document.getElementById('content').value = content;
     }
 });
 </script>

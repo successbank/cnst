@@ -266,45 +266,6 @@ function moveUp(id) {
 function moveDown(id) {
     window.location.href = "admin_layer_popup_action.php?action=move&id=" + id + "&direction=down";
 }
-
-function previewPopup(id) {
-    fetch("ajax/get_layer_popup.php?id=" + id)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const popup = data.popup;
-                const modal = document.getElementById("previewModal");
-                const previewContainer = document.getElementById("previewContainer");
-
-                let content = "";
-                if (popup.image_path) {
-                    content += "<div class=\"preview-image\"><img src=\"../uploads/popups/" + popup.image_path + "\" alt=\"\"></div>";
-                }
-                if (popup.content) {
-                    content += "<div class=\"preview-content\">" + popup.content + "</div>";
-                }
-
-                previewContainer.innerHTML = content;
-                previewContainer.style.width = popup.width + "px";
-
-                modal.classList.add("show");
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("미리보기를 불러오는 중 오류가 발생했습니다.");
-        });
-}
-
-function closePreviewModal() {
-    document.getElementById("previewModal").classList.remove("show");
-}
-
-document.addEventListener("click", function(e) {
-    if (e.target.id === "previewModal") {
-        closePreviewModal();
-    }
-});
 ';
 
 require_once 'admin_head.php';
@@ -512,12 +473,321 @@ function getPopupStatus($popup) {
     <?php endif; ?>
 </div>
 
-<!-- 미리보기 모달 -->
+<!-- 미리보기 모달 (실제 팝업 형태) -->
 <div id="previewModal" class="preview-modal">
-    <div class="preview-popup">
-        <button class="preview-close" onclick="closePreviewModal()">&times;</button>
-        <div id="previewContainer"></div>
+    <div class="preview-backdrop">
+        <div class="preview-info-bar">
+            <span><i class="fas fa-desktop"></i> 팝업 미리보기</span>
+            <button class="preview-info-close" onclick="closePreviewModal()"><i class="fas fa-times"></i> 닫기</button>
+        </div>
+        <div class="preview-screen">
+            <div id="previewPopupBox" class="preview-popup-box">
+                <div class="preview-popup-header">
+                    <button class="preview-popup-close-btn">&times;</button>
+                </div>
+                <div id="previewPopupContent" class="preview-popup-content"></div>
+                <div id="previewPopupFooter" class="preview-popup-footer">
+                    <label class="preview-hide-today">
+                        <input type="checkbox" disabled> 오늘 하루 보지 않기
+                    </label>
+                    <button class="preview-close-btn">닫기</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+/* 개선된 미리보기 모달 */
+.preview-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+}
+
+.preview-modal.show {
+    display: block;
+}
+
+.preview-backdrop {
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-info-bar {
+    background: #1A237E;
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.preview-info-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.preview-info-close:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.preview-screen {
+    flex: 1;
+    position: relative;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    overflow: hidden;
+}
+
+.preview-screen::before {
+    content: '메인 페이지 미리보기 영역';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255,255,255,0.3);
+    font-size: 24px;
+    font-weight: 300;
+    pointer-events: none;
+}
+
+.preview-popup-box {
+    position: absolute;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    overflow: hidden;
+    animation: popupSlideIn 0.3s ease;
+}
+
+@keyframes popupSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.preview-popup-header {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 12px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.preview-popup-close-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: #e0e0e0;
+    color: #666;
+    font-size: 18px;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-popup-content {
+    overflow: auto;
+}
+
+.preview-popup-content img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.preview-popup-content .popup-html-content {
+    padding: 20px;
+}
+
+.preview-popup-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f5f5f5;
+    border-top: 1px solid #e0e0e0;
+}
+
+.preview-hide-today {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #666;
+}
+
+.preview-close-btn {
+    padding: 8px 16px;
+    background: #1A237E;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: default;
+}
+
+.preview-popup-footer.no-hide-today {
+    justify-content: flex-end;
+}
+
+/* 팝업 정보 표시 */
+.preview-popup-info {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.preview-popup-info strong {
+    color: #90caf9;
+}
+</style>
+
+<script>
+// 미리보기 함수 개선
+function previewPopup(id) {
+    const modal = document.getElementById('previewModal');
+    const popupBox = document.getElementById('previewPopupBox');
+    const popupContent = document.getElementById('previewPopupContent');
+    const popupFooter = document.getElementById('previewPopupFooter');
+
+    // 로딩 표시
+    popupContent.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;"><i class="fas fa-spinner fa-spin"></i> 로딩 중...</div>';
+    popupBox.style.left = '100px';
+    popupBox.style.top = '100px';
+    popupBox.style.width = '400px';
+    modal.classList.add('show');
+
+    fetch('ajax/get_layer_popup.php?id=' + id)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const popup = data.popup;
+
+                // 팝업 위치 및 크기 설정
+                popupBox.style.left = popup.position_left + 'px';
+                popupBox.style.top = popup.position_top + 'px';
+                popupBox.style.width = popup.width + 'px';
+
+                // 콘텐츠 구성
+                let content = '';
+                if (popup.image_path) {
+                    if (popup.link_url) {
+                        content += '<a href="' + escapeHtml(popup.link_url) + '" target="' + escapeHtml(popup.link_target) + '" style="display:block;">';
+                        content += '<img src="../uploads/popups/' + escapeHtml(popup.image_path) + '" alt="">';
+                        content += '</a>';
+                    } else {
+                        content += '<img src="../uploads/popups/' + escapeHtml(popup.image_path) + '" alt="">';
+                    }
+                }
+                if (popup.content) {
+                    content += '<div class="popup-html-content">' + popup.content + '</div>';
+                }
+
+                if (!content) {
+                    content = '<div style="padding: 40px; text-align: center; color: #999;">콘텐츠가 없습니다.</div>';
+                }
+
+                popupContent.innerHTML = content;
+                popupContent.style.maxHeight = (popup.height - 100) + 'px';
+
+                // 오늘 하루 보지 않기 옵션
+                if (popup.hide_today == 1) {
+                    popupFooter.classList.remove('no-hide-today');
+                    popupFooter.innerHTML = `
+                        <label class="preview-hide-today">
+                            <input type="checkbox" disabled> 오늘 하루 보지 않기
+                        </label>
+                        <button class="preview-close-btn">닫기</button>
+                    `;
+                } else {
+                    popupFooter.classList.add('no-hide-today');
+                    popupFooter.innerHTML = '<button class="preview-close-btn">닫기</button>';
+                }
+
+                // 팝업 정보 표시 추가
+                let existingInfo = document.querySelector('.preview-popup-info');
+                if (existingInfo) existingInfo.remove();
+
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'preview-popup-info';
+                infoDiv.innerHTML = `
+                    <strong>제목:</strong> ${escapeHtml(popup.title)}<br>
+                    <strong>위치:</strong> left: ${popup.position_left}px, top: ${popup.position_top}px<br>
+                    <strong>크기:</strong> ${popup.width} x ${popup.height}px
+                `;
+                document.querySelector('.preview-screen').appendChild(infoDiv);
+
+            } else {
+                popupContent.innerHTML = '<div style="padding: 40px; text-align: center; color: #d32f2f;"><i class="fas fa-exclamation-circle"></i> ' + (data.message || '오류가 발생했습니다.') + '</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            popupContent.innerHTML = '<div style="padding: 40px; text-align: center; color: #d32f2f;"><i class="fas fa-exclamation-circle"></i> 미리보기를 불러오는 중 오류가 발생했습니다.<br><small>' + error.message + '</small></div>';
+        });
+}
+
+function closePreviewModal() {
+    document.getElementById('previewModal').classList.remove('show');
+    // 팝업 정보 제거
+    const infoDiv = document.querySelector('.preview-popup-info');
+    if (infoDiv) infoDiv.remove();
+}
+
+// HTML 이스케이프 함수
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// 모달 외부 클릭 시 닫기
+document.getElementById('previewModal').addEventListener('click', function(e) {
+    if (e.target === this || e.target.classList.contains('preview-backdrop') || e.target.classList.contains('preview-screen')) {
+        closePreviewModal();
+    }
+});
+
+// ESC 키로 닫기
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closePreviewModal();
+    }
+});
+</script>
 
 <?php require_once 'admin_tail.php'; ?>
