@@ -606,19 +606,19 @@ $currentFile = basename($_SERVER['PHP_SELF']);
                     </a>
                     <div class="nav-dropdown-menu">
                         <a href="admin_members.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_members.php' || $currentFile === 'admin_members_detail.php' ? 'active' : ''; ?>">회원 관리</a>
-                        <a href="admin_kakao.php" class="nav-dropdown-item <?php echo strpos($currentFile, 'admin_kakao') === 0 ? 'active' : ''; ?>">카카오톡 설정</a>
                     </div>
                 </div>
                 
                 <!-- 시스템 관리 드롭다운 -->
                 <div class="nav-dropdown" id="systemDropdown">
-                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_statistics.php', 'admin_site.php', 'admin_banners.php', 'admin_product_icons.php', 'admin_product_icon_edit.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('systemDropdown'); return false;">
+                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_statistics.php', 'admin_site.php', 'admin_banners.php', 'admin_product_icons.php', 'admin_product_icon_edit.php', 'admin_layer_popups.php', 'admin_layer_popup_edit.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('systemDropdown'); return false;">
                         시스템 관리
                     </a>
                     <div class="nav-dropdown-menu">
                         <a href="admin_statistics.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_statistics.php' ? 'active' : ''; ?>">접속통계</a>
                         <a href="admin_site.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_site.php' ? 'active' : ''; ?>">사이트 관리</a>
                         <a href="admin_banners.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_banners.php' ? 'active' : ''; ?>">배너 관리</a>
+                        <a href="admin_layer_popups.php" class="nav-dropdown-item <?php echo in_array($currentFile, ['admin_layer_popups.php', 'admin_layer_popup_edit.php']) ? 'active' : ''; ?>">레이어팝업 관리</a>
                         <a href="admin_product_icons.php" class="nav-dropdown-item <?php echo in_array($currentFile, ['admin_product_icons.php', 'admin_product_icon_edit.php']) ? 'active' : ''; ?>">제품 아이콘 관리</a>
                     </div>
                 </div>

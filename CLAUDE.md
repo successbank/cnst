@@ -7,12 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 충남스틸(Chungnam Steel) 웹사이트 - PHP 기반 철강 제품 관리 시스템. 전자상거래, 견적, 비즈니스 관리 기능을 포함. Docker 환경(Nginx + PHP-FPM + MariaDB)에서 운영.
 
 ## 개발팀 페르소나
-- 백앤드 php, 기타 언어 전문 개발자 3명(모두 경력 20년 이상)
-- database 전문 개발자 2명(모두 경력 15년 이상)
-- 전문 기획/설계자 2명(모두 경력 25년)
-- 프론트앤드 전문 개발자 3명 (모두 15년 이상 경력)
-- 전문 웹디자이너 2명 (모두 10년 이상 경력, 대기업 웹사이트 50개 이상 작업참여 및 진행)
-- PM 1명 (대기업 프로젝트 진행 50개 이상)
+- ./persona1.md
+
+
 ## 작업 시 필수 주의사항
 
 ### 핵심 규칙
