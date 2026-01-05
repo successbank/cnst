@@ -2,249 +2,167 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## 프로젝트 개요
 
-This is the Chungnam Steel (충남스틸) website - a PHP-based steel products management system with comprehensive e-commerce, quotation, and business management features. The system runs on Docker with Nginx, PHP-FPM, and MariaDB.
+충남스틸(Chungnam Steel) 웹사이트 - PHP 기반 철강 제품 관리 시스템. 전자상거래, 견적, 비즈니스 관리 기능을 포함. Docker 환경(Nginx + PHP-FPM + MariaDB)에서 운영.
 
-## 🚨 작업 시 필수 주의사항
+## 개발팀 페르소나
+- 백앤드 php, 기타 언어 전문 개발자 3명(모두 경력 20년 이상)
+- database 전문 개발자 2명(모두 경력 15년 이상)
+- 전문 기획/설계자 2명(모두 경력 25년)
+- 프론트앤드 전문 개발자 3명 (모두 15년 이상 경력)
+- 전문 웹디자이너 2명 (모두 10년 이상 경력, 대기업 웹사이트 50개 이상 작업참여 및 진행)
+- PM 1명 (대기업 프로젝트 진행 50개 이상)
+## 작업 시 필수 주의사항
 
-## 판매제품 계산식 개발 주의사항
-- 진행중인 개발 제품군외에는 절대 수정 변경하지 말것
-- 별도의 요청이 있을경우 별도요청 진행
-
-
-## claude code와의 소통언어
-- 한국어
-
-### 항상 지켜야 할 규칙
-1. ** 개발 요청한 제품군만 개발 진행**
-
-
-3. **데이터베이스 작업 시**
+### 핵심 규칙
+1. **개발 요청한 제품군만 개발 진행** - 진행중인 개발 제품군 외에는 절대 수정/변경 금지
+2. **소통 언어**: 한국어
+3. **데이터베이스 작업 시**:
    - WHERE 조건 필수 확인
    - UPDATE/DELETE 전 SELECT로 대상 확인
    - 트랜잭션 사용 권장
-   - DB : project1_db
+4. **테스트**: 수정 후 반드시 실제 페이지 테스트, 에러 로그 확인
 
-4. **테스트**
-   - 수정 후 반드시 실제 페이지 테스트
-   - 관련 없는 제품군 영향 확인
-   - 에러 로그 확인: `docker logs project1_php`
+## 서버 환경
 
-### 반복되는 작업 패턴
-```bash
-# 1. 제품 데이터 확인
-php -r "require_once 'db.php'; \$pdo = getDB(); \$stmt = \$pdo->prepare('SELECT * FROM products WHERE id = ?'); \$stmt->execute([ID]); print_r(\$stmt->fetch());"
+### Docker 컨테이너
+| 컨테이너 | 이미지 | 포트 |
+|---------|--------|------|
+| project1_web | nginx:alpine | 80, 8080, 1112 |
+| project1_php | project5-php | 9000 (내부) |
+| project1_mysql | mariadb:10.11 | 3306 |
+| project1_pgadmin | dpage/pgadmin4 | 8081 |
 
-# 2. 파일 백업
-cp /path/to/file.php /path/to/file.php.bak.$(date +%Y%m%d_%H%M%S)
+### 경로 매핑
+```
+호스트: /home/cnst/www/html/webservice/html/html/
+   ↓
+Nginx:  /usr/share/nginx/html/
+PHP:    /var/www/html/
 ```
 
-## Essential Commands
+## 필수 명령어
 
-### Development & Testing
+### Docker 관리
 ```bash
-# Start all Docker containers
-cd /home/successbank/projects/docker/project1
-docker compose up -d
+# 컨테이너 상태 확인
+sudo docker ps
 
-# Check container status
-docker compose ps
+# 로그 확인
+sudo docker logs project1_php
+sudo docker logs project1_web
 
-# View logs
-docker compose logs -f [service_name]  # php, mysql, web
-
-# Restart services
-docker compose restart
-
-# Run database migrations
-docker exec -it project1_php php /var/www/html/[migration_file.php]
+# 컨테이너 재시작
+cd /home/cnst/www/html/webservice && sudo docker compose restart
 ```
 
-### Database Access
+### 데이터베이스 접근
 ```bash
-# Access MySQL CLI
-docker exec -it project1_mysql mysql -u user -puserpassword project1_db
+# MySQL CLI 접속
+sudo docker exec -it project1_mysql mysql -u root -prootpassword project1_db
 
-# Common database operations
-mysql> SHOW TABLES;
-mysql> DESCRIBE [table_name];
+# 또는 일반 사용자로
+sudo docker exec -it project1_mysql mysql -u user -puserpassword project1_db
 ```
 
-### Testing & Debugging
+### 데이터베이스 백업/복원
 ```bash
-# Check PHP configuration
-docker exec -it project1_php php -i
+# 백업
+sudo docker exec project1_mysql mysqldump -u root -prootpassword project1_db > backup.sql
 
-# Test specific functionality
-curl http://localhost:1112/test_db.php
-
-# Clear PHP session data (if needed)
-docker exec -it project1_php rm -rf /var/lib/php/sessions/*
+# 복원
+sudo docker exec -i project1_mysql mysql -u root -prootpassword project1_db < backup.sql
 ```
 
-### TypeScript/Node.js commands (if using the Node.js parts)
+### 제품 데이터 확인 (Docker 내부)
 ```bash
-npm run dev    # Development server with hot reload
-npm run build  # Build TypeScript to JavaScript
-npm run start  # Run production server
+sudo docker exec -it project1_php php -r "
+require_once '/var/www/html/db.php';
+\$pdo = getDB();
+\$stmt = \$pdo->prepare('SELECT * FROM products WHERE id = ?');
+\$stmt->execute([제품ID]);
+print_r(\$stmt->fetch());
+"
 ```
 
-## Architecture Overview
+## 아키텍처
 
-### Technology Stack
-- **Frontend**: PHP templates, vanilla JavaScript, custom CSS (samsung-style.css)
-- **Backend**: PHP 8.3 with PDO
-- **Database**: MariaDB 10.11
-- **Server**: Nginx with PHP-FPM
-- **Container**: Docker Compose
+### 기술 스택
+- **Frontend**: PHP 템플릿, Vanilla JS, CSS (samsung-style.css)
+- **Backend**: PHP 8.3 + PDO
+- **Database**: MariaDB 10.11 (DB: project1_db)
+- **Server**: Nginx + PHP-FPM
 
-### Directory Structure
+### 디렉토리 구조
 ```
 /html/
-├── index.php              # Homepage
-├── admin/                 # Admin panel (protected)
-│   ├── admin_index.php   # Dashboard
-│   ├── admin_check.php   # Auth middleware
-│   └── ajax/             # AJAX endpoints
-├── includes/             # Shared components
-│   ├── sub_layout.php   # Page layouts
-│   └── settings.php     # Configuration
-├── db.php               # Database connection & utilities
-├── head.php            # Common header
-├── tail.php            # Common footer
-└── uploads/            # User uploaded files
+├── index.php           # 홈페이지
+├── db.php              # DB 연결 (getDB() 함수)
+├── head.php            # 공통 헤더
+├── tail.php            # 공통 푸터
+├── admin/              # 관리자 패널
+│   ├── admin_check.php # 인증 미들웨어
+│   ├── admin_head.php  # 관리자 헤더/메뉴
+│   └── ajax/           # AJAX 엔드포인트
+├── ajax/               # 프론트엔드 AJAX
+├── includes/           # 공통 컴포넌트
+│   └── sub_layout.php  # 서브페이지 레이아웃
+├── css/                # 스타일시트
+├── js/                 # 자바스크립트
+└── uploads/            # 업로드 파일
 ```
 
-### Key Design Patterns
-1. **Template-based views**: PHP files serve as both controller and view
-2. **Include-based composition**: Common elements via head.php/tail.php
-3. **Session-based authentication**: Via member_check.php
-4. **Direct database access**: PDO prepared statements in individual files
-5. **AJAX for dynamic content**: Endpoints in admin/ajax/
+### 주요 테이블
+- `members` - 회원 (bcrypt 비밀번호)
+- `products`, `product_categories` - 제품 카탈로그
+- `product_quotes`, `product_quote_items` - 견적 시스템
+- `board_notice`, `board_news`, `board_consignment` - 게시판
+- `banners` - 홈페이지 배너
+- `unit_weights` - 단중 계산
 
-### Database Schema (Key Tables)
-- `members` - User accounts with bcrypt passwords
-- `products`, `product_categories` - Product catalog
-- `product_quotes`, `product_quote_items` - Quotation system
-- `board_notice`, `board_news` - Content management
-- `unit_weights` - Product weight calculations
-- `rebar_materials` - Steel rebar specifications
-- `banners` - Homepage carousel management
+### 제품 데이터 구조
+`products` 테이블 주요 필드:
+- `available_materials`: JSON 형식 재질 목록 (예: `["SS275","SM490B"]`)
+- `material_price_data`: JSON 형식 재질별 가격
+- `has_calculator`: 계산기 보유 여부 (0/1)
+- `parent_product_id`: 부모 제품 ID (계산기 상속용)
 
-### Authentication & Security
-- Two user types: members and admins
-- Password hashing: bcrypt (see README_password_hashing.md)
-- Session-based auth with `member_check.php` functions
-- Admin area protected by `admin_check.php`
-- XSS prevention via `htmlspecialchars()`
-- SQL injection prevention via PDO prepared statements
+### 인증 시스템
+- 회원: `member_check.php` - 세션 기반 인증
+- 관리자: `admin/admin_check.php` - 관리자 권한 확인
+- 비밀번호: bcrypt 해싱
 
-### Business Logic Components
-
-#### Product Management
-- Category-based organization (H형강, I형강, etc.)
-- Product specifications with variants
-- Unit weight calculations
-- Price range management
-- Stock status tracking
-
-#### Quotation System  
-- Shopping cart functionality (sessionStorage)
-- Quote request forms
-- Admin quote management
-- PDF generation capability
-
-#### Special Features
-- Rebar calculator (`rebar_quote.php`)
-- Consignment board with privacy protection
-- Kakao notification integration
-- Multi-origin product support
-- Member address management
-
-### Common Development Tasks
-
-#### Adding a New Product Category
-1. Insert into `product_categories` table
-2. Add category slug mapping
-3. Update navigation if needed
-
-#### Modifying Admin Menu
-1. Edit `admin/admin_head.php`
-2. Add corresponding admin page
-3. Update `admin_check.php` if needed
-
-#### Creating New Database Tables
-1. Add SQL to `sql/` directory
-2. Create PHP migration script
-3. Run via Docker: `docker exec -it project1_php php migration.php`
-
-#### Adding AJAX Functionality
-1. Create endpoint in `admin/ajax/` or `ajax/`
-2. Return JSON with proper headers
-3. Handle errors appropriately
-
-### Important URLs
-- Main site: http://211.248.112.67:1112/
-- Admin panel: http://211.248.112.67:1112/admin/
-- Webmail: http://211.248.112.67:1112/webmail/
-
-### Notes for Future Development
-- The codebase mixes modern (PDO, AJAX) and traditional PHP patterns
-- No formal MVC framework - logic embedded in view files
-- Admin panel has comprehensive business management features
-- Mobile-responsive design implemented
-- Consider implementing CSRF tokens for form submissions
-- Some TypeScript/Node.js scaffolding exists but main app is PHP
-
-## Recent Work History (2025-09-26)
-
-### 경량H형강 재질 표시 개선 작업
-
-#### 작업 내용
-경량H형강(light-h-beam) 제품의 재질 정보가 제품 상세 페이지에서 올바르게 표시되지 않는 문제를 해결했습니다.
-
-#### 문제점
-1. **하드코딩 문제**: `html/product_detail.php`에 SS275가 기본값으로 하드코딩되어 있었음
-2. **데이터 상속 문제**: 자식 제품이 부모 제품의 재질 정보를 상속받아 실제 재질이 표시되지 않음
-3. **중복 파일 존재**: `product_detail.php`가 루트와 html 디렉토리에 각각 존재
-
-#### 수정 사항
-
-1. **product_detail.php (루트 디렉토리)**:
+### 페이지 구조 패턴
 ```php
-// 경량H형강의 경우 현재 제품의 재질 정보를 우선 사용
-if ($category_code === 'light-h-beam' && !empty($current_product) && !empty($current_product['available_materials'])) {
-    $available_materials = json_decode($current_product['available_materials'], true) ?? [];
-} else {
-    $available_materials = json_decode($product['available_materials'], true) ?? [];
-}
+<?php
+$currentPage = 'about';
+$pageTitle = '회사소개';
+require_once 'includes/sub_layout.php';
+include 'head.php';
+
+startSubPage('회사소개', 'about');
+companySidebar('about');
+?>
+
+<main class="sub-content">
+    <!-- 콘텐츠 -->
+</main>
+
+<?php
+endSubPage();
+include 'tail.php';
+?>
 ```
 
-2. **html/product_detail.php**:
-- SS275 하드코딩 제거
-- 경량H형강 제품의 경우 현재 제품의 재질 정보 우선 사용
+## 주요 URL
 
-#### 데이터베이스 구조
-- `products` 테이블의 주요 필드:
-  - `available_materials`: JSON 형식의 재질 목록 (예: `["SS275","SUS304","SM570","SM520"]`)
-  - `material_price_data`: JSON 형식의 재질별 가격 정보
-  - `has_calculator`: 계산기 보유 여부 (0 또는 1)
-  - `parent_product_id`: 부모 제품 ID (계산기 상속용)
+- 메인 사이트: http://103.124.103.229/
+- 관리자 패널: http://103.124.103.229/admin/
 
-#### 테스트 케이스
-- ID 390 (경량H형강 LHB 300*150*4.5*6.0): SS275, SUS304, SM570, SM520
-- ID 397 (경량H형강 LHB 250*250*6.0*8.0): SS275, SM490B, SM570
+## 파일 수정 시 주의사항
 
-### 파일 위치 정리
-- **제품 상세 페이지 (두 개 존재)**:
-  - `/home/successbank/projects/docker/project1/product_detail.php`
-  - `/home/successbank/projects/docker/project1/html/product_detail.php`
-- **관리자 제품 편집**:
-  - `/home/successbank/projects/docker/project1/html/admin/admin_products_edit.php`
-
-### 주의사항
-- 경량H형강 카테고리 코드: `light-h-beam`
-- 일반 H형강 카테고리 코드: `light-h-beam`
-- 제품이 계산기를 가지지 않으면 부모 제품의 데이터를 참조하는 구조
-- 재질 정보는 JSON 배열로 저장되며, 첫 번째 재질이 기본값으로 표시됨
+1. **권한 문제**: 파일 수정 전 `sudo chmod 666 파일경로` 필요할 수 있음
+2. **product_detail.php**: 루트와 html 디렉토리에 각각 존재 - 수정 시 둘 다 확인
+3. **경량H형강 처리**: 카테고리 코드 `light-h-beam`, 자식 제품은 부모 재질 대신 자체 재질 사용
+4. **JSON 필드**: `available_materials`, `material_price_data` 등은 JSON 형식으로 저장

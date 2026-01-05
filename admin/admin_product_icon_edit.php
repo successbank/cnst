@@ -48,6 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if (isset($_FILES['icon_image']) && $_FILES['icon_image']['error'] === UPLOAD_ERR_OK) {
                 $uploadDir = '../uploads/product_icons/';
+
+                // 업로드 디렉토리가 없으면 생성
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                    chmod($uploadDir, 0777);
+                }
+
                 $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml'];
                 $maxSize = 2 * 1024 * 1024; // 2MB
                 
@@ -67,16 +74,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $filename = uniqid() . '.' . $extension;
                 $uploadPath = $uploadDir . $filename;
                 
-                // 기존 이미지 삭제
+                // 기존 이미지 삭제 (권한이 있는 경우에만)
                 if ($icon_image_path && file_exists('../' . $icon_image_path)) {
-                    unlink('../' . $icon_image_path);
+                    @unlink('../' . $icon_image_path); // @ 연산자로 권한 오류 무시
                 }
                 
                 // 새 이미지 업로드
                 if (move_uploaded_file($_FILES['icon_image']['tmp_name'], $uploadPath)) {
+                    // 업로드된 파일에 권한 설정
+                    @chmod($uploadPath, 0666);
                     $icon_image_path = 'uploads/product_icons/' . $filename;
                 } else {
-                    throw new Exception('파일 업로드에 실패했습니다.');
+                    throw new Exception('파일 업로드에 실패했습니다. 디렉토리 권한을 확인해주세요.');
                 }
             }
             
@@ -202,9 +211,10 @@ require_once 'admin_head.php';
 }
 
 .current-icon-preview img {
-    width: 50px;
-    height: 50px;
-    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .checkbox-group {

@@ -172,121 +172,231 @@
 .toc-items a {
     color: #333;
     text-decoration: none;
-    display: block;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.toc-items a:hover {
+    background-color: #e3f2fd;
 }
 
 .toc-items a:active {
     color: #2196F3;
+    background-color: #bbdefb;
+}
+
+.toc-page-num {
+    color: #999;
+    font-size: 12px;
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
+/* 검색창 스타일 (향후 확장용) */
+.toc-search {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.toc-search input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+}
+
+.toc-search input:focus {
+    border-color: #2196F3;
 }
 </style>
 
 <!-- 목차 JavaScript -->
 <script>
-// jQuery를 사용한 구현 (이미 jQuery가 로드되어 있음)
+// 충남스틸 제품 목차 데이터 (전자책 6페이지 목차 기준)
+var tocData = [
+    {
+        category: "철근류",
+        icon: "🔗",
+        items: [
+            { title: "철근 콘크리트용 봉강", page: 7 },
+            { title: "나사형 철근", page: 10 },
+            { title: "철근", page: 11 }
+        ]
+    },
+    {
+        category: "형강류",
+        icon: "🔩",
+        items: [
+            { title: "H형강", page: 19 },
+            { title: "경량H형강", page: 21 },
+            { title: "T형강", page: 22 },
+            { title: "등변 ㄱ형강", page: 23 },
+            { title: "부등변 ㄱ형강", page: 24 },
+            { title: "C형강, 강널말뚝", page: 25 },
+            { title: "레일", page: 26 },
+            { title: "원형강", page: 27 },
+            { title: "사각강, 육각강, 팔각강", page: 28 },
+            { title: "평강", page: 29 },
+            { title: "와셔", page: 30 },
+            { title: "일반 데크플레이트", page: 32 },
+            { title: "철근일체형 데크플레이트", page: 33 },
+            { title: "내화구조형 데크플레이트", page: 38 },
+            { title: "주차데크", page: 41 }
+        ]
+    },
+    {
+        category: "강관류",
+        icon: "⭕",
+        items: [
+            { title: "일반구조용 탄소강관", page: 43 },
+            { title: "일반배관용 탄소강관", page: 44 },
+            { title: "압력/고온/저온배관용", page: 45 },
+            { title: "ASTMA53 배관용", page: 46 },
+            { title: "일반구조용 각형강관", page: 47 },
+            { title: "아연도 강관, 단관파이프", page: 48 },
+            { title: "강관파일", page: 49 }
+        ]
+    },
+    {
+        category: "철판류",
+        icon: "📋",
+        items: [
+            { title: "열간압연강판", page: 51 },
+            { title: "무늬강판, 망철판", page: 53 },
+            { title: "냉간압연강판, 아연도금강판", page: 54 },
+            { title: "복합판", page: 55 },
+            { title: "복공판", page: 56 }
+        ]
+    },
+    {
+        category: "스테인리스",
+        icon: "✨",
+        items: [
+            { title: "스테인리스 강판", page: 57 },
+            { title: "스테인리스 원형강/사각강/육각강", page: 58 },
+            { title: "스테인리스 배관/구조용 강관", page: 59 },
+            { title: "스테인리스 ㄱ형강", page: 60 },
+            { title: "스테인리스 C형강", page: 61 },
+            { title: "스테인리스 평철", page: 62 }
+        ]
+    },
+    {
+        category: "기타",
+        icon: "📦",
+        items: [
+            { title: "치수허용차", page: 63 },
+            { title: "규격 및 약호", page: 67 },
+            { title: "각종 규격 대비표", page: 69 },
+            { title: "각판 규격 약호", page: 71 },
+            { title: "중량표, C형강", page: 73 },
+            { title: "업체별 빔드수량", page: 75 }
+        ]
+    },
+    {
+        category: "토목자재",
+        icon: "🏗️",
+        items: [
+            { title: "형강류, 마구리판, 연결판", page: 77 }
+        ]
+    },
+    {
+        category: "철스크랩",
+        icon: "♻️",
+        items: [
+            { title: "각종 압연재, 고철류", page: 79 }
+        ]
+    },
+    {
+        category: "철근 표시법",
+        icon: "📐",
+        items: [
+            { title: "KS D 3504 철근 강자 표시", page: 81 }
+        ]
+    }
+];
+
+// jQuery를 사용한 구현
 $(document).ready(function() {
-    // 목차 데이터 로드
-    loadTableOfContents();
+    // 목차 렌더링
+    renderTableOfContents();
 
     // 플로팅 버튼 클릭
     $('#floatingTocButton').on('click', function() {
-        $('#tocModal').show();
+        $('#tocModal').fadeIn(200);
     });
 
     // 닫기 버튼 클릭
     $('.toc-close').on('click', function() {
-        $('#tocModal').hide();
+        $('#tocModal').fadeOut(200);
     });
 
     // 모달 외부 클릭
     $('#tocModal').on('click', function(event) {
         if (event.target === this) {
-            $(this).hide();
+            $(this).fadeOut(200);
+        }
+    });
+
+    // ESC 키로 모달 닫기
+    $(document).on('keydown', function(e) {
+        if (e.keyCode === 27) {
+            $('#tocModal').fadeOut(200);
         }
     });
 });
 
-// 목차 데이터를 API에서 가져와서 렌더링
-function loadTableOfContents() {
-    $.ajax({
-        url: '/api/ebook_toc.php',
-        method: 'GET',
-        dataType: 'json',
-        success: function(response) {
-            if (response.success && response.data) {
-                renderTableOfContents(response.data);
-            } else {
-                showTocError('목차 데이터를 불러올 수 없습니다.');
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error('목차 로드 오류:', error);
-            showTocError('목차를 불러오는 중 오류가 발생했습니다.');
-        }
-    });
-}
-
 // 목차 HTML 렌더링
-function renderTableOfContents(categories) {
+function renderTableOfContents() {
     var html = '';
 
-    categories.forEach(function(category) {
+    for (var i = 0; i < tocData.length; i++) {
+        var category = tocData[i];
         html += '<div class="toc-section">';
-        html += '<h3 class="toc-category">' +
-                escapeHtml(category.category_icon) + ' ' +
-                escapeHtml(category.category) + '</h3>';
+        html += '<h3 class="toc-category">' + category.icon + ' ' + category.category + '</h3>';
         html += '<ul class="toc-items">';
 
-        category.items.forEach(function(item) {
+        for (var j = 0; j < category.items.length; j++) {
+            var item = category.items[j];
             html += '<li>';
-            html += '<a href="#p=' + item.page_number + '" data-page="' + item.page_number + '">';
-            html += escapeHtml(item.title);
+            html += '<a href="javascript:void(0);" onclick="goToTocPage(' + item.page + ')">';
+            html += item.title;
+            html += '<span class="toc-page-num">p.' + item.page + '</span>';
             html += '</a>';
             html += '</li>';
-        });
+        }
 
         html += '</ul>';
         html += '</div>';
-    });
-
-    $('#tocBody').html(html);
-
-    // 목차 항목 클릭 이벤트 바인딩
-    $('.toc-items a').on('click', function(e) {
-        e.preventDefault();
-        var page = $(this).attr('data-page');
-
-        // 현재 URL 변경
-        window.location.hash = 'p=' + page;
-
-        // 모달 닫기
-        $('#tocModal').hide();
-    });
-}
-
-// 오류 메시지 표시
-function showTocError(message) {
-    var html = '<div style="text-align: center; padding: 40px; color: #f44336;">';
-    html += '<div style="font-size: 32px; margin-bottom: 10px;">⚠️</div>';
-    html += '<div>' + escapeHtml(message) + '</div>';
-    html += '<div style="margin-top: 15px; font-size: 12px; color: #999;">';
-    html += '관리자에게 문의하세요.';
-    html += '</div>';
-    html += '</div>';
+    }
 
     $('#tocBody').html(html);
 }
 
-// XSS 방지를 위한 HTML 이스케이프
-function escapeHtml(text) {
-    var map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+// 목차에서 페이지로 이동
+function goToTocPage(pageNum) {
+    // 모달 닫기
+    $('#tocModal').fadeOut(200);
+
+    // 약간의 딜레이 후 페이지 이동 (애니메이션 완료 후)
+    setTimeout(function() {
+        // gotoPageFun 함수가 존재하는지 확인
+        if (typeof gotoPageFun === 'function') {
+            gotoPageFun(pageNum);
+        } else if (typeof flipBook !== 'undefined' && flipBook.gotoPage) {
+            flipBook.gotoPage(pageNum);
+        } else {
+            // 대체: URL 해시 변경 후 페이지 리로드
+            window.location.hash = 'p=' + pageNum;
+            window.location.reload();
+        }
+    }, 250);
 }
 </script>
 

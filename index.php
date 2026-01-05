@@ -351,7 +351,7 @@ $defaultIcons = [
                    class="product-nav-item">
                     <div class="product-nav-icon">
                         <?php if ($icon['icon_image']): ?>
-                            <img src="<?php echo htmlspecialchars($icon['icon_image']); ?>" alt="" style="width: 40px; height: 40px; object-fit: contain;">
+                            <img src="<?php echo htmlspecialchars($icon['icon_image']); ?>" alt="">
                         <?php elseif (isset($defaultIcons[$icon['category_code']])): ?>
                             <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
                                 <?php echo $defaultIcons[$icon['category_code']]; ?>
@@ -388,7 +388,7 @@ $defaultIcons = [
                        class="product-nav-item">
                         <div class="product-nav-icon">
                             <?php if ($icon['icon_image']): ?>
-                                <img src="<?php echo htmlspecialchars($icon['icon_image']); ?>" alt="" style="width: 40px; height: 40px; object-fit: contain;">
+                                <img src="<?php echo htmlspecialchars($icon['icon_image']); ?>" alt="">
                             <?php elseif (isset($defaultIcons[$icon['category_code']])): ?>
                                 <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
                                     <?php echo $defaultIcons[$icon['category_code']]; ?>
@@ -400,19 +400,19 @@ $defaultIcons = [
                         <span><?php echo htmlspecialchars($icon['icon_name']); ?></span>
                     </a>
                     <?php endforeach; ?>
-                    
-                    <?php 
+
+                    <?php
                     // 추가 아이콘이 있으면 표시 (16개 이상)
                     if (count($icons) > 16):
                         $additionalIcons = array_slice($icons, 16);
-                        foreach ($additionalIcons as $icon): 
+                        foreach ($additionalIcons as $icon):
                     ?>
-                    <a href="<?php echo htmlspecialchars($icon['icon_url'] ?? '#'); ?>" 
-                       target="<?php echo htmlspecialchars($icon['url_target'] ?? '_self'); ?>" 
+                    <a href="<?php echo htmlspecialchars($icon['icon_url'] ?? '#'); ?>"
+                       target="<?php echo htmlspecialchars($icon['url_target'] ?? '_self'); ?>"
                        class="product-nav-item">
                         <div class="product-nav-icon">
                             <?php if ($icon['icon_image']): ?>
-                                <img src="<?php echo htmlspecialchars($icon['icon_image']); ?>" alt="" style="width: 40px; height: 40px; object-fit: contain;">
+                                <img src="<?php echo htmlspecialchars($icon['icon_image']); ?>" alt="">
                             <?php elseif (isset($defaultIcons[$icon['category_code']])): ?>
                                 <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
                                     <?php echo $defaultIcons[$icon['category_code']]; ?>
@@ -1205,6 +1205,14 @@ window.addEventListener('resize', () => {
     justify-content: center;
     margin-bottom: 8px;
     transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.product-nav-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .product-nav-item:hover .product-nav-icon {
