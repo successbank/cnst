@@ -248,7 +248,7 @@ include 'head.php';
                         // 위험한 태그는 제거하고 안전한 HTML만 허용
                         $allowed_tags = '<p><br><strong><em><u><img><a><ul><ol><li><blockquote><h3><h4><h5><h6>';
                         $content = strip_tags($post['content'], $allowed_tags);
-                        echo $content;
+                        echo nl2br($content);
                     } else {
                         // 다른 게시판은 HTML 이스케이프
                         echo nl2br(escape($post['content']));
@@ -489,6 +489,28 @@ include 'head.php';
     line-height: 1.8;
     font-size: 16px;
     color: #333;
+    overflow: hidden; /* float 이미지 포함을 위한 clearfix */
+}
+
+/* 본문 내 이미지 스타일 */
+.post-content img {
+    max-width: 100%;
+    height: auto !important;
+    border-radius: 8px;
+    margin: 8px 0;
+}
+
+/* float 이미지 정렬 */
+.post-content img.note-float-left,
+.post-content img[style*="float: left"] {
+    margin-right: 20px;
+    margin-bottom: 10px;
+}
+
+.post-content img.note-float-right,
+.post-content img[style*="float: right"] {
+    margin-left: 20px;
+    margin-bottom: 10px;
 }
 
 /* Attachment */

@@ -37,7 +37,7 @@ function getDB() {
         
         // 통신 인코딩 설정
         $pdo->exec("SET NAMES utf8mb4");
-        
+
         return $pdo;
     } catch (PDOException $e) {
         // 데이터베이스가 없는 경우 생성 시도

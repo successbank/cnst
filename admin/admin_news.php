@@ -451,33 +451,7 @@ if($action === 'list') {
                     
                     <div class="form-group">
                         <label for="content">내용</label>
-                        <div class="editor-container">
-                            <div class="editor-toolbar">
-                                <button type="button" onclick="insertImageTag()" class="toolbar-btn" title="이미지 태그 삽입">
-                                    <span>🖼️</span> 이미지 삽입
-                                </button>
-                            </div>
-                            <textarea id="content" name="content" required><?php echo $news ? htmlspecialchars($news['content']) : ''; ?></textarea>
-                            <div id="dropZone" class="drop-zone">
-                                <p>이미지를 여기에 드래그 앤 드롭하거나 클릭하여 업로드</p>
-                                <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
-                            </div>
-                            <div id="uploadedImages" class="uploaded-images"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="source">출처</label>
-                        <input type="text" id="source" name="source" 
-                               value="<?php echo $news ? htmlspecialchars($news['source']) : ''; ?>" 
-                               placeholder="예: 철강신문">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="source_url">출처 URL</label>
-                        <input type="url" id="source_url" name="source_url" 
-                               value="<?php echo $news && isset($news['source_url']) ? htmlspecialchars($news['source_url']) : ''; ?>" 
-                               placeholder="https://example.com">
+                        <textarea id="content" name="content"><?php echo $news ? htmlspecialchars($news['content']) : ''; ?></textarea>
                     </div>
                     
                     <button type="submit" class="submit-btn">
@@ -508,112 +482,61 @@ if($action === 'list') {
 </div>
 
 <style>
-/* 에디터 스타일 */
-.editor-container {
-    border: 2px solid #E5E5E7;
-    border-radius: 8px;
+/* Summernote 커스텀 스타일 */
+.note-editor.note-frame {
+    border: 2px solid #E5E5E7 !important;
+    border-radius: 8px !important;
     overflow: hidden;
 }
 
-.editor-toolbar {
-    background: #F8F9FA;
-    padding: 8px;
-    border-bottom: 1px solid #E5E5E7;
+.note-editor .note-toolbar {
+    background: #F8F9FA !important;
+    border-bottom: 1px solid #E5E5E7 !important;
+    padding: 8px !important;
 }
 
-.toolbar-btn {
-    padding: 6px 12px;
+.note-editor .note-editing-area {
     background: white;
-    border: 1px solid #D0D0D2;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.3s ease;
 }
 
-.toolbar-btn:hover {
-    background: #E8EAF6;
-    border-color: #1A237E;
+.note-editor .note-editing-area .note-editable {
+    padding: 16px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #333;
+    min-height: 350px;
 }
 
-#content {
-    border: none;
-    min-height: 300px;
-    padding: 16px;
-    font-family: inherit;
+.note-editor .note-statusbar {
+    background: #F8F9FA !important;
+    border-top: 1px solid #E5E5E7 !important;
 }
 
-.drop-zone {
-    border: 2px dashed #D0D0D2;
+.note-btn {
+    border-radius: 4px !important;
+}
+
+.note-btn:hover {
+    background: #E8EAF6 !important;
+}
+
+/* 코드뷰 스타일 */
+.note-editor .note-codable {
+    background: #1e1e1e !important;
+    color: #d4d4d4 !important;
+    font-family: "Consolas", "Monaco", "Courier New", monospace !important;
+    font-size: 14px !important;
+    padding: 16px !important;
+}
+
+/* 에디터 내 이미지 스타일 */
+.note-editable img {
+    max-width: 100%;
+    height: auto;
+    margin: 16px 0;
     border-radius: 8px;
-    padding: 40px;
-    text-align: center;
-    margin: 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: #F8F9FA;
-}
-
-.drop-zone:hover {
-    border-color: #1A237E;
-    background: #E8EAF6;
-}
-
-.drop-zone.dragover {
-    border-color: #1A237E;
-    background: #E8EAF6;
-    transform: scale(1.02);
-}
-
-.drop-zone p {
-    margin: 0;
-    color: #666;
-    font-size: 14px;
-}
-
-.uploaded-images {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 16px;
-    padding: 16px;
-}
-
-.uploaded-image {
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.uploaded-image img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-}
-
-.uploaded-image .image-url {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0,0,0,0.8);
-    color: white;
-    padding: 4px 8px;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.uploaded-image .remove-btn {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    background: rgba(244, 67, 54, 0.9);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    cursor: pointer;
-    font-size: 12px;
 }
 
 /* 모달 스타일 */
@@ -713,6 +636,12 @@ if($action === 'list') {
 }
 </style>
 
+<!-- jQuery + Summernote Lite CDN -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/lang/summernote-ko-KR.min.js"></script>
+
 <script>
 function viewNews(id) {
     // AJAX로 뉴스 상세 정보 가져오기
@@ -766,118 +695,68 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// 이미지 업로드 기능
-const dropZone = document.getElementById('dropZone');
-const imageInput = document.getElementById('imageInput');
-const uploadedImages = document.getElementById('uploadedImages');
-
-if (dropZone && imageInput) {
-    // 드롭존 클릭시 파일 선택
-    dropZone.addEventListener('click', () => {
-        imageInput.click();
-    });
-
-    // 파일 선택시
-    imageInput.addEventListener('change', handleFiles);
-
-    // 드래그 앤 드롭 이벤트
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('dragover');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('dragover');
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('dragover');
-        handleFiles({ target: { files: e.dataTransfer.files } });
-    });
-}
-
-function handleFiles(e) {
-    const files = Array.from(e.target.files);
-    files.forEach(uploadFile);
-}
-
-function uploadFile(file) {
-    if (!file.type.startsWith('image/')) {
-        alert('이미지 파일만 업로드 가능합니다.');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('image', file);
-
-    fetch('ajax/upload_image.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            displayUploadedImage(data.url, data.filename);
-        } else {
-            alert(data.message || '업로드 실패');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('업로드 중 오류가 발생했습니다.');
-    });
-}
-
-function displayUploadedImage(url, filename) {
-    const imageDiv = document.createElement('div');
-    imageDiv.className = 'uploaded-image';
-    imageDiv.innerHTML = `
-        <img src="${url}" alt="${filename}">
-        <div class="image-url" onclick="copyToClipboard('${url}')" title="클릭하여 URL 복사">${filename}</div>
-        <button class="remove-btn" onclick="removeImage(this, '${filename}')">삭제</button>
-    `;
-    uploadedImages.appendChild(imageDiv);
-}
-
-function removeImage(btn, filename) {
-    if (confirm('이미지를 삭제하시겠습니까?')) {
-        fetch('ajax/delete_image.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ filename: filename })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                btn.parentElement.remove();
+// Summernote 에디터 초기화
+$(document).ready(function() {
+    // content textarea가 있을 때만 Summernote 초기화
+    if ($('#content').length > 0) {
+        $('#content').summernote({
+            lang: 'ko-KR',
+            height: 400,
+            placeholder: '뉴스 내용을 입력하세요...',
+            tabsize: 2,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                ['fontname', ['fontname']],
+                ['fontsize', ['fontsize']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['table', ['table']],
+                ['insert', ['link', 'picture', 'video', 'hr']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+            ],
+            fontNames: ['맑은 고딕', '굴림', '돋움', '바탕', 'Arial', 'Arial Black', 'Comic Sans MS', 'Courier New', 'Helvetica', 'Impact', 'Tahoma', 'Times New Roman', 'Verdana'],
+            fontNamesIgnoreCheck: ['맑은 고딕', '굴림', '돋움', '바탕'],
+            callbacks: {
+                onImageUpload: function(files) {
+                    // 이미지 업로드 처리
+                    for (let i = 0; i < files.length; i++) {
+                        uploadImage(files[i], this);
+                    }
+                }
             }
         });
     }
-}
+});
 
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        alert('URL이 클립보드에 복사되었습니다.');
+// 이미지 업로드 함수 (Summernote 콜백용)
+function uploadImage(file, editor) {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    $.ajax({
+        url: 'ajax/upload_image.php',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success) {
+                // 에디터에 이미지 삽입
+                const imgNode = $('<img>').attr('src', response.url).css({
+                    'max-width': '100%',
+                    'height': 'auto'
+                });
+                $(editor).summernote('insertNode', imgNode[0]);
+            } else {
+                alert(response.message || '이미지 업로드 실패');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Upload error:', error);
+            alert('이미지 업로드 중 오류가 발생했습니다.');
+        }
     });
-}
-
-function insertImageTag() {
-    const url = prompt('이미지 URL을 입력하세요:');
-    if (url) {
-        const textarea = document.getElementById('content');
-        const imageTag = `\n<img src="${url}" alt="뉴스 이미지" style="max-width: 100%; height: auto;">\n`;
-        
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const text = textarea.value;
-        
-        textarea.value = text.substring(0, start) + imageTag + text.substring(end);
-        textarea.selectionStart = textarea.selectionEnd = start + imageTag.length;
-        textarea.focus();
-    }
 }
 </script>
 

@@ -306,6 +306,108 @@ textarea.form-control {
     border-bottom: 2px solid #e3f2fd;
 }
 
+/* 템플릿 선택 섹션 */
+.template-section {
+    margin-bottom: 32px;
+}
+
+.template-description {
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.template-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 1200px) {
+    .template-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .template-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .template-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.template-card {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.template-card:hover {
+    border-color: #1A237E;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(26, 35, 126, 0.15);
+}
+
+.template-card.selected {
+    border-color: #1A237E;
+    box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.2);
+}
+
+.template-preview {
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.template-preview-content {
+    text-align: center;
+    color: white;
+}
+
+.template-badge {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    background: rgba(255,255,255,0.25);
+    padding: 4px 10px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+}
+
+.template-title-preview {
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.template-info {
+    padding: 12px;
+    text-align: center;
+}
+
+.template-info strong {
+    display: block;
+    font-size: 13px;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.template-info span {
+    font-size: 11px;
+    color: #888;
+}
+
 ';
 
 // 추가 스크립트
@@ -355,6 +457,155 @@ require_once 'admin_head.php';
                    value="<?php echo $isEdit ? htmlspecialchars($popup['title']) : ''; ?>" required>
             <div class="form-help">관리 목적으로 사용되는 제목입니다. 방문자에게는 표시되지 않습니다.</div>
         </div>
+
+        <!-- 템플릿 선택 (신규 등록 시에만 표시) -->
+        <?php if (!$isEdit): ?>
+        <h3 class="section-title"><i class="fas fa-palette"></i> 템플릿 선택</h3>
+        <div class="template-section">
+            <p class="template-description">원하는 템플릿을 선택하면 자동으로 내용이 채워집니다. 선택 후 수정할 수 있습니다.</p>
+            <div class="template-grid">
+                <!-- 템플릿 1: 이벤트 프로모션 -->
+                <div class="template-card" onclick="applyTemplate(1)">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="template-preview-content">
+                            <span class="template-badge">EVENT</span>
+                            <span class="template-title-preview">이벤트</span>
+                        </div>
+                    </div>
+                    <div class="template-info">
+                        <strong>이벤트 프로모션</strong>
+                        <span>특별 이벤트, 프로모션 안내</span>
+                    </div>
+                </div>
+
+                <!-- 템플릿 2: 할인 세일 -->
+                <div class="template-card" onclick="applyTemplate(2)">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);">
+                        <div class="template-preview-content">
+                            <span class="template-badge">SALE</span>
+                            <span class="template-title-preview">할인</span>
+                        </div>
+                    </div>
+                    <div class="template-info">
+                        <strong>할인 세일</strong>
+                        <span>할인, 특가 세일 안내</span>
+                    </div>
+                </div>
+
+                <!-- 템플릿 3: 신제품 출시 -->
+                <div class="template-card" onclick="applyTemplate(3)">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                        <div class="template-preview-content">
+                            <span class="template-badge">NEW</span>
+                            <span class="template-title-preview">신제품</span>
+                        </div>
+                    </div>
+                    <div class="template-info">
+                        <strong>신제품 출시</strong>
+                        <span>새로운 제품 출시 안내</span>
+                    </div>
+                </div>
+
+                <!-- 템플릿 4: 공지사항 -->
+                <div class="template-card" onclick="applyTemplate(4)">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #1A237E 0%, #3949AB 100%);">
+                        <div class="template-preview-content">
+                            <span class="template-badge">NOTICE</span>
+                            <span class="template-title-preview">공지</span>
+                        </div>
+                    </div>
+                    <div class="template-info">
+                        <strong>공지사항</strong>
+                        <span>중요 공지, 안내사항</span>
+                    </div>
+                </div>
+
+                <!-- 템플릿 5: 휴무 안내 -->
+                <div class="template-card" onclick="applyTemplate(5)">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                        <div class="template-preview-content">
+                            <span class="template-badge">CLOSED</span>
+                            <span class="template-title-preview">휴무</span>
+                        </div>
+                    </div>
+                    <div class="template-info">
+                        <strong>휴무 안내</strong>
+                        <span>휴일, 연휴 휴무 안내</span>
+                    </div>
+                </div>
+
+                <!-- 템플릿 6: 회원 혜택 -->
+                <div class="template-card" onclick="applyTemplate(6)">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <div class="template-preview-content">
+                            <span class="template-badge">VIP</span>
+                            <span class="template-title-preview">혜택</span>
+                        </div>
+                    </div>
+                    <div class="template-info">
+                        <strong>회원 혜택</strong>
+                        <span>회원 전용 혜택, 적립금</span>
+                    </div>
+                </div>
+
+                <!-- 템플릿 7: 무료 배송 -->
+                <div class="template-card" onclick="applyTemplate(7)">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <div class="template-preview-content">
+                            <span class="template-badge">FREE</span>
+                            <span class="template-title-preview">배송</span>
+                        </div>
+                    </div>
+                    <div class="template-info">
+                        <strong>무료 배송</strong>
+                        <span>배송비 무료, 빠른 배송</span>
+                    </div>
+                </div>
+
+                <!-- 템플릿 8: 고객 감사 -->
+                <div class="template-card" onclick="applyTemplate(8)">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                        <div class="template-preview-content">
+                            <span class="template-badge">THANKS</span>
+                            <span class="template-title-preview">감사</span>
+                        </div>
+                    </div>
+                    <div class="template-info">
+                        <strong>고객 감사</strong>
+                        <span>감사 인사, 사은 행사</span>
+                    </div>
+                </div>
+
+                <!-- 템플릿 9: 시즌 인사 -->
+                <div class="template-card" onclick="applyTemplate(9)">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                        <div class="template-preview-content">
+                            <span class="template-badge">SEASON</span>
+                            <span class="template-title-preview">인사</span>
+                        </div>
+                    </div>
+                    <div class="template-info">
+                        <strong>시즌 인사</strong>
+                        <span>명절, 새해 인사말</span>
+                    </div>
+                </div>
+
+                <!-- 템플릿 10: 문의 안내 -->
+                <div class="template-card" onclick="applyTemplate(10)">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%);">
+                        <div class="template-preview-content">
+                            <span class="template-badge">CONTACT</span>
+                            <span class="template-title-preview">문의</span>
+                        </div>
+                    </div>
+                    <div class="template-info">
+                        <strong>문의 안내</strong>
+                        <span>상담, 문의 방법 안내</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <!-- 팝업 내용 -->
         <h3 class="section-title"><i class="fas fa-image"></i> 팝업 내용</h3>
