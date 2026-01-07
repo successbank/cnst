@@ -377,7 +377,7 @@ companySidebar('location');
             </div>
             <div class="info-item">
                 <h4>대표전화</h4>
-                <p>032-564-0090</p>
+                <p>032-564-1616</p>
             </div>
             <div class="info-item">
                 <h4>이메일</h4>
