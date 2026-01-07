@@ -1701,6 +1701,7 @@ window.addEventListener('resize', () => {
     line-height: 1.8;
     color: #333;
     font-size: 16px;
+    text-align: left;
 }
 
 .notice-modal-content-text img {

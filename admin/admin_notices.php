@@ -180,100 +180,61 @@ $additionalStyles = '
     transform: translateY(-1px);
 }
 
-/* 이미지 드래그앤드롭 스타일 */
-.image-drop-zone {
-    border: 2px dashed #E5E5E7;
-    border-radius: 8px;
-    padding: 40px;
-    text-align: center;
-    margin-bottom: 20px;
-    background: #F8F9FA;
-    transition: all 0.3s ease;
-    cursor: pointer;
+/* Summernote 커스텀 스타일 */
+.note-editor.note-frame {
+    border: 2px solid #E5E5E7 !important;
+    border-radius: 8px !important;
+    overflow: hidden;
 }
 
-.image-drop-zone.dragging {
-    border-color: #1A237E;
-    background: #E8EAF6;
+.note-editor .note-toolbar {
+    background: #F8F9FA !important;
+    border-bottom: 1px solid #E5E5E7 !important;
+    padding: 8px !important;
 }
 
-.image-drop-zone .drop-text {
-    color: #666;
+.note-editor .note-editing-area {
+    background: white;
+}
+
+.note-editor .note-editing-area .note-editable {
+    padding: 16px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-size: 16px;
-    margin-bottom: 10px;
+    line-height: 1.8;
+    color: #333;
+    min-height: 350px;
 }
 
-.image-drop-zone .drop-subtext {
-    color: #999;
-    font-size: 14px;
+.note-editor .note-statusbar {
+    background: #F8F9FA !important;
+    border-top: 1px solid #E5E5E7 !important;
 }
 
-.image-preview-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 16px;
-    margin-top: 20px;
+.note-btn {
+    border-radius: 4px !important;
 }
 
-.image-preview {
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+.note-btn:hover {
+    background: #E8EAF6 !important;
 }
 
-.image-preview img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-}
-
-.image-preview .remove-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.3s ease;
-}
-
-.image-preview .remove-btn:hover {
-    background: #FF5252;
-}
-
-.upload-progress {
-    margin-top: 10px;
-    display: none;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 4px;
-    background: #E5E5E7;
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: #1A237E;
-    transition: width 0.3s ease;
+/* 코드뷰 스타일 */
+.note-editor .note-codable {
+    background: #1e1e1e !important;
+    color: #d4d4d4 !important;
+    font-family: "Consolas", "Monaco", "Courier New", monospace !important;
+    font-size: 14px !important;
+    padding: 16px !important;
 }
 
 /* 에디터 내 이미지 스타일 */
-.content-editor img {
+.note-editable img {
     max-width: 100%;
     height: auto;
-    border-radius: 8px;
     margin: 16px 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 /* 내용 보기 시 이미지 스타일 */
@@ -524,38 +485,23 @@ if($action === 'list') {
             </div>
             
             <div class="content-box">
-                <form method="POST" action="">
+                <form method="POST" action="" enctype="multipart/form-data">
                     <?php if($action === 'edit' && $notice): ?>
                         <input type="hidden" name="id" value="<?php echo $notice['id']; ?>">
                     <?php endif; ?>
-                    
+
                     <div class="form-group">
                         <label for="title">제목</label>
-                        <input type="text" id="title" name="title" 
-                               value="<?php echo $notice ? htmlspecialchars($notice['title']) : ''; ?>" 
+                        <input type="text" id="title" name="title"
+                               value="<?php echo $notice ? htmlspecialchars($notice['title']) : ''; ?>"
                                required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="content">내용</label>
-                        <textarea id="content" name="content" class="content-editor" required><?php echo $notice ? $notice['content'] : ''; ?></textarea>
+                        <textarea id="content" name="content"><?php echo $notice ? htmlspecialchars($notice['content']) : ''; ?></textarea>
                     </div>
-                    
-                    <div class="form-group">
-                        <label>이미지 업로드</label>
-                        <div class="image-drop-zone" id="dropZone">
-                            <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
-                            <div class="drop-text">이미지를 드래그하여 놓거나 클릭하여 선택하세요</div>
-                            <div class="drop-subtext">JPG, PNG, GIF 형식 지원 (최대 5MB)</div>
-                        </div>
-                        <div class="upload-progress" id="uploadProgress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
-                            </div>
-                        </div>
-                        <div class="image-preview-container" id="imagePreviewContainer"></div>
-                    </div>
-                    
+
                     <div class="form-group">
                         <div class="checkbox-group">
                             <input type="checkbox" id="is_important" name="is_important" 
@@ -590,163 +536,11 @@ if($action === 'list') {
     </div>
 </div>
 
-<?php if($action === 'write' || $action === 'edit'): ?>
-<script>
-// 이미지 업로드 기능
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-const uploadProgress = document.getElementById('uploadProgress');
-const progressFill = document.getElementById('progressFill');
-const contentTextarea = document.getElementById('content');
-
-// 업로드된 이미지 URL 저장
-let uploadedImages = [];
-
-// 드래그 앤 드롭 이벤트
-dropZone.addEventListener('click', () => fileInput.click());
-
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragging');
-});
-
-dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('dragging');
-});
-
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragging');
-    handleFiles(e.dataTransfer.files);
-});
-
-fileInput.addEventListener('change', (e) => {
-    handleFiles(e.target.files);
-});
-
-// 파일 처리
-function handleFiles(files) {
-    Array.from(files).forEach(file => {
-        if (!file.type.startsWith('image/')) {
-            alert('이미지 파일만 업로드 가능합니다.');
-            return;
-        }
-        
-        if (file.size > 5 * 1024 * 1024) {
-            alert('파일 크기는 5MB를 초과할 수 없습니다.');
-            return;
-        }
-        
-        uploadImage(file);
-    });
-}
-
-// 이미지 업로드
-function uploadImage(file) {
-    const formData = new FormData();
-    formData.append('image', file);
-    
-    // 프로그레스 바 표시
-    uploadProgress.style.display = 'block';
-    progressFill.style.width = '0%';
-    
-    const xhr = new XMLHttpRequest();
-    
-    xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-            const percentComplete = (e.loaded / e.total) * 100;
-            progressFill.style.width = percentComplete + '%';
-        }
-    });
-    
-    xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-            try {
-                const response = JSON.parse(xhr.responseText);
-                if (response.success) {
-                    uploadedImages.push(response.url);
-                    addImagePreview(response.url, file.name);
-                    insertImageToContent(response.url);
-                } else {
-                    alert('이미지 업로드 실패: ' + response.message);
-                }
-            } catch (e) {
-                console.error('JSON 파싱 오류:', e);
-                console.error('서버 응답:', xhr.responseText);
-                alert('이미지 업로드 중 오류가 발생했습니다. 서버 응답을 확인할 수 없습니다.');
-            }
-        } else {
-            alert('이미지 업로드 실패: HTTP ' + xhr.status);
-        }
-        uploadProgress.style.display = 'none';
-    });
-    
-    xhr.addEventListener('error', () => {
-        alert('이미지 업로드 중 오류가 발생했습니다.');
-        uploadProgress.style.display = 'none';
-    });
-    
-    xhr.open('POST', 'upload_image_debug.php');
-    xhr.send(formData);
-}
-
-// 이미지 프리뷰 추가
-function addImagePreview(url, filename) {
-    const preview = document.createElement('div');
-    preview.className = 'image-preview';
-    preview.innerHTML = `
-        <img src="${url}" alt="${filename}">
-        <button type="button" class="remove-btn" onclick="removeImage('${url}', this)">×</button>
-    `;
-    imagePreviewContainer.appendChild(preview);
-}
-
-// 이미지 삭제
-function removeImage(url, button) {
-    if (confirm('이미지를 삭제하시겠습니까?')) {
-        // 프리뷰에서 제거
-        button.parentElement.remove();
-        
-        // 배열에서 제거
-        uploadedImages = uploadedImages.filter(img => img !== url);
-        
-        // 텍스트 영역에서 이미지 태그 제거
-        const imgTag = `<img src="${url}"`;
-        const content = contentTextarea.value;
-        const imgRegex = new RegExp(`<img[^>]*src="${url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>`, 'g');
-        contentTextarea.value = content.replace(imgRegex, '');
-    }
-}
-
-// 내용에 이미지 삽입
-function insertImageToContent(url) {
-    const imgTag = `\n<img src="${url}" alt="업로드된 이미지">\n`;
-    const cursorPos = contentTextarea.selectionStart;
-    const textBefore = contentTextarea.value.substring(0, cursorPos);
-    const textAfter = contentTextarea.value.substring(cursorPos);
-    
-    contentTextarea.value = textBefore + imgTag + textAfter;
-    contentTextarea.focus();
-    contentTextarea.setSelectionRange(cursorPos + imgTag.length, cursorPos + imgTag.length);
-}
-
-// 기존 이미지 표시 (수정 모드)
-<?php if($action === 'edit' && $notice): ?>
-document.addEventListener('DOMContentLoaded', function() {
-    const content = contentTextarea.value;
-    const imgRegex = /<img[^>]+src="([^">]+)"/g;
-    let match;
-    
-    while ((match = imgRegex.exec(content)) !== null) {
-        const url = match[1];
-        uploadedImages.push(url);
-        addImagePreview(url, 'existing-image');
-    }
-});
-<?php endif; ?>
-</script>
-<?php endif; ?>
+<!-- jQuery + Summernote Lite CDN -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/lang/summernote-ko-KR.min.js"></script>
 
 <script>
 // 공지사항 보기 함수
@@ -793,6 +587,70 @@ document.addEventListener('keydown', function(event) {
         closeModal();
     }
 });
+
+// Summernote 에디터 초기화
+$(document).ready(function() {
+    // content textarea가 있을 때만 Summernote 초기화
+    if ($('#content').length > 0) {
+        $('#content').summernote({
+            lang: 'ko-KR',
+            height: 400,
+            placeholder: '공지사항 내용을 입력하세요...',
+            tabsize: 2,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                ['fontname', ['fontname']],
+                ['fontsize', ['fontsize']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['table', ['table']],
+                ['insert', ['link', 'picture', 'video', 'hr']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+            ],
+            fontNames: ['맑은 고딕', '굴림', '돋움', '바탕', 'Arial', 'Arial Black', 'Comic Sans MS', 'Courier New', 'Helvetica', 'Impact', 'Tahoma', 'Times New Roman', 'Verdana'],
+            fontNamesIgnoreCheck: ['맑은 고딕', '굴림', '돋움', '바탕'],
+            callbacks: {
+                onImageUpload: function(files) {
+                    // 이미지 업로드 처리
+                    for (let i = 0; i < files.length; i++) {
+                        uploadImage(files[i], this);
+                    }
+                }
+            }
+        });
+    }
+});
+
+// 이미지 업로드 함수 (Summernote 콜백용)
+function uploadImage(file, editor) {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    $.ajax({
+        url: 'ajax/upload_image.php',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success) {
+                // 에디터에 이미지 삽입
+                const imgNode = $('<img>').attr('src', response.url).css({
+                    'max-width': '100%',
+                    'height': 'auto'
+                });
+                $(editor).summernote('insertNode', imgNode[0]);
+            } else {
+                alert(response.message || '이미지 업로드 실패');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Upload error:', error);
+            alert('이미지 업로드 중 오류가 발생했습니다.');
+        }
+    });
+}
 </script>
 
 <?php require_once 'admin_tail.php'; ?>

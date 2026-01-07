@@ -1008,6 +1008,345 @@ document.querySelector('form').addEventListener('submit', function(e) {
         document.getElementById('content').value = content;
     }
 });
+
+// ============================================
+// 팝업 템플릿 데이터 및 적용 함수
+// ============================================
+
+const popupTemplates = {
+    // 템플릿 1: 이벤트 프로모션
+    1: {
+        title: '이벤트 프로모션',
+        content: `
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; color: white;">
+    <div style="background: rgba(255,255,255,0.2); display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 1px; margin-bottom: 16px;">SPECIAL EVENT</div>
+    <h2 style="font-size: 28px; font-weight: 700; margin: 0 0 12px 0; color: white;">특별 이벤트 진행중!</h2>
+    <p style="font-size: 16px; margin: 0 0 24px 0; opacity: 0.9; color: white;">지금 참여하시면 다양한 혜택을 드립니다</p>
+    <div style="background: white; color: #667eea; padding: 12px 32px; border-radius: 30px; display: inline-block; font-weight: 700; font-size: 15px;">자세히 보기</div>
+</div>
+<div style="padding: 24px 30px; background: #f8f9fa; text-align: center;">
+    <p style="margin: 0; color: #666; font-size: 14px;"><strong>이벤트 기간:</strong> 2026.01.01 ~ 2026.01.31</p>
+</div>`,
+        width: 420,
+        height: 380
+    },
+
+    // 템플릿 2: 할인 세일
+    2: {
+        title: '할인 세일',
+        content: `
+<div style="background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); padding: 40px 30px; text-align: center; color: white;">
+    <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px; letter-spacing: 2px;">LIMITED TIME OFFER</div>
+    <div style="font-size: 72px; font-weight: 900; line-height: 1; margin-bottom: 8px;">50%</div>
+    <div style="font-size: 24px; font-weight: 700; margin-bottom: 20px;">할인 세일</div>
+    <p style="font-size: 15px; opacity: 0.9; margin-bottom: 24px;">전 품목 최대 50% 특별 할인!</p>
+    <div style="background: white; color: #f5576c; padding: 14px 40px; border-radius: 30px; display: inline-block; font-weight: 700; font-size: 16px;">쇼핑하러 가기</div>
+</div>
+<div style="padding: 20px; background: #fff3f5; text-align: center;">
+    <p style="margin: 0; color: #f5576c; font-size: 13px; font-weight: 600;">* 일부 품목 제외, 재고 소진 시 조기 종료</p>
+</div>`,
+        width: 400,
+        height: 420
+    },
+
+    // 템플릿 3: 신제품 출시
+    3: {
+        title: '신제품 출시',
+        content: `
+<div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 40px 30px; text-align: center; color: white;">
+    <div style="background: rgba(255,255,255,0.25); display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 2px; margin-bottom: 16px;">NEW ARRIVAL</div>
+    <h2 style="font-size: 26px; font-weight: 700; margin: 0 0 16px 0; color: white;">신제품이 출시되었습니다</h2>
+    <p style="font-size: 15px; margin: 0 0 24px 0; opacity: 0.9; line-height: 1.6; color: white;">더 나은 품질, 더 합리적인 가격으로<br>새롭게 선보입니다</p>
+    <div style="background: white; color: #11998e; padding: 12px 32px; border-radius: 30px; display: inline-block; font-weight: 700; font-size: 15px;">제품 보러가기</div>
+</div>
+<div style="padding: 20px 30px; background: #e8f5e9;">
+    <div style="display: flex; justify-content: center; gap: 30px; text-align: center;">
+        <div><div style="font-size: 20px; font-weight: 700; color: #11998e;">최고급</div><div style="font-size: 12px; color: #666;">품질</div></div>
+        <div><div style="font-size: 20px; font-weight: 700; color: #11998e;">합리적</div><div style="font-size: 12px; color: #666;">가격</div></div>
+        <div><div style="font-size: 20px; font-weight: 700; color: #11998e;">빠른</div><div style="font-size: 12px; color: #666;">배송</div></div>
+    </div>
+</div>`,
+        width: 420,
+        height: 400
+    },
+
+    // 템플릿 4: 공지사항
+    4: {
+        title: '공지사항',
+        content: `
+<div style="background: linear-gradient(135deg, #1A237E 0%, #3949AB 100%); padding: 30px; color: white;">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px;">📢</div>
+        <div style="font-size: 20px; font-weight: 700;">공지사항</div>
+    </div>
+    <p style="font-size: 14px; opacity: 0.9; margin: 0; line-height: 1.6;">중요한 안내사항을 알려드립니다.</p>
+</div>
+<div style="padding: 28px 30px; background: white;">
+    <h3 style="font-size: 18px; font-weight: 700; color: #333; margin: 0 0 16px 0;">[안내] 시스템 점검 안내</h3>
+    <p style="font-size: 14px; color: #666; line-height: 1.7; margin: 0 0 20px 0;">
+        안녕하세요, 충남스틸입니다.<br><br>
+        더 나은 서비스 제공을 위해 시스템 점검이 진행될 예정입니다. 이용에 참고 부탁드립니다.
+    </p>
+    <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; font-size: 13px; color: #666;">
+        <strong>점검 일시:</strong> 2026년 1월 15일 02:00 ~ 06:00
+    </div>
+</div>`,
+        width: 440,
+        height: 420
+    },
+
+    // 템플릿 5: 휴무 안내
+    5: {
+        title: '휴무 안내',
+        content: `
+<div style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); padding: 40px 30px; text-align: center;">
+    <div style="font-size: 48px; margin-bottom: 16px;">🏠</div>
+    <h2 style="font-size: 24px; font-weight: 700; color: #333; margin: 0 0 12px 0;">휴무 안내</h2>
+    <p style="font-size: 15px; color: #666; margin: 0 0 24px 0;">아래 기간 동안 휴무입니다</p>
+    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <div style="font-size: 14px; color: #999; margin-bottom: 8px;">휴무 기간</div>
+        <div style="font-size: 20px; font-weight: 700; color: #f5576c;">2026.01.24 (금) ~ 01.27 (월)</div>
+        <div style="font-size: 13px; color: #666; margin-top: 12px;">설 연휴 (4일간)</div>
+    </div>
+</div>
+<div style="padding: 20px 30px; background: white; text-align: center;">
+    <p style="margin: 0; font-size: 14px; color: #666; line-height: 1.6;">
+        휴무 기간 중 주문 및 문의는<br><strong>1월 28일(화)</strong>부터 순차 처리됩니다.
+    </p>
+</div>`,
+        width: 400,
+        height: 440
+    },
+
+    // 템플릿 6: 회원 혜택
+    6: {
+        title: '회원 혜택',
+        content: `
+<div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 40px 30px; text-align: center; color: white;">
+    <div style="font-size: 12px; letter-spacing: 3px; margin-bottom: 12px; opacity: 0.9;">MEMBERS ONLY</div>
+    <div style="font-size: 48px; margin-bottom: 12px;">👑</div>
+    <h2 style="font-size: 26px; font-weight: 700; margin: 0 0 12px 0; color: white;">회원 특별 혜택</h2>
+    <p style="font-size: 15px; opacity: 0.9; margin: 0; color: white;">지금 가입하고 혜택을 받으세요!</p>
+</div>
+<div style="padding: 28px 30px; background: white;">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #fff0f3; border-radius: 8px;">
+            <span style="font-size: 20px;">🎁</span>
+            <span style="font-size: 14px; color: #333;"><strong>신규 가입</strong> 5,000P 즉시 지급</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #fff0f3; border-radius: 8px;">
+            <span style="font-size: 20px;">💰</span>
+            <span style="font-size: 14px; color: #333;"><strong>구매 적립</strong> 최대 5% 적립</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #fff0f3; border-radius: 8px;">
+            <span style="font-size: 20px;">🚚</span>
+            <span style="font-size: 14px; color: #333;"><strong>무료배송</strong> 월 1회 제공</span>
+        </div>
+    </div>
+    <div style="text-align: center; margin-top: 20px;">
+        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 12px 32px; border-radius: 30px; display: inline-block; font-weight: 700; font-size: 15px;">회원가입</div>
+    </div>
+</div>`,
+        width: 400,
+        height: 520
+    },
+
+    // 템플릿 7: 무료 배송
+    7: {
+        title: '무료 배송',
+        content: `
+<div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 40px 30px; text-align: center; color: white;">
+    <div style="font-size: 56px; margin-bottom: 16px;">🚚</div>
+    <h2 style="font-size: 28px; font-weight: 700; margin: 0 0 12px 0; color: white;">무료배송 이벤트</h2>
+    <p style="font-size: 16px; opacity: 0.9; margin: 0; color: white;">전 품목 배송비 무료!</p>
+</div>
+<div style="padding: 28px 30px; background: white; text-align: center;">
+    <div style="background: #e3f2fd; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">조건</div>
+        <div style="font-size: 24px; font-weight: 700; color: #4facfe;">5만원 이상 구매 시</div>
+    </div>
+    <p style="font-size: 13px; color: #888; margin: 0 0 20px 0;">
+        * 도서산간 지역 추가 배송비 발생<br>
+        * 이벤트 기간: 2026.01.01 ~ 01.31
+    </p>
+    <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 12px 32px; border-radius: 30px; display: inline-block; font-weight: 700; font-size: 15px;">쇼핑하기</div>
+</div>`,
+        width: 400,
+        height: 450
+    },
+
+    // 템플릿 8: 고객 감사
+    8: {
+        title: '고객 감사',
+        content: `
+<div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 40px 30px; text-align: center; color: white;">
+    <div style="font-size: 56px; margin-bottom: 16px;">🙏</div>
+    <h2 style="font-size: 26px; font-weight: 700; margin: 0 0 12px 0; color: white;">고객 감사 이벤트</h2>
+    <p style="font-size: 15px; opacity: 0.95; margin: 0; color: white;">항상 저희를 믿고 찾아주셔서<br>진심으로 감사드립니다</p>
+</div>
+<div style="padding: 28px 30px; background: white; text-align: center;">
+    <div style="font-size: 15px; color: #666; margin-bottom: 20px; line-height: 1.7;">
+        고객님의 성원에 보답하고자<br>
+        <strong style="color: #fa709a;">특별 감사 혜택</strong>을 준비했습니다.
+    </div>
+    <div style="background: linear-gradient(135deg, #fff5f7 0%, #fffef0 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+        <div style="font-size: 32px; font-weight: 900; color: #fa709a; margin-bottom: 4px;">10% 할인</div>
+        <div style="font-size: 13px; color: #666;">전 품목 적용</div>
+    </div>
+    <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; padding: 12px 32px; border-radius: 30px; display: inline-block; font-weight: 700; font-size: 15px;">혜택 받기</div>
+</div>`,
+        width: 400,
+        height: 480
+    },
+
+    // 템플릿 9: 시즌 인사
+    9: {
+        title: '시즌 인사',
+        content: `
+<div style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); padding: 40px 30px; text-align: center;">
+    <div style="font-size: 56px; margin-bottom: 16px;">🎊</div>
+    <h2 style="font-size: 28px; font-weight: 700; color: #333; margin: 0 0 12px 0;">새해 복 많이 받으세요!</h2>
+    <p style="font-size: 16px; color: #666; margin: 0 0 24px 0;">2026년 병오년 새해가 밝았습니다</p>
+    <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+        <p style="font-size: 15px; color: #555; line-height: 1.8; margin: 0;">
+            항상 충남스틸을 이용해 주시는<br>
+            고객님께 깊은 감사를 드리며,<br>
+            새해에도 건강과 행복이<br>
+            가득하시길 기원합니다.
+        </p>
+        <div style="margin-top: 20px; font-size: 14px; color: #888;">
+            - 충남스틸 임직원 일동 -
+        </div>
+    </div>
+</div>`,
+        width: 400,
+        height: 440
+    },
+
+    // 템플릿 10: 문의 안내
+    10: {
+        title: '문의 안내',
+        content: `
+<div style="background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%); padding: 30px; color: white;">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <div style="font-size: 32px;">📞</div>
+        <div>
+            <div style="font-size: 20px; font-weight: 700;">문의 안내</div>
+            <div style="font-size: 13px; opacity: 0.9;">언제든지 연락주세요!</div>
+        </div>
+    </div>
+</div>
+<div style="padding: 28px 30px; background: white;">
+    <div style="margin-bottom: 20px;">
+        <div style="font-size: 12px; color: #999; margin-bottom: 6px;">대표전화</div>
+        <div style="font-size: 24px; font-weight: 700; color: #333;">032-564-1616</div>
+    </div>
+    <div style="margin-bottom: 20px;">
+        <div style="font-size: 12px; color: #999; margin-bottom: 6px;">팩스</div>
+        <div style="font-size: 16px; font-weight: 600; color: #555;">032-564-0090</div>
+    </div>
+    <div style="margin-bottom: 20px;">
+        <div style="font-size: 12px; color: #999; margin-bottom: 6px;">이메일</div>
+        <div style="font-size: 16px; font-weight: 600; color: #555;">cn1616@naver.com</div>
+    </div>
+    <div style="background: #f5f5f5; padding: 16px; border-radius: 8px;">
+        <div style="font-size: 12px; color: #999; margin-bottom: 6px;">상담 시간</div>
+        <div style="font-size: 14px; color: #333;">
+            <strong>평일</strong> 09:00 ~ 18:00<br>
+            <strong>토요일</strong> 09:00 ~ 13:00
+        </div>
+    </div>
+</div>`,
+        width: 380,
+        height: 480
+    }
+};
+
+// 템플릿 적용 함수
+function applyTemplate(templateId) {
+    const template = popupTemplates[templateId];
+    if (!template) {
+        alert('템플릿을 찾을 수 없습니다.');
+        return;
+    }
+
+    // 확인 메시지
+    if ($('#content').summernote('code').trim() !== '' &&
+        $('#content').summernote('code').trim() !== '<p><br></p>') {
+        if (!confirm('현재 작성 중인 내용이 있습니다. 템플릿을 적용하면 덮어씌워집니다. 계속하시겠습니까?')) {
+            return;
+        }
+    }
+
+    // 제목 설정
+    document.getElementById('title').value = template.title;
+
+    // 내용 설정
+    $('#content').summernote('code', template.content.trim());
+
+    // 크기 설정
+    document.getElementById('width').value = template.width;
+    document.getElementById('height').value = template.height;
+
+    // 선택된 카드 표시
+    document.querySelectorAll('.template-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    event.currentTarget.classList.add('selected');
+
+    // 스크롤 이동
+    document.querySelector('.section-title i.fa-image').parentElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+    });
+
+    // 알림
+    showToast('템플릿이 적용되었습니다. 내용을 수정한 후 등록하세요.');
+}
+
+// 토스트 메시지 표시
+function showToast(message) {
+    // 기존 토스트 제거
+    const existingToast = document.querySelector('.template-toast');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'template-toast';
+    toast.innerHTML = '<i class="fas fa-check-circle"></i> ' + message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 14px 28px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 10000;
+        animation: toastFadeIn 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    `;
+    document.body.appendChild(toast);
+
+    // CSS 애니메이션 추가
+    if (!document.querySelector('#toastAnimation')) {
+        const style = document.createElement('style');
+        style.id = 'toastAnimation';
+        style.textContent = `
+            @keyframes toastFadeIn {
+                from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                to { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    setTimeout(() => {
+        toast.style.animation = 'toastFadeIn 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 </script>
 
 <?php require_once 'admin_tail.php'; ?>
