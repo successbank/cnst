@@ -314,7 +314,8 @@ function companySidebar($current = '') {
         <h3 class="sidebar-title">회사소개</h3>
         <nav class="sidebar-menu">
             <a href="about.php" class="<?php echo $current == 'about' ? 'active' : ''; ?>">회사개요</a>
-            <a href="vision.php" class="<?php echo $current == 'vision' ? 'active' : ''; ?>">경영이념</a>
+            <a href="history.php" class="<?php echo $current == 'history' ? 'active' : ''; ?>">연혁</a>
+            <a href="vision.php" class="<?php echo $current == 'vision' ? 'active' : ''; ?>">경영이념/사훈</a>
             <a href="location.php" class="<?php echo $current == 'location' ? 'active' : ''; ?>">오시는길</a>
         </nav>
     </aside>
