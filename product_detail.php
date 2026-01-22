@@ -47,19 +47,24 @@ if ($product_id) {
         $calculation_type = $product['parent_calculation_type'] ?? $product['calculation_type'];
 
         // JSON 파싱
-        $unit_weight_data = json_decode($unit_weight_data, true) ?? [];
-        $available_materials = json_decode($available_materials, true) ?? [];
+        $unit_weight_data = json_decode($unit_weight_data ?? '', true) ?? [];
+        $available_materials = json_decode($available_materials ?? '', true) ?? [];
 
         // 철근 제품인 경우 길이별 본수 데이터 조회
         $pieces_per_length_data = [];
+        $weight_per_length_data = [];
         $available_lengths = [];
         $spec_name = '';
+        $default_bundle_price = 0;
+        $default_min_price = 0;
+        $default_max_price = 0;
+
         if ($product['category_code'] === 'rebar') {
             // 제품명에서 규격 추출 (예: "철근 D10" → "D10")
             $spec_name = str_replace('철근 ', '', $product['product_name']);
 
             $stmt = $pdo->prepare("
-                SELECT length, pieces_per_length
+                SELECT length, pieces_per_length, weight_per_ton
                 FROM rebar_length_data
                 WHERE spec_name = ?
                 AND length BETWEEN 6 AND 12
@@ -71,9 +76,46 @@ if ($product_id) {
                 // 길이를 문자열 키로 변환 (JavaScript에서 사용하기 위해)
                 $length_key = number_format($row['length'], 1, '.', '');
                 $pieces_per_length_data[$length_key] = $row['pieces_per_length'];
+                $weight_per_length_data[$length_key] = $row['weight_per_ton'];
 
                 // 사용 가능한 길이 목록 저장
                 $available_lengths[] = $row['length'];
+            }
+
+            // 기본 번들 가격 계산 (기본값 기준)
+            $standard_len = number_format(floatval($product['standard_length'] ?? 8), 1, '.', '');
+            if (isset($weight_per_length_data[$standard_len])) {
+                // 1. 기본 단가
+                $base_price = floatval($product['price']);
+
+                // 2. 원산지 추가가격 (첫번째 = 기본값)
+                $origin_price_data = json_decode($product['origin_price_data'] ?? '{}', true);
+                $origins = json_decode($product['available_origins'] ?? '[]', true);
+                $default_origin = $origins[0] ?? '';
+                $origin_add = floatval($origin_price_data[$default_origin] ?? 0);
+
+                // 3. 재질 추가가격 (첫번째 = 기본값)
+                $material_price_data = json_decode($product['material_price_data'] ?? '{}', true);
+                $materials = json_decode($product['available_materials'] ?? '[]', true);
+                $default_material = $materials[0] ?? '';
+                $material_add = floatval($material_price_data[$default_material] ?? 0);
+
+                // 4. 조정 단가 (원/kg)
+                $adjusted_price = $base_price + $origin_add + $material_add;
+
+                // 5. 번들 중량
+                $bundle_weight = floatval($weight_per_length_data[$standard_len]);
+
+                // 6. 번들 가격 및 최저/최대 (±10%)
+                $default_bundle_price = $bundle_weight * $adjusted_price;
+
+                // 수동 입력값 우선, 없으면 자동 계산
+                $default_min_price = (isset($product['rebar_manual_min_price']) && $product['rebar_manual_min_price'] > 0)
+                    ? $product['rebar_manual_min_price']
+                    : round($default_bundle_price * 0.90);
+                $default_max_price = (isset($product['rebar_manual_max_price']) && $product['rebar_manual_max_price'] > 0)
+                    ? $product['rebar_manual_max_price']
+                    : round($default_bundle_price * 1.10);
             }
         }
     }
@@ -605,8 +647,13 @@ if ($product_id) {
                         <div class="price-range-box">
                             <div class="price-range-title">가격 범위</div>
                             <div class="price-range-values">
+                                <?php if ($product['category_code'] === 'rebar' && $default_min_price > 0): ?>
+                                <span class="price-min" id="priceMin">최저: <?php echo number_format($default_min_price); ?>원</span>
+                                <span class="price-max" id="priceMax">최대: <?php echo number_format($default_max_price); ?>원</span>
+                                <?php else: ?>
                                 <span class="price-min" id="priceMin">최저: 0원</span>
                                 <span class="price-max" id="priceMax">최대: 0원</span>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -795,7 +842,11 @@ if ($product_id) {
                         priceUnit: '<?php echo htmlspecialchars($product['price_unit'] ?? 'kg'); ?>',
                         minPrice: <?php echo floatval($product['min_price'] ?? 0); ?>,
                         maxPrice: <?php echo floatval($product['max_price'] ?? 0); ?>,
-                        standardLength: <?php echo floatval($product['standard_length'] ?? 0); ?>
+                        standardLength: <?php echo floatval($product['standard_length'] ?? 0); ?>,
+                        productId: <?php echo intval($product['id'] ?? 0); ?>,
+                        // 철근 수동 가격 (번들 기준)
+                        manualMinPrice: <?php echo json_encode($product['rebar_manual_min_price'] ?? null); ?>,
+                        manualMaxPrice: <?php echo json_encode($product['rebar_manual_max_price'] ?? null); ?>
                     };
                     </script>
                     <?php endif; ?>
@@ -1043,14 +1094,29 @@ if ($product_id) {
         document.getElementById('calcResultValue').textContent = resultText;
         document.getElementById('calcResultPrice').textContent = '견적금액: ' + totalPrice.toLocaleString() + '원';
 
-        // 가격 범위 업데이트 (견적금액의 ±10%)
-        const minPrice = Math.round(totalPrice * 0.9);
-        const maxPrice = Math.round(totalPrice * 1.1);
+        // 가격 범위 업데이트 - 수동 입력값이 있으면 고정 표시, 없으면 동적 계산 (±10%)
+        let minPrice, maxPrice;
+        if (calculatorData.categoryCode === 'rebar' && calculatorData.manualMinPrice > 0) {
+            minPrice = calculatorData.manualMinPrice;
+        } else {
+            minPrice = Math.round(totalPrice * 0.9);
+        }
+        if (calculatorData.categoryCode === 'rebar' && calculatorData.manualMaxPrice > 0) {
+            maxPrice = calculatorData.manualMaxPrice;
+        } else {
+            maxPrice = Math.round(totalPrice * 1.1);
+        }
         document.getElementById('priceMin').textContent = '최저: ' + minPrice.toLocaleString() + '원';
         document.getElementById('priceMax').textContent = '최대: ' + maxPrice.toLocaleString() + '원';
 
-        // 계산 과정 표시
-        const stepsHtml = calculationSteps.map(step =>
+        // 계산 과정 표시 - 철근 제품군은 "단위중량", "총 중량" 라인 숨김
+        let filteredSteps = calculationSteps;
+        if (calculatorData.categoryCode === 'rebar') {
+            filteredSteps = calculationSteps.filter(step =>
+                !step.startsWith('단위중량:') && !step.startsWith('총 중량:') && !step.startsWith('견적금액:')
+            );
+        }
+        const stepsHtml = filteredSteps.map(step =>
             `<div class="calc-step">${step}</div>`
         ).join('');
         document.getElementById('calcSteps').innerHTML = stepsHtml;

@@ -1068,26 +1068,45 @@ include 'admin_head.php';
                 </div>
             </div>
             
-            <div class="form-group">
-                <label for="min_price">최저단가</label>
+
+
+            <!-- 철근 수동 가격 (번들 기준) - 카테고리가 rebar일 때만 표시 -->
+            <div class="form-group rebar-manual-price-group" id="rebar_manual_min_price_group" style="display: none;">
+                <label for="rebar_manual_min_price">철근 수동 최저가격 (번들 기준)</label>
+                <input type="number" id="rebar_manual_min_price" name="rebar_manual_min_price" step="1"
+                       value="<?php echo isset($product['rebar_manual_min_price']) ? $product['rebar_manual_min_price'] : ''; ?>"
+                       placeholder="예: 180000">
+                <div class="help-text">
+                    입력 시 목록/상세 페이지에 이 값이 표시됩니다<br>
+                    <small style="color: #dc3545;">미입력 시 자동 계산(번들가격×0.9)</small>
+                </div>
+            </div>
+
+            <div class="form-group rebar-manual-price-group" id="rebar_manual_max_price_group" style="display: none;">
+                <label for="rebar_manual_max_price">철근 수동 최대가격 (번들 기준)</label>
+                <input type="number" id="rebar_manual_max_price" name="rebar_manual_max_price" step="1"
+                       value="<?php echo isset($product['rebar_manual_max_price']) ? $product['rebar_manual_max_price'] : ''; ?>"
+                       placeholder="예: 220000">
+                <div class="help-text">
+                    입력 시 목록/상세 페이지에 이 값이 표시됩니다<br>
+                    <small style="color: #dc3545;">미입력 시 자동 계산(번들가격×1.1)</small>
+                </div>
+            </div>
+
+                        <div class="form-group">
+                <label for="min_price">사용하지 말것</label>
                 <input type="number" id="min_price" name="min_price" step="0.01"
                        value="<?php echo isset($product['min_price']) ? $product['min_price'] : ''; ?>">
-                <div class="help-text">
-                    비워두면 기준단가의 90%로 자동 계산<br>
-                    <small style="color: #007bff;">※ 최저단가 × 기준길이(m) × 단위중량(kg/m) ÷ 1000 = 최저금액</small>
-                </div>
+                
             </div>
             
             <div class="form-group">
-                <label for="max_price">최대단가</label>
+                <label for="max_price">사용하지 말것</label>
                 <input type="number" id="max_price" name="max_price" step="0.01"
                        value="<?php echo isset($product['max_price']) ? $product['max_price'] : ''; ?>">
-                <div class="help-text">
-                    비워두면 기준단가의 110%로 자동 계산<br>
-                    <small style="color: #007bff;">※ 최대단가 × 기준길이(m) × 단위중량(kg/m) ÷ 1000 = 최대금액</small>
-                </div>
+               
             </div>
-            
+
             <div class="form-group">
                 <label for="unit">판매단위</label>
                 <input type="text" id="unit" name="unit" 
@@ -1567,6 +1586,33 @@ function toggleApplyPriceButton() {
         }
     }
 }
+
+// 철근 수동 가격 필드 표시/숨김 처리
+function toggleRebarManualPriceFields() {
+    const categoryCode = document.getElementById('category_code').value;
+    const minPriceGroup = document.getElementById('rebar_manual_min_price_group');
+    const maxPriceGroup = document.getElementById('rebar_manual_max_price_group');
+
+    if (minPriceGroup && maxPriceGroup) {
+        if (categoryCode === 'rebar') {
+            minPriceGroup.style.display = 'block';
+            maxPriceGroup.style.display = 'block';
+        } else {
+            minPriceGroup.style.display = 'none';
+            maxPriceGroup.style.display = 'none';
+        }
+    }
+}
+
+// 카테고리 변경 시 철근 수동 가격 필드 토글
+document.getElementById('category_code').addEventListener('change', function() {
+    toggleRebarManualPriceFields();
+});
+
+// 페이지 로드 시 철근 수동 가격 필드 초기화
+window.addEventListener('DOMContentLoaded', function() {
+    toggleRebarManualPriceFields();
+});
 
 // 카테고리 변경 시 처리 (단가 적용 버튼 제거됨)
 // document.getElementById('category_code').addEventListener('change', function() {

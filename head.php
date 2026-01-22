@@ -53,7 +53,7 @@ if(file_exists('includes/settings.php')) {
                     <ul>
                         <li><a href="products_new.php" class="<?php echo $currentPage == 'products' ? 'active' : ''; ?>">판매제품</a></li>
                         <li><a href="about.php" class="<?php echo $currentPage == 'about' ? 'active' : ''; ?>">회사소개</a></li>
-                        <li><a href="http://103.124.103.229/ebook/mobile/index.html#p=1" target="_blank" ; ?>단중표</a></li>
+                        <li><a href="https://cnst.co.kr/ebook/mobile/index.html#p=1" target="_blank" ; ?>단중표</a></li>
                         <li><a href="consignment.php" class="<?php echo $currentPage == 'consignment' ? 'active' : ''; ?>">중계판매</a></li>
                         <li><a href="quote.php" class="<?php echo $currentPage == 'quote' ? 'active' : ''; ?>">견적문의</a></li>
                         <li><a href="notice.php" class="<?php echo $currentPage == 'notice' ? 'active' : ''; ?>">공지사항</a></li>

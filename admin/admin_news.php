@@ -227,6 +227,45 @@ $additionalStyles = '
 require_once 'admin_check.php';
 require_once '../db.php';
 
+// base64 이미지를 파일로 변환하는 함수 (아래한글 복사-붙여넣기 대응)
+function processBase64Images($content) {
+    // base64 이미지 패턴 매칭
+    $pattern = '/<img[^>]+src=["\']data:image\/(png|jpeg|jpg|gif|webp|bmp);base64,([^"\']+)["\'][^>]*>/i';
+
+    return preg_replace_callback($pattern, function($matches) {
+        $extension = strtolower($matches[1]);
+        // jpeg로 통일
+        if ($extension === 'jpg') {
+            $extension = 'jpeg';
+        }
+        $base64Data = $matches[2];
+
+        // base64 디코딩
+        $imageData = base64_decode($base64Data);
+        if ($imageData === false) {
+            return $matches[0]; // 디코딩 실패 시 원본 유지
+        }
+
+        // 업로드 디렉토리 설정
+        $uploadDir = __DIR__ . '/../uploads/news/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // 고유 파일명 생성
+        $filename = 'news_' . date('YmdHis') . '_' . uniqid() . '.' . $extension;
+        $filepath = $uploadDir . $filename;
+
+        // 파일 저장
+        if (file_put_contents($filepath, $imageData)) {
+            chmod($filepath, 0644);
+            return '<img src="/uploads/news/' . $filename . '">';
+        }
+
+        return $matches[0]; // 저장 실패 시 원본 유지
+    }, $content);
+}
+
 // 액션 처리
 $action = $_GET['action'] ?? 'list';
 
@@ -249,7 +288,10 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && ($action === 'write' || $action === 
     $content = $_POST['content'] ?? '';
     $source = $_POST['source'] ?? '';
     $source_url = $_POST['source_url'] ?? '';
-    
+
+    // base64 이미지를 파일로 변환 (아래한글 복사-붙여넣기 대응)
+    $content = processBase64Images($content);
+
     if($title && $content) {
         try {
             if($action === 'write') {

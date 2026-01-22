@@ -22,6 +22,11 @@ try {
     $price = isset($_POST['price']) && $_POST['price'] !== '' ? (float)$_POST['price'] : null;
     $min_price = isset($_POST['min_price']) && $_POST['min_price'] !== '' ? (float)$_POST['min_price'] : null;
     $max_price = isset($_POST['max_price']) && $_POST['max_price'] !== '' ? (float)$_POST['max_price'] : null;
+
+    // 철근 수동 가격 (번들 기준)
+    $rebar_manual_min_price = isset($_POST['rebar_manual_min_price']) && $_POST['rebar_manual_min_price'] !== '' ? (int)$_POST['rebar_manual_min_price'] : null;
+    $rebar_manual_max_price = isset($_POST['rebar_manual_max_price']) && $_POST['rebar_manual_max_price'] !== '' ? (int)$_POST['rebar_manual_max_price'] : null;
+
     $unit = trim($_POST['unit'] ?? '');
     $min_order_qty = (int)($_POST['min_order_qty'] ?? 1);
     $stock_status = $_POST['stock_status'] ?? 'in_stock';
@@ -120,7 +125,9 @@ try {
         'quality_cert' => false,
         'product_features' => false,
         'show_on_homepage' => false,
-        'homepage_display_order' => false
+        'homepage_display_order' => false,
+        'rebar_manual_min_price' => false,
+        'rebar_manual_max_price' => false
     ];
     
     foreach ($columns_check as $column => &$exists) {
@@ -262,6 +269,14 @@ try {
         if ($columns_check['homepage_display_order']) {
             $sql .= ", homepage_display_order = :homepage_display_order";
             $params[':homepage_display_order'] = $homepage_display_order;
+        }
+        if ($columns_check['rebar_manual_min_price']) {
+            $sql .= ", rebar_manual_min_price = :rebar_manual_min_price";
+            $params[':rebar_manual_min_price'] = $rebar_manual_min_price;
+        }
+        if ($columns_check['rebar_manual_max_price']) {
+            $sql .= ", rebar_manual_max_price = :rebar_manual_max_price";
+            $params[':rebar_manual_max_price'] = $rebar_manual_max_price;
         }
 
         $sql .= " WHERE id = :id";
@@ -419,6 +434,16 @@ try {
             $columns[] = 'homepage_display_order';
             $values[] = ':homepage_display_order';
             $params[':homepage_display_order'] = $homepage_display_order;
+        }
+        if ($columns_check['rebar_manual_min_price']) {
+            $columns[] = 'rebar_manual_min_price';
+            $values[] = ':rebar_manual_min_price';
+            $params[':rebar_manual_min_price'] = $rebar_manual_min_price;
+        }
+        if ($columns_check['rebar_manual_max_price']) {
+            $columns[] = 'rebar_manual_max_price';
+            $values[] = ':rebar_manual_max_price';
+            $params[':rebar_manual_max_price'] = $rebar_manual_max_price;
         }
 
         $sql = "INSERT INTO products (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";

@@ -139,9 +139,12 @@ foreach ($products as &$product) {
 
             if (isset($rebar_bundle_data[$spec])) {
                 $product['bundle_info'] = $rebar_bundle_data[$spec];
-                // 대표 길이(8m) 정보 추가
-                if (isset($rebar_bundle_data[$spec][8.0])) {
-                    $product['default_bundle'] = $rebar_bundle_data[$spec][8.0];
+                // 대표 길이(8m) 정보 추가 - 문자열 키 사용
+                $standard_len = $product['standard_length'] ?? '8.0';
+                if (isset($rebar_bundle_data[$spec][$standard_len])) {
+                    $product['default_bundle'] = $rebar_bundle_data[$spec][$standard_len];
+                } elseif (isset($rebar_bundle_data[$spec]['8.0'])) {
+                    $product['default_bundle'] = $rebar_bundle_data[$spec]['8.0'];
                 }
             }
         }
@@ -1068,13 +1071,62 @@ foreach ($products as &$product) {
                         <p class="description"><?php echo escape($product['description']); ?></p>
                         <?php endif; ?>
                         <?php if ($product['price'] && $product['price'] > 0): ?>
-                        <?php 
-                        $min_price = isset($product['min_price']) && $product['min_price'] > 0 
-                            ? $product['min_price'] 
-                            : $product['price'] * 0.90;
-                        $max_price = isset($product['max_price']) && $product['max_price'] > 0 
-                            ? $product['max_price'] 
-                            : $product['price'] * 1.10;
+                        <?php
+                        // 철근 제품 번들 가격 계산 (기본값 기준)
+                        if ($product['category_code'] === 'rebar') {
+                            // 1. 기본 단가 계산
+                            $base_price = floatval($product['price']);
+
+                            // 2. 원산지 추가가격 (첫번째 = 기본값)
+                            $origin_price_data = json_decode($product['origin_price_data'] ?? '{}', true);
+                            $origins = json_decode($product['available_origins'] ?? '[]', true);
+                            $default_origin = $origins[0] ?? '';
+                            $origin_add = floatval($origin_price_data[$default_origin] ?? 0);
+
+                            // 3. 재질 추가가격 (첫번째 = 기본값)
+                            $material_price_data = json_decode($product['material_price_data'] ?? '{}', true);
+                            $materials = json_decode($product['available_materials'] ?? '[]', true);
+                            $default_material = $materials[0] ?? '';
+                            $material_add = floatval($material_price_data[$default_material] ?? 0);
+
+                            // 4. 조정 단가 (원/kg)
+                            $adjusted_price = $base_price + $origin_add + $material_add;
+
+                            // 5. 번들 중량 가져오기 (default_bundle에서)
+                            $bundle_weight = 0;
+                            if (isset($product['default_bundle']) && isset($product['default_bundle']['weight_per_ton'])) {
+                                $bundle_weight = floatval($product['default_bundle']['weight_per_ton']);
+                            }
+
+                            // 6. 번들 가격 계산 및 최저/최대 가격 (±10%)
+                            if ($bundle_weight > 0) {
+                                $bundle_price = $bundle_weight * $adjusted_price;
+
+                                // 수동 입력값 우선, 없으면 자동 계산
+                                $min_price = (isset($product['rebar_manual_min_price']) && $product['rebar_manual_min_price'] > 0)
+                                    ? $product['rebar_manual_min_price']
+                                    : round($bundle_price * 0.90);
+                                $max_price = (isset($product['rebar_manual_max_price']) && $product['rebar_manual_max_price'] > 0)
+                                    ? $product['rebar_manual_max_price']
+                                    : round($bundle_price * 1.10);
+                            } else {
+                                // fallback: 기존 방식 (수동 입력값 우선)
+                                $min_price = (isset($product['rebar_manual_min_price']) && $product['rebar_manual_min_price'] > 0)
+                                    ? $product['rebar_manual_min_price']
+                                    : $product['price'] * 0.90;
+                                $max_price = (isset($product['rebar_manual_max_price']) && $product['rebar_manual_max_price'] > 0)
+                                    ? $product['rebar_manual_max_price']
+                                    : $product['price'] * 1.10;
+                            }
+                        } else {
+                            // 기존 로직 (철근 외 제품)
+                            $min_price = isset($product['min_price']) && $product['min_price'] > 0
+                                ? $product['min_price']
+                                : $product['price'] * 0.90;
+                            $max_price = isset($product['max_price']) && $product['max_price'] > 0
+                                ? $product['max_price']
+                                : $product['price'] * 1.10;
+                        }
                         ?>
                         <div class="price-range-mini">
                             <div class="price-item-mini min">

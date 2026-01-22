@@ -861,63 +861,7 @@ companySidebar('about');
     </div>
 </section>
 
-<!-- 인증 및 수상 섹션 -->
-<section class="about-certificates-section">
-    <div class="about-section-container">
-        <div class="about-section-header">
-            <span class="about-section-tag">Certifications</span>
-            <h3>인증 및 수상</h3>
-            <p>공인된 품질과 신뢰의 증거</p>
-        </div>
-        <div class="about-certificates-grid">
-            <div class="about-certificate-card">
-                <div class="about-certificate-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-                    </svg>
-                </div>
-                <div class="about-certificate-content">
-                    <h5>ISO 9001:2015</h5>
-                    <p>품질경영시스템 국제 인증</p>
-                </div>
-            </div>
-            <div class="about-certificate-card">
-                <div class="about-certificate-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M19 5H5C3.9 5 3 5.9 3 7V17C3 18.1 3.9 19 5 19H19C20.1 19 21 18.1 21 17V7C21 5.9 20.1 5 19 5ZM12 17L6 11L7.41 9.59L12 14.17L18.59 7.58L20 9L12 17Z"/>
-                    </svg>
-                </div>
-                <div class="about-certificate-content">
-                    <h5>2019 충청남도 우수기업</h5>
-                    <p>지역 산업 발전 공로</p>
-                </div>
-            </div>
-            <div class="about-certificate-card">
-                <div class="about-certificate-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"/>
-                    </svg>
-                </div>
-                <div class="about-certificate-content">
-                    <h5>2018 일자리 창출 우수기업</h5>
-                    <p>고용노동부 선정</p>
-                </div>
-            </div>
-            <div class="about-certificate-card">
-                <div class="about-certificate-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
-                        <path d="M2 17L12 22L22 17M2 12L12 17L22 12"/>
-                    </svg>
-                </div>
-                <div class="about-certificate-content">
-                    <h5>한국철강협회 정회원사</h5>
-                    <p>철강 업계 공식 인증</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+
 
 <!-- CTA 섹션 -->
 <section class="about-cta-section">
