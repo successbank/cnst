@@ -29,12 +29,16 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 유효성 검사
     if(strlen($user_id) < 4) {
         $error = '아이디는 4자 이상이어야 합니다.';
-    } elseif(strlen($password) < 6) {
-        $error = '비밀번호는 6자 이상이어야 합니다.';
+    } elseif(strlen($password) < 4 || strlen($password) > 8) {
+        $error = '비밀번호는 4자 이상 8자 이하여야 합니다.';
     } elseif($password !== $password_confirm) {
         $error = '비밀번호가 일치하지 않습니다.';
     } elseif(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = '올바른 이메일 주소를 입력해주세요.';
+    } elseif(empty($phone)) {
+        $error = '휴대폰 번호를 입력해주세요.';
+    } elseif(!preg_match('/^01[0-9][-]?[0-9]{3,4}[-]?[0-9]{4}$/', $phone)) {
+        $error = '올바른 휴대폰 번호 형식을 입력해주세요. (예: 010-0000-0000 또는 01000000000)';
     } else {
         try {
             // 아이디 중복 체크
@@ -259,12 +263,12 @@ include 'head.php';
                 <div class="form-row">
                     <div class="form-group">
                         <label for="password">비밀번호 <span>*</span></label>
-                        <input type="password" id="password" name="password" required minlength="6">
+                        <input type="password" id="password" name="password" required minlength="4" maxlength="8">
                     </div>
                     
                     <div class="form-group">
                         <label for="password_confirm">비밀번호 확인 <span>*</span></label>
-                        <input type="password" id="password_confirm" name="password_confirm" required minlength="6">
+                        <input type="password" id="password_confirm" name="password_confirm" required minlength="4" maxlength="8">
                     </div>
                 </div>
                 
@@ -281,10 +285,11 @@ include 'head.php';
                 </div>
                 
                 <div class="form-group">
-                    <label for="phone">휴대폰 번호</label>
-                    <input type="tel" id="phone" name="phone" 
+                    <label for="phone">휴대폰 번호 <span>*</span></label>
+                    <input type="tel" id="phone" name="phone" required
                            placeholder="010-0000-0000"
-                           pattern="[0-9]{3}-[0-9]{4}-[0-9]{4}"
+                           pattern="01[0-9]-?[0-9]{3,4}-?[0-9]{4}"
+                           title="올바른 휴대폰 번호를 입력해주세요 (예: 010-0000-0000 또는 01000000000)"
                            value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>">
                 </div>
                 
