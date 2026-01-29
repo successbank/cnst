@@ -3,6 +3,32 @@ session_start();
 require_once '../db.php';
 require_once 'admin_check.php';
 
+/**
+ * JSON 배열을 쉼표로 구분된 문자열로 변환
+ * 예: ["SS275","SS400"] → "SS275,SS400"
+ */
+function jsonArrayToCommaSeparated($json) {
+    if (empty($json)) return '';
+    $arr = json_decode($json, true);
+    if (!is_array($arr)) return '';
+    return implode(',', $arr);
+}
+
+/**
+ * JSON 객체를 세미콜론 형식으로 변환
+ * 예: {"SS400":"100","SM490A":"200"} → "SS400:100;SM490A:200"
+ */
+function jsonObjectToSemicolonFormat($json) {
+    if (empty($json)) return '';
+    $obj = json_decode($json, true);
+    if (!is_array($obj)) return '';
+    $parts = [];
+    foreach ($obj as $key => $value) {
+        $parts[] = $key . ':' . $value;
+    }
+    return implode(';', $parts);
+}
+
 // 카테고리 코드 받기
 $category_code = $_GET['category'] ?? '';
 
@@ -24,7 +50,7 @@ $stmt = $pdo->prepare("
     FROM products p
     JOIN product_categories pc ON p.category_code = pc.category_code
     LEFT JOIN unit_weights uw ON p.specifications = uw.specification
-    WHERE $whereClause 
+    WHERE $whereClause
     ORDER BY p.id ASC
 ");
 $stmt->execute($params);
@@ -45,31 +71,44 @@ echo "\xEF\xBB\xBF";
 // 출력 스트림 열기
 $output = fopen('php://output', 'w');
 
-// 헤더 행 작성
+// 헤더 행 작성 (36개 컬럼)
 $headers = [
-    'ID',
-    '카테고리코드',
-    '카테고리명',
-    '제품명',
-    '제품코드',
-    '규격',
-    '설명',
-    '가격',
-    '단위',
-    '최소주문수량',
-    '재고상태',
-    '원산지',
-    '제조사',
-    '치수',
-    '중량',
-    '재질',
-    '단위중량(kg/m)',
-    '특징',
-    '배송정보',
-    '추천제품',
-    '활성화',
-    '조회수',
-    '등록일'
+    'ID',                    // 0
+    '카테고리코드',          // 1
+    '카테고리명',            // 2 (읽기전용)
+    '제품명',                // 3 (필수)
+    '제품코드',              // 4
+    '규격',                  // 5 (필수)
+    '설명',                  // 6
+    '가격',                  // 7
+    '가격단위',              // 8 (신규: kg/piece)
+    '단위',                  // 9
+    '최소주문수량',          // 10
+    '재고상태',              // 11
+    '원산지',                // 12
+    '제조사',                // 13
+    '치수',                  // 14
+    '중량',                  // 15
+    '재질',                  // 16
+    '단위중량',              // 17 (신규: specification_weight)
+    '계산기유형',            // 18 (신규: linear/sheet/piece)
+    '계산기보유',            // 19 (신규: Y/N)
+    '사용가능재질',          // 20 (신규: 쉼표 구분)
+    '사용가능원산지',        // 21 (신규: 쉼표 구분)
+    '재질별추가가격',        // 22 (신규: 재질:가격;...)
+    '원산지별추가가격',      // 23 (신규: 원산지:가격;...)
+    '특징',                  // 24
+    '배송정보',              // 25
+    '추천제품',              // 26 (Y/N)
+    '활성화',                // 27 (Y/N)
+    '기본길이',              // 28 (신규)
+    '최소길이',              // 29 (신규)
+    '최대길이',              // 30 (신규)
+    '표준길이',              // 31 (신규)
+    '홈페이지표시',          // 32 (신규: Y/N)
+    '조회수',                // 33 (읽기전용)
+    '등록일',                // 34 (읽기전용)
+    '삭제(Y)'                // 35 (삭제시 Y 입력)
 ];
 fputcsv($output, $headers);
 
@@ -84,6 +123,7 @@ foreach ($products as $product) {
         $product['specifications'] ?? '',
         $product['description'] ?? '',
         $product['price'] ?? '',
+        $product['price_unit'] ?? 'kg',
         $product['unit'] ?? '',
         $product['min_order_qty'] ?? 1,
         $product['stock_status'] ?? 'in_stock',
@@ -92,13 +132,25 @@ foreach ($products as $product) {
         $product['dimensions'] ?? '',
         $product['weight'] ?? '',
         $product['material'] ?? '',
-        $product['unit_weight'] ?? '',
+        $product['specification_weight'] ?? '',
+        $product['calculation_type'] ?? 'linear',
+        ($product['has_calculator'] ?? 0) ? 'Y' : 'N',
+        jsonArrayToCommaSeparated($product['available_materials'] ?? ''),
+        jsonArrayToCommaSeparated($product['available_origins'] ?? ''),
+        jsonObjectToSemicolonFormat($product['material_price_data'] ?? ''),
+        jsonObjectToSemicolonFormat($product['origin_price_data'] ?? ''),
         $product['features'] ?? '',
         $product['delivery_info'] ?? '',
-        $product['is_featured'] ? 'Y' : 'N',
-        $product['is_active'] ? 'Y' : 'N',
+        ($product['is_featured'] ?? 0) ? 'Y' : 'N',
+        ($product['is_active'] ?? 1) ? 'Y' : 'N',
+        $product['base_length'] ?? 6,
+        $product['min_length'] ?? '',
+        $product['max_length'] ?? '',
+        $product['standard_length'] ?? '',
+        ($product['show_on_homepage'] ?? 1) ? 'Y' : 'N',
         $product['view_count'] ?? 0,
-        $product['created_at'] ?? ''
+        $product['created_at'] ?? '',
+        ''  // 삭제(Y) - 빈 값으로 내보내기
     ];
     fputcsv($output, $row);
 }
