@@ -93,6 +93,60 @@ a, button, .btn, .category-tab {
     max-width: 400px;
 }
 
+/* 드롭다운 스타일 */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-toggle {
+    cursor: pointer;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 180px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    margin-top: 4px;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    display: block;
+    padding: 10px 15px;
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+    background: #f5f5f5;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: #e9ecef;
+    margin: 5px 0;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
 .search-form input {
     flex: 1;
     padding: 10px 15px;
@@ -504,20 +558,39 @@ a, button, .btn, .category-tab {
         <button type="submit" class="btn btn-primary">검색</button>
     </form>
     
-    <div>
+    <div class="action-buttons">
         <?php if ($homepage_filter === '1'): ?>
             <a href="?tab=products" class="btn btn-secondary">전체 보기</a>
         <?php else: ?>
             <a href="?tab=products&homepage=1" class="btn btn-warning">메인노출 제품만</a>
         <?php endif; ?>
-        <a href="products_export.php?category=<?php echo urlencode($category_filter); ?>" 
-           class="btn btn-success">
-            📥 엑셀 다운로드
-        </a>
-        <a href="products_import.php" 
-           class="btn btn-info">
+
+        <!-- 다운로드 드롭다운 -->
+        <div class="dropdown" id="downloadDropdown">
+            <button type="button" class="btn btn-success dropdown-toggle" onclick="toggleDropdown('downloadDropdown')">
+                📥 다운로드 ▾
+            </button>
+            <div class="dropdown-menu">
+                <a href="ajax/products_export_v2.php?category=<?php echo urlencode($category_filter); ?>" class="dropdown-item">
+                    전체 다운로드 (v2)
+                </a>
+                <a href="#" class="dropdown-item" onclick="downloadSelected(); return false;">
+                    선택한 제품만 (<span id="downloadSelectedCount">0</span>건)
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="ajax/products_template_v2.php?category=<?php echo urlencode($category_filter); ?>" class="dropdown-item">
+                    빈 템플릿 (v2)
+                </a>
+                <a href="ajax/products_template_v2.php?category=<?php echo urlencode($category_filter); ?>&sample" class="dropdown-item">
+                    샘플 템플릿 (v2)
+                </a>
+            </div>
+        </div>
+
+        <!-- 업로드 버튼 -->
+        <button type="button" class="btn btn-info" onclick="ImV2.open()">
             📤 엑셀 업로드
-        </a>
+        </button>
     </div>
 </div>
 
@@ -692,7 +765,13 @@ function updateSelectedCount() {
     const checkboxes = document.querySelectorAll('input[name="selected[]"]:checked');
     const count = checkboxes.length;
     document.getElementById('selectedCount').textContent = count;
-    
+
+    // 다운로드 드롭다운의 선택 건수도 업데이트
+    const downloadCount = document.getElementById('downloadSelectedCount');
+    if (downloadCount) {
+        downloadCount.textContent = count;
+    }
+
     const bulkActions = document.getElementById('bulkActions');
     if (count > 0) {
         bulkActions.classList.add('show');
@@ -700,6 +779,37 @@ function updateSelectedCount() {
         bulkActions.classList.remove('show');
     }
 }
+
+// 드롭다운 토글
+function toggleDropdown(dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    const menu = dropdown.querySelector('.dropdown-menu');
+    menu.classList.toggle('show');
+}
+
+// 클릭 외부 영역 클릭 시 드롭다운 닫기
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.classList.remove('show');
+        });
+    }
+});
+
+// 선택한 제품만 다운로드
+function downloadSelected() {
+    const checkboxes = document.querySelectorAll('input[name="selected[]"]:checked');
+    if (checkboxes.length === 0) {
+        alert('다운로드할 제품을 선택해주세요.');
+        return;
+    }
+
+    const ids = Array.from(checkboxes).map(cb => cb.value).join(',');
+    const category = '<?php echo htmlspecialchars($category_filter); ?>';
+    window.location.href = 'ajax/products_export_v2.php?category=' + encodeURIComponent(category) + '&ids=' + ids;
+}
+
+// v2 모달은 ImV2 객체에서 관리 (products_import_modal_v2.php)
 
 function executeBulkAction() {
     const action = document.getElementById('bulkAction').value;
@@ -821,3 +931,8 @@ function updateHomepageOrder(productId, order) {
     });
 }
 </script>
+
+<?php
+// 업로드 모달 포함 (v2 - 4단계 위자드)
+include __DIR__ . '/products_import_modal_v2.php';
+?>

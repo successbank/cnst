@@ -49,17 +49,47 @@ $results = [
 // 삭제 건수 제한
 $MAX_DELETE_COUNT = 50;
 
+// CSRF 토큰 생성
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// 리턴 카테고리 (업로드 후 돌아갈 카테고리)
+$return_category = $_GET['category'] ?? '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
     $uploadedFile = $_FILES['excel_file'];
-    
+
+    // CSRF 토큰 검증
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $errors[] = "보안 토큰이 유효하지 않습니다. 페이지를 새로고침 후 다시 시도하세요.";
+    }
+
+    // 리턴 카테고리 저장
+    $return_category = $_POST['return_category'] ?? '';
+
     // 파일 검증
-    if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
+    if (empty($errors) && $uploadedFile['error'] !== UPLOAD_ERR_OK) {
         $errors[] = "파일 업로드 실패";
-    } else {
+    } elseif (empty($errors)) {
         // 파일 확장자 확인
         $fileExt = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
         if (!in_array($fileExt, ['csv', 'txt'])) {
             $errors[] = "CSV 파일만 업로드 가능합니다.";
+        }
+
+        // MIME 타입 검증 (파일 내용 기반)
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($uploadedFile['tmp_name']);
+        $allowedMimes = ['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel'];
+        if (!in_array($mimeType, $allowedMimes)) {
+            $errors[] = "허용되지 않은 파일 형식입니다. (감지된 타입: $mimeType)";
+        }
+
+        // 파일 크기 제한 (10MB)
+        $maxSize = 10 * 1024 * 1024;
+        if ($uploadedFile['size'] > $maxSize) {
+            $errors[] = "파일 크기가 너무 큽니다. (최대 10MB)";
         }
     }
     
@@ -93,8 +123,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                 $category_code = trim($data[1] ?? '');
                 $product_name = trim($data[3] ?? '');
                 $product_code = trim($data[4] ?? '');
+                $product_code = ($product_code !== '') ? $product_code : null;  // 빈 값 → NULL (UNIQUE 제약 대응)
                 $specifications = trim($data[5] ?? '');
                 $description = trim($data[6] ?? '');
+                $description = str_replace(['{{NEWLINE}}', '{{BR}}'], ["\n", "\n"], $description);  // 개행 복원
                 $price = $data[7] !== '' ? $data[7] : null;
 
                 if ($isExtendedFormat) {
@@ -123,6 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                     $min_length = $data[29] !== '' ? (float)$data[29] : null;
                     $max_length = $data[30] !== '' ? (float)$data[30] : null;
                     $standard_length = trim($data[31] ?? '');
+                    $standard_length = ($standard_length !== '' && is_numeric($standard_length)) ? (float)$standard_length : null;  // 빈 값 → NULL (decimal 대응)
                     $show_on_homepage = strtoupper(trim($data[32] ?? 'Y')) === 'Y' ? 1 : 0;
                 } else {
                     // 23개 컬럼 형식 (하위 호환성)
@@ -233,37 +266,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                 }
 
                 if ($id && is_numeric($id)) {
-                    // 기존 제품 업데이트
-                    $stmt = $pdo->prepare("
-                        UPDATE products SET
-                            category_code = ?, product_name = ?, product_code = ?,
-                            specifications = ?, description = ?, price = ?,
-                            price_unit = ?, unit = ?, min_order_qty = ?, stock_status = ?,
-                            origin = ?, manufacturer = ?, dimensions = ?,
-                            weight = ?, material = ?, specification_weight = ?,
-                            calculation_type = ?, has_calculator = ?,
-                            available_materials = ?, available_origins = ?,
-                            material_price_data = ?, origin_price_data = ?,
-                            features = ?, delivery_info = ?, is_featured = ?, is_active = ?,
-                            base_length = ?, min_length = ?, max_length = ?,
-                            standard_length = ?, show_on_homepage = ?
-                        WHERE id = ?
-                    ");
-                    $stmt->execute([
-                        $category_code, $product_name, $product_code,
-                        $specifications, $description, $price,
-                        $price_unit, $unit, $min_order_qty, $stock_status,
-                        $origin, $manufacturer, $dimensions,
-                        $weight, $material, $specification_weight,
-                        $calculation_type, $has_calculator,
-                        $available_materials, $available_origins,
-                        $material_price_data, $origin_price_data,
-                        $features, $delivery_info, $is_featured, $is_active,
-                        $base_length, $min_length, $max_length,
-                        $standard_length, $show_on_homepage,
-                        $id
-                    ]);
-                    $results['updated']++;
+                    // ID 존재 확인
+                    $stmt_exist = $pdo->prepare("SELECT id FROM products WHERE id = ?");
+                    $stmt_exist->execute([$id]);
+                    $idExists = $stmt_exist->fetch();
+
+                    if ($idExists) {
+                        // 기존 제품 업데이트
+                        $stmt = $pdo->prepare("
+                            UPDATE products SET
+                                category_code = ?, product_name = ?, product_code = ?,
+                                specifications = ?, description = ?, price = ?,
+                                price_unit = ?, unit = ?, min_order_qty = ?, stock_status = ?,
+                                origin = ?, manufacturer = ?, dimensions = ?,
+                                weight = ?, material = ?, specification_weight = ?,
+                                calculation_type = ?, has_calculator = ?,
+                                available_materials = ?, available_origins = ?,
+                                material_price_data = ?, origin_price_data = ?,
+                                features = ?, delivery_info = ?, is_featured = ?, is_active = ?,
+                                base_length = ?, min_length = ?, max_length = ?,
+                                standard_length = ?, show_on_homepage = ?
+                            WHERE id = ?
+                        ");
+                        $stmt->execute([
+                            $category_code, $product_name, $product_code,
+                            $specifications, $description, $price,
+                            $price_unit, $unit, $min_order_qty, $stock_status,
+                            $origin, $manufacturer, $dimensions,
+                            $weight, $material, $specification_weight,
+                            $calculation_type, $has_calculator,
+                            $available_materials, $available_origins,
+                            $material_price_data, $origin_price_data,
+                            $features, $delivery_info, $is_featured, $is_active,
+                            $base_length, $min_length, $max_length,
+                            $standard_length, $show_on_homepage,
+                            $id
+                        ]);
+                        $results['updated']++;
+                    } else {
+                        // DB에 없는 ID → INSERT로 전환 (미리보기와 동일한 동작)
+                        $stmt = $pdo->prepare("
+                            INSERT INTO products (
+                                category_code, product_name, product_code,
+                                specifications, description, price,
+                                price_unit, unit, min_order_qty, stock_status,
+                                origin, manufacturer, dimensions,
+                                weight, material, specification_weight,
+                                calculation_type, has_calculator,
+                                available_materials, available_origins,
+                                material_price_data, origin_price_data,
+                                features, delivery_info, is_featured, is_active,
+                                base_length, min_length, max_length,
+                                standard_length, show_on_homepage,
+                                created_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                        ");
+                        $stmt->execute([
+                            $category_code, $product_name, $product_code,
+                            $specifications, $description, $price,
+                            $price_unit, $unit, $min_order_qty, $stock_status,
+                            $origin, $manufacturer, $dimensions,
+                            $weight, $material, $specification_weight,
+                            $calculation_type, $has_calculator,
+                            $available_materials, $available_origins,
+                            $material_price_data, $origin_price_data,
+                            $features, $delivery_info, $is_featured, $is_active,
+                            $base_length, $min_length, $max_length,
+                            $standard_length, $show_on_homepage
+                        ]);
+                        $results['created']++;
+                    }
                 } else {
                     // 새 제품 생성
                     $stmt = $pdo->prepare("
@@ -316,10 +388,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
             $message .= ", 오류 " . count($results['errors']) . "건";
         }
 
-        // 성공적으로 처리되고 오류가 없으면 제품 목록으로 리다이렉트
+        // 성공적으로 처리되고 오류가 없으면 제품 목록으로 리다이렉트 (카테고리 컨텍스트 유지)
         if (empty($results['errors']) && ($results['updated'] > 0 || $results['created'] > 0 || $results['deleted'] > 0)) {
             $_SESSION['import_message'] = $message;
-            header("Location: admin_products_integrated.php?tab=products&imported=1");
+            $redirect_url = "admin_products_integrated.php?tab=products&imported=1";
+            if ($return_category) {
+                $redirect_url .= "&category=" . urlencode($return_category);
+            }
+            header("Location: $redirect_url");
             exit;
         }
     }
@@ -376,6 +452,12 @@ include 'admin_head.php';
 .file-input-wrapper:hover .file-input-label {
     background: #e9ecef;
     border-color: #adb5bd;
+}
+
+.file-input-wrapper.drag-over .file-input-label {
+    background: #e3f2fd;
+    border-color: #2196f3;
+    border-style: solid;
 }
 
 .file-selected {
@@ -546,10 +628,12 @@ include 'admin_head.php';
     
     <div class="upload-box">
         <form method="POST" enctype="multipart/form-data" class="upload-form" id="uploadForm">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+            <input type="hidden" name="return_category" value="<?php echo htmlspecialchars($return_category); ?>">
             <div class="file-input-wrapper">
                 <input type="file" name="excel_file" id="excelFile" accept=".csv" required>
                 <label for="excelFile" class="file-input-label">
-                    CSV 파일 선택
+                    📄 CSV 파일 선택 또는 여기로 드래그
                 </label>
             </div>
             <div class="file-selected" id="fileSelected" style="display: none;"></div>
@@ -563,22 +647,66 @@ include 'admin_head.php';
 </div>
 
 <script>
-document.getElementById('excelFile').addEventListener('change', function(e) {
-    const fileName = e.target.files[0]?.name;
-    if (fileName) {
-        document.getElementById('fileSelected').textContent = '선택된 파일: ' + fileName;
-        document.getElementById('fileSelected').style.display = 'block';
-        document.getElementById('uploadBtn').disabled = false;
-    } else {
-        document.getElementById('fileSelected').style.display = 'none';
-        document.getElementById('uploadBtn').disabled = true;
+const fileInput = document.getElementById('excelFile');
+const fileWrapper = document.querySelector('.file-input-wrapper');
+const fileSelected = document.getElementById('fileSelected');
+const uploadBtn = document.getElementById('uploadBtn');
+
+// 파일 선택 핸들러
+function handleFileSelect(file) {
+    if (file) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['csv', 'txt'].includes(ext)) {
+            alert('CSV 파일만 업로드 가능합니다.');
+            return;
+        }
+        fileSelected.textContent = '선택된 파일: ' + file.name + ' (' + formatFileSize(file.size) + ')';
+        fileSelected.style.display = 'block';
+        uploadBtn.disabled = false;
+    }
+}
+
+// 파일 크기 포맷
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// 파일 입력 변경
+fileInput.addEventListener('change', function(e) {
+    handleFileSelect(e.target.files[0]);
+});
+
+// 드래그앤드롭 지원
+fileWrapper.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.classList.add('drag-over');
+});
+
+fileWrapper.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.classList.remove('drag-over');
+});
+
+fileWrapper.addEventListener('drop', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.classList.remove('drag-over');
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        fileInput.files = files;
+        handleFileSelect(files[0]);
     }
 });
 
+// 폼 제출
 document.getElementById('uploadForm').addEventListener('submit', function(e) {
-    const btn = document.getElementById('uploadBtn');
-    btn.textContent = '처리 중...';
-    btn.disabled = true;
+    uploadBtn.textContent = '처리 중...';
+    uploadBtn.disabled = true;
 });
 </script>
 

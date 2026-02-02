@@ -32,6 +32,16 @@ function jsonObjectToSemicolonFormat($json) {
 // 카테고리 코드 받기
 $category_code = $_GET['category'] ?? '';
 
+// 선택된 제품 ID 받기 (콤마 구분)
+$selected_ids_param = $_GET['ids'] ?? '';
+$selected_ids = [];
+if ($selected_ids_param) {
+    $selected_ids = array_filter(explode(',', $selected_ids_param), function($v) {
+        return is_numeric(trim($v));
+    });
+    $selected_ids = array_map('intval', $selected_ids);
+}
+
 // 카테고리별 조건 설정
 $where = ["1=1"];
 $params = [];
@@ -39,6 +49,13 @@ $params = [];
 if ($category_code) {
     $where[] = "p.category_code = ?";
     $params[] = $category_code;
+}
+
+// 선택된 제품만 필터링
+if (!empty($selected_ids)) {
+    $placeholders = implode(',', array_fill(0, count($selected_ids), '?'));
+    $where[] = "p.id IN ($placeholders)";
+    $params = array_merge($params, $selected_ids);
 }
 
 $whereClause = implode(" AND ", $where);
@@ -56,8 +73,20 @@ $stmt = $pdo->prepare("
 $stmt->execute($params);
 $products = $stmt->fetchAll();
 
-// CSV 파일명 설정
-$filename = 'products_' . ($category_code ?: 'all') . '_' . date('Ymd_His') . '.csv';
+// CSV 파일명 설정 - 카테고리명 포함
+$category_name = '전체';
+if ($category_code) {
+    $stmt_cat = $pdo->prepare("SELECT category_name FROM product_categories WHERE category_code = ?");
+    $stmt_cat->execute([$category_code]);
+    $cat = $stmt_cat->fetch();
+    if ($cat) {
+        $category_name = $cat['category_name'];
+    }
+}
+
+// 선택 다운로드인 경우 파일명에 표시
+$selection_suffix = !empty($selected_ids) ? '_선택' . count($selected_ids) . '건' : '';
+$filename = 'products_' . $category_name . $selection_suffix . '_' . date('Ymd_His') . '.csv';
 
 // CSV 헤더 설정
 header('Content-Type: text/csv; charset=UTF-8');
@@ -121,7 +150,7 @@ foreach ($products as $product) {
         $product['product_name'],
         $product['product_code'] ?? '',
         $product['specifications'] ?? '',
-        $product['description'] ?? '',
+        str_replace(["\r\n", "\r", "\n"], '{{NEWLINE}}', $product['description'] ?? ''),  // 개행 → 플레이스홀더
         $product['price'] ?? '',
         $product['price_unit'] ?? 'kg',
         $product['unit'] ?? '',

@@ -3,35 +3,20 @@
 session_start();
 require_once '../db.php';
 require_once 'admin_check.php';
+require_once '../includes/MemberAdminLogService.php';
+
+// CSRF 토큰 생성 (없으면)
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrf_token = $_SESSION['csrf_token'];
 
 // 액션 처리 (헤더 출력 전에 처리)
 $action = $_GET['action'] ?? 'list';
+$tab = $_GET['tab'] ?? 'list'; // 탭 파라미터 (list: 회원 목록, permissions: 권한설정)
 
-// 회원 상태 변경 처리
-if($action === 'toggle_status' && isset($_GET['id'])) {
-    $id = (int)$_GET['id'];
-    try {
-        $stmt = $pdo->prepare("UPDATE members SET is_active = NOT is_active WHERE id = ?");
-        $stmt->execute([$id]);
-        header('Location: admin_members.php?msg=status_changed');
-        exit;
-    } catch(PDOException $e) {
-        $error = "상태 변경 중 오류가 발생했습니다.";
-    }
-}
-
-// 회원 삭제 처리
-if($action === 'delete' && isset($_GET['id'])) {
-    $id = (int)$_GET['id'];
-    try {
-        $stmt = $pdo->prepare("DELETE FROM members WHERE id = ? AND is_admin = 0");
-        $stmt->execute([$id]);
-        header('Location: admin_members.php?msg=deleted');
-        exit;
-    } catch(PDOException $e) {
-        $error = "삭제 중 오류가 발생했습니다.";
-    }
-}
+// 로그 서비스 초기화 (상세 페이지용)
+$memberLogService = new MemberAdminLogService($pdo);
 
 $pageTitle = '회원 관리';
 
@@ -118,11 +103,13 @@ $additionalStyles = '
 .members-table th:nth-child(4),
 .members-table td:nth-child(4) { width: 25%; } /* 회사명 */
 .members-table th:nth-child(5),
-.members-table td:nth-child(5) { width: 15%; text-align: center; } /* 가입일 */
+.members-table td:nth-child(5) { width: 8%; text-align: center; } /* 등급 */
 .members-table th:nth-child(6),
-.members-table td:nth-child(6) { width: 10%; text-align: center; } /* 상태 */
+.members-table td:nth-child(6) { width: 12%; text-align: center; } /* 가입일 */
 .members-table th:nth-child(7),
-.members-table td:nth-child(7) { width: 15%; text-align: center; } /* 관리 */
+.members-table td:nth-child(7) { width: 8%; text-align: center; } /* 상태 */
+.members-table th:nth-child(8),
+.members-table td:nth-child(8) { width: 12%; text-align: center; } /* 관리 */
 
 /* 테이블 wrapper 스타일 추가 */
 .table-wrapper {
@@ -185,6 +172,52 @@ $additionalStyles = '
     background: #FFCDD2;
 }
 
+/* 버튼 태그용 스타일 */
+button.btn-toggle {
+    background: #FFF3E0;
+    color: #FB8C00;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+button.btn-toggle:hover {
+    background: #FFE0B2;
+}
+
+button.btn-delete {
+    background: #FFEBEE;
+    color: #E53935;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+button.btn-delete:hover {
+    background: #FFCDD2;
+}
+
+button.btn-view {
+    background: #E3F2FD;
+    color: #1976D2;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+button.btn-view:hover {
+    background: #BBDEFB;
+}
+
 .status-active {
     background: #E8F5E9;
     color: #2E7D32;
@@ -193,6 +226,37 @@ $additionalStyles = '
 .status-inactive {
     background: #FFEBEE;
     color: #C62828;
+}
+
+/* 회원등급 배지 스타일 */
+.grade-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.grade-normal {
+    background: #F5F5F5;
+    color: #666;
+}
+
+.grade-silver {
+    background: #E0E0E0;
+    color: #424242;
+}
+
+.grade-gold {
+    background: #FFF8E1;
+    color: #F57C00;
+    border: 1px solid #FFE082;
+}
+
+.grade-vip {
+    background: #E8EAF6;
+    color: #3F51B5;
+    border: 1px solid #C5CAE9;
 }
 
 
@@ -689,6 +753,329 @@ $additionalStyles = '
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     overflow: hidden;
 }
+
+/* 탭 메뉴 스타일 */
+.member-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.member-tab {
+    padding: 12px 24px;
+    border: 2px solid #E5E5E7;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.member-tab:hover {
+    border-color: #1A237E;
+    color: #1A237E;
+}
+
+.member-tab.active {
+    background: #1A237E;
+    border-color: #1A237E;
+    color: white;
+}
+
+.member-tab .badge {
+    background: rgba(0,0,0,0.1);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.member-tab.active .badge {
+    background: rgba(255,255,255,0.2);
+}
+
+/* 권한설정 탭 스타일 */
+.permission-section {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+}
+
+.permission-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #E5E5E7;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: #F8F9FA;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.stat-card:hover {
+    border-color: #1A237E;
+    transform: translateY(-2px);
+}
+
+.stat-card .stat-grade {
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.stat-card .stat-count {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1A237E;
+}
+
+.stat-card .stat-count small {
+    font-size: 14px;
+    color: #999;
+    font-weight: 400;
+}
+
+/* 등급 설정 테이블 */
+.grade-settings-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.grade-settings-table th,
+.grade-settings-table td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #E5E5E7;
+}
+
+.grade-settings-table th {
+    background: #F8F9FA;
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+}
+
+.grade-settings-table input[type="text"],
+.grade-settings-table input[type="number"] {
+    padding: 8px 12px;
+    border: 2px solid #E5E5E7;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: center;
+    width: 80px;
+}
+
+.grade-settings-table input:focus {
+    outline: none;
+    border-color: #1A237E;
+}
+
+/* 권한 매트릭스 */
+.permission-matrix {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+}
+
+.permission-matrix th,
+.permission-matrix td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #E5E5E7;
+}
+
+.permission-matrix th {
+    background: #F8F9FA;
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+}
+
+.permission-matrix td:first-child {
+    text-align: left;
+    font-weight: 500;
+}
+
+.permission-matrix input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+/* 일괄 등급 변경 */
+.bulk-change-form {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.bulk-change-form select {
+    padding: 10px 16px;
+    border: 2px solid #E5E5E7;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+}
+
+.bulk-change-form select:focus {
+    outline: none;
+    border-color: #1A237E;
+}
+
+/* 관리자 목록 */
+.admin-list-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-list-table th,
+.admin-list-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #E5E5E7;
+}
+
+.admin-list-table th {
+    background: #F8F9FA;
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+}
+
+.admin-toggle-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.admin-toggle-btn.is-admin {
+    background: #E8F5E9;
+    color: #2E7D32;
+}
+
+.admin-toggle-btn.not-admin {
+    background: #E3F2FD;
+    color: #1976D2;
+}
+
+.admin-toggle-btn:hover {
+    opacity: 0.8;
+}
+
+/* 버튼 스타일 */
+.btn-primary {
+    padding: 10px 20px;
+    background: #1A237E;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: #283593;
+}
+
+.btn-secondary {
+    padding: 10px 20px;
+    background: #E5E5E7;
+    color: #333;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #D5D5D7;
+}
+
+.btn-success {
+    padding: 10px 20px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+    background: #45A049;
+}
+
+/* 로딩 스피너 */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #E5E5E7;
+    border-radius: 50%;
+    border-top-color: #1A237E;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 알림 메시지 */
+.alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.alert-success {
+    background: #E8F5E9;
+    color: #2E7D32;
+    border: 1px solid #C8E6C9;
+}
+
+.alert-error {
+    background: #FFEBEE;
+    color: #C62828;
+    border: 1px solid #FFCDD2;
+}
 ';
 
 require_once 'admin_head.php';
@@ -696,6 +1083,7 @@ require_once 'admin_head.php';
 // 검색 및 필터
 $search = $_GET['search'] ?? '';
 $filter = $_GET['filter'] ?? 'all';
+$grade_filter = $_GET['grade'] ?? 'all';
 
 // 회원 상세 정보
 $member_detail = null;
@@ -741,7 +1129,13 @@ if($action === 'list') {
         } elseif($filter === 'inactive') {
             $where_conditions[] = "is_active = 0";
         }
-        
+
+        // 등급 필터
+        if($grade_filter !== 'all' && in_array($grade_filter, ['normal', 'silver', 'gold', 'vip'])) {
+            $where_conditions[] = "member_grade = ?";
+            $params[] = $grade_filter;
+        }
+
         $where_clause = $where_conditions ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
         
         // 전체 개수
@@ -821,6 +1215,7 @@ if($action === 'list') {
                     <form method="POST" action="admin_members_action.php">
                         <input type="hidden" name="action" value="update_member">
                         <input type="hidden" name="member_id" value="<?php echo $member_detail['id']; ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                         <div class="detail-grid">
                             <div class="detail-item">
                                 <div class="detail-label">아이디</div>
@@ -963,6 +1358,22 @@ if($action === 'list') {
                                 <div class="detail-label">관리자 여부</div>
                                 <div class="detail-value"><?php echo $member_detail['is_admin'] ? '관리자' : '일반회원'; ?></div>
                             </div>
+                            <div class="detail-item">
+                                <div class="detail-label">회원등급</div>
+                                <div class="detail-value">
+                                    <select name="member_grade" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                                        <option value="normal" <?php echo ($member_detail['member_grade'] ?? 'normal') === 'normal' ? 'selected' : ''; ?>>일반 (할인 0%)</option>
+                                        <option value="silver" <?php echo ($member_detail['member_grade'] ?? '') === 'silver' ? 'selected' : ''; ?>>실버 (할인 3%)</option>
+                                        <option value="gold" <?php echo ($member_detail['member_grade'] ?? '') === 'gold' ? 'selected' : ''; ?>>골드 (할인 5%)</option>
+                                        <option value="vip" <?php echo ($member_detail['member_grade'] ?? '') === 'vip' ? 'selected' : ''; ?>>VIP (할인 10%)</option>
+                                    </select>
+                                    <?php if($member_detail['grade_updated_at']): ?>
+                                        <small style="color: #999; margin-left: 8px;">
+                                            (변경일: <?php echo date('Y-m-d H:i', strtotime($member_detail['grade_updated_at'])); ?>)
+                                        </small>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                             <div class="detail-item" style="grid-column: 1 / -1;">
                                 <div class="detail-label">관리자 메모</div>
                                 <input type="hidden" name="memo" value="<?php echo htmlspecialchars($member_detail['memo'] ?? ''); ?>">
@@ -991,7 +1402,18 @@ if($action === 'list') {
                                         <p style="text-align: center; color: #999; margin: 0;">등록된 메모가 없습니다.</p>
                                     <?php endif; ?>
                                 </div>
-                                
+
+                                <!-- toggleMemoAdd 함수를 버튼보다 먼저 정의 -->
+                                <script>
+                                function toggleMemoAdd() {
+                                    const addSection = document.getElementById('memo-add-section');
+                                    addSection.classList.toggle('active');
+                                    if (addSection.classList.contains('active')) {
+                                        document.getElementById('new-memo-content').focus();
+                                    }
+                                }
+                                </script>
+
                                 <!-- 메모 추가 버튼 -->
                                 <button type="button" class="add-memo-btn" onclick="toggleMemoAdd()" style="margin-top: 12px;">
                                     + 메모 추가
@@ -1027,6 +1449,7 @@ if($action === 'list') {
                     <form method="POST" action="admin_members_action.php">
                         <input type="hidden" name="action" value="change_password">
                         <input type="hidden" name="member_id" value="<?php echo $member_detail['id']; ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                         <div class="detail-grid">
                             <div class="detail-item" style="grid-column: 1 / -1;">
                                 <div class="detail-label">새 비밀번호</div>
@@ -1047,24 +1470,40 @@ if($action === 'list') {
                 </div>
                 
                 <!-- 로그인 이력 섹션 -->
-                <?php 
+                <?php
                 $member_id = $member_detail['id'];
-                include 'includes/member_login_history.php'; 
+                include 'includes/member_login_history.php';
                 ?>
-                
-                <div class="action-links" style="margin-top: 24px;">
-                    <a href="?action=toggle_status&id=<?php echo $member_detail['id']; ?>" 
-                       class="btn-toggle"
-                       onclick="return confirm('상태를 변경하시겠습니까?')">
-                        상태 변경
-                    </a>
-                    <?php if(!$member_detail['is_admin']): ?>
-                        <a href="?action=delete&id=<?php echo $member_detail['id']; ?>" 
-                           class="btn-delete"
-                           onclick="return confirm('정말 삭제하시겠습니까?')">
-                            삭제
-                        </a>
-                    <?php endif; ?>
+
+                <!-- 관리 이력 섹션 -->
+                <?php include 'includes/member_admin_history.php'; ?>
+
+                <!-- 상태 변경 / 삭제 (POST 폼) -->
+                <div class="member-detail" style="margin-top: 24px;">
+                    <h3 style="font-size: 18px; margin-bottom: 16px;">회원 관리</h3>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <!-- 상태 변경 폼 -->
+                        <form method="POST" action="admin_members_action.php" style="display: inline;" onsubmit="return confirm('상태를 변경하시겠습니까?');">
+                            <input type="hidden" name="action" value="toggle_status">
+                            <input type="hidden" name="member_id" value="<?php echo $member_detail['id']; ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                            <button type="submit" class="btn-toggle" style="padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; background: <?php echo $member_detail['is_active'] ? '#FF9800' : '#4CAF50'; ?>; color: white;">
+                                <?php echo $member_detail['is_active'] ? '비활성화' : '활성화'; ?>
+                            </button>
+                        </form>
+
+                        <?php if(!$member_detail['is_admin']): ?>
+                        <!-- 삭제 폼 -->
+                        <form method="POST" action="admin_members_action.php" style="display: inline;" onsubmit="return confirm('정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.');">
+                            <input type="hidden" name="action" value="delete_member">
+                            <input type="hidden" name="member_id" value="<?php echo $member_detail['id']; ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                            <button type="submit" class="btn-delete" style="padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; background: #F44336; color: white;">
+                                회원 삭제
+                            </button>
+                        </form>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
             
@@ -1143,15 +1582,7 @@ if($action === 'list') {
                     }
                 }).open();
             }
-            
-            function toggleMemoAdd() {
-                const addSection = document.getElementById('memo-add-section');
-                addSection.classList.toggle('active');
-                if (addSection.classList.contains('active')) {
-                    document.getElementById('new-memo-content').focus();
-                }
-            }
-            
+
             function addMemo(memberId) {
                 const newMemoContent = document.getElementById('new-memo-content').value.trim();
                 if (!newMemoContent) {
@@ -1216,9 +1647,21 @@ if($action === 'list') {
         <?php else: ?>
             <div class="page-header">
                 <h1>회원 관리</h1>
-                <p>가입된 회원을 조회하고 관리할 수 있습니다. <?php if($search): ?><strong>검색어: "<?php echo htmlspecialchars($search); ?>"</strong><?php endif; ?></p>
+                <p>가입된 회원을 조회하고 관리할 수 있습니다. <?php if($search && $tab === 'list'): ?><strong>검색어: "<?php echo htmlspecialchars($search); ?>"</strong><?php endif; ?></p>
             </div>
-            
+
+            <!-- 탭 메뉴 -->
+            <div class="member-tabs">
+                <a href="?tab=list" class="member-tab <?php echo $tab === 'list' ? 'active' : ''; ?>">
+                    회원 목록 <span class="badge"><?php echo number_format($total ?? 0); ?></span>
+                </a>
+                <a href="?tab=permissions" class="member-tab <?php echo $tab === 'permissions' ? 'active' : ''; ?>">
+                    권한설정
+                </a>
+            </div>
+
+            <?php if($tab === 'list'): ?>
+            <!-- 회원 목록 탭 -->
             <div style="margin-bottom: 20px; text-align: right;">
                 <a href="admin_members_add.php" class="btn btn-primary" style="padding: 10px 20px; background: #1A237E; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">+ 회원 추가</a>
             </div>
@@ -1228,12 +1671,19 @@ if($action === 'list') {
                        placeholder="아이디, 이름, 이메일, 회사명, 메모로 검색" 
                        value="<?php echo htmlspecialchars($search); ?>">
                 <select name="filter" class="filter-select">
-                    <option value="all" <?php echo $filter === 'all' ? 'selected' : ''; ?>>전체</option>
+                    <option value="all" <?php echo $filter === 'all' ? 'selected' : ''; ?>>전체 상태</option>
                     <option value="active" <?php echo $filter === 'active' ? 'selected' : ''; ?>>활성</option>
                     <option value="inactive" <?php echo $filter === 'inactive' ? 'selected' : ''; ?>>비활성</option>
                 </select>
+                <select name="grade" class="filter-select">
+                    <option value="all" <?php echo $grade_filter === 'all' ? 'selected' : ''; ?>>전체 등급</option>
+                    <option value="normal" <?php echo $grade_filter === 'normal' ? 'selected' : ''; ?>>일반</option>
+                    <option value="silver" <?php echo $grade_filter === 'silver' ? 'selected' : ''; ?>>실버</option>
+                    <option value="gold" <?php echo $grade_filter === 'gold' ? 'selected' : ''; ?>>골드</option>
+                    <option value="vip" <?php echo $grade_filter === 'vip' ? 'selected' : ''; ?>>VIP</option>
+                </select>
                 <button type="submit" class="search-btn">검색</button>
-                <?php if($search || $filter !== 'all'): ?>
+                <?php if($search || $filter !== 'all' || $grade_filter !== 'all'): ?>
                     <a href="admin_members.php" class="search-btn" style="background: #666; text-decoration: none; display: inline-flex; align-items: center;">초기화</a>
                 <?php endif; ?>
             </form>
@@ -1247,6 +1697,7 @@ if($action === 'list') {
                                 <th>아이디</th>
                                 <th>이름</th>
                                 <th>회사명</th>
+                                <th>등급</th>
                                 <th>가입일</th>
                                 <th>상태</th>
                                 <th>관리</th>
@@ -1255,11 +1706,20 @@ if($action === 'list') {
                     <tbody>
                         <?php if(empty($members)): ?>
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 40px;">
+                                <td colspan="8" style="text-align: center; padding: 40px;">
                                     등록된 회원이 없습니다.
                                 </td>
                             </tr>
                         <?php else: ?>
+                            <?php
+                            // 등급 레이블 정의
+                            $gradeLabels = [
+                                'normal' => '일반',
+                                'silver' => '실버',
+                                'gold' => '골드',
+                                'vip' => 'VIP'
+                            ];
+                            ?>
                             <?php foreach($members as $member): ?>
                                 <tr>
                                     <td><?php echo $member['id']; ?></td>
@@ -1286,6 +1746,12 @@ if($action === 'list') {
                                             <?php echo htmlspecialchars($member['company'] ?? '-'); ?>
                                         </span>
                                     </td>
+                                    <td>
+                                        <?php $grade = $member['member_grade'] ?? 'normal'; ?>
+                                        <span class="grade-badge grade-<?php echo $grade; ?>">
+                                            <?php echo $gradeLabels[$grade] ?? '일반'; ?>
+                                        </span>
+                                    </td>
                                     <td><?php echo date('Y-m-d', strtotime($member['created_at'])); ?></td>
                                     <td>
                                         <?php if($member['is_active']): ?>
@@ -1297,17 +1763,9 @@ if($action === 'list') {
                                     <td>
                                         <div class="action-links">
                                             <a href="?action=view&id=<?php echo $member['id']; ?>" class="btn-view">상세</a>
-                                            <a href="?action=toggle_status&id=<?php echo $member['id']; ?>" 
-                                               class="btn-toggle"
-                                               onclick="return confirm('상태를 변경하시겠습니까?')">
-                                                상태
-                                            </a>
+                                            <button type="button" class="btn-toggle" onclick="toggleMemberStatus(<?php echo $member['id']; ?>)">상태</button>
                                             <?php if(!$member['is_admin']): ?>
-                                                <a href="?action=delete&id=<?php echo $member['id']; ?>" 
-                                                   class="btn-delete"
-                                                   onclick="return confirm('정말 삭제하시겠습니까?')">
-                                                    삭제
-                                                </a>
+                                                <button type="button" class="btn-delete" onclick="deleteMember(<?php echo $member['id']; ?>)">삭제</button>
                                             <?php endif; ?>
                                         </div>
                                     </td>
@@ -1615,6 +2073,408 @@ if($action === 'list') {
                 }
             });
             </script>
+            <?php endif; // end tab === 'list' ?>
+
+            <?php if($tab === 'permissions'): ?>
+            <!-- 권한설정 탭 -->
+            <div id="permissions-content">
+                <!-- 등급별 통계 -->
+                <div class="permission-section">
+                    <h3 class="permission-section-title">등급별 회원 현황</h3>
+                    <div class="stats-grid" id="grade-stats">
+                        <div class="stat-card">
+                            <div class="stat-grade">일반</div>
+                            <div class="stat-count" id="stat-normal">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-grade">실버</div>
+                            <div class="stat-count" id="stat-silver">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-grade">골드</div>
+                            <div class="stat-count" id="stat-gold">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-grade">VIP</div>
+                            <div class="stat-count" id="stat-vip">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 등급 설정 -->
+                <div class="permission-section">
+                    <h3 class="permission-section-title">등급별 할인율 설정</h3>
+                    <div id="grade-settings-alert"></div>
+                    <table class="grade-settings-table">
+                        <thead>
+                            <tr>
+                                <th>등급코드</th>
+                                <th>등급명</th>
+                                <th>할인율 (%)</th>
+                                <th>정렬순서</th>
+                                <th>활성</th>
+                            </tr>
+                        </thead>
+                        <tbody id="grade-settings-body">
+                            <tr><td colspan="5" style="text-align:center;padding:40px;color:#999;">로딩 중...</td></tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 16px; display: flex; gap: 12px;">
+                        <button type="button" class="btn-primary" onclick="saveGradeSettings()">등급 설정 저장</button>
+                    </div>
+                </div>
+
+                <!-- 등급별 접근 권한 -->
+                <div class="permission-section">
+                    <h3 class="permission-section-title">등급별 접근 권한</h3>
+                    <div id="permission-matrix-alert"></div>
+                    <table class="permission-matrix" id="permission-matrix">
+                        <thead>
+                            <tr>
+                                <th style="width:40%;">권한</th>
+                                <th>일반</th>
+                                <th>실버</th>
+                                <th>골드</th>
+                                <th>VIP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="permission-matrix-body">
+                            <tr><td colspan="5" style="text-align:center;padding:40px;color:#999;">로딩 중...</td></tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 16px; display: flex; gap: 12px;">
+                        <button type="button" class="btn-primary" onclick="savePermissions()">권한 설정 저장</button>
+                    </div>
+                </div>
+
+                <!-- 일괄 등급 변경 -->
+                <div class="permission-section">
+                    <h3 class="permission-section-title">일괄 등급 변경</h3>
+                    <div id="bulk-change-alert"></div>
+                    <div class="bulk-change-form">
+                        <label>현재 등급:</label>
+                        <select id="bulk-from-grade">
+                            <option value="all">전체</option>
+                            <option value="normal">일반</option>
+                            <option value="silver">실버</option>
+                            <option value="gold">골드</option>
+                            <option value="vip">VIP</option>
+                        </select>
+                        <span style="font-size:20px;">→</span>
+                        <label>변경할 등급:</label>
+                        <select id="bulk-to-grade">
+                            <option value="normal">일반</option>
+                            <option value="silver">실버</option>
+                            <option value="gold">골드</option>
+                            <option value="vip">VIP</option>
+                        </select>
+                        <button type="button" class="btn-secondary" onclick="previewBulkChange()">미리보기</button>
+                        <button type="button" class="btn-success" onclick="executeBulkChange()">일괄 변경</button>
+                    </div>
+                    <div id="bulk-preview" style="margin-top: 16px; display: none;"></div>
+                </div>
+
+                <!-- 관리자 목록 -->
+                <div class="permission-section">
+                    <h3 class="permission-section-title">관리자 권한 관리</h3>
+                    <div id="admin-list-alert"></div>
+                    <table class="admin-list-table">
+                        <thead>
+                            <tr>
+                                <th>아이디</th>
+                                <th>이름</th>
+                                <th>회사명</th>
+                                <th>관리자 권한</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-list-body">
+                            <tr><td colspan="4" style="text-align:center;padding:40px;color:#999;">로딩 중...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <script>
+            // 권한설정 탭 JavaScript
+            document.addEventListener('DOMContentLoaded', function() {
+                loadGradeStats();
+                loadGradeSettings();
+                loadPermissionMatrix();
+                loadAdminList();
+            });
+
+            // 등급별 통계 로드
+            function loadGradeStats() {
+                fetch('ajax/member_permissions.php?action=get_stats')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('stat-normal').innerHTML = data.stats.normal + '<small>명</small>';
+                            document.getElementById('stat-silver').innerHTML = data.stats.silver + '<small>명</small>';
+                            document.getElementById('stat-gold').innerHTML = data.stats.gold + '<small>명</small>';
+                            document.getElementById('stat-vip').innerHTML = data.stats.vip + '<small>명</small>';
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+
+            // 등급 설정 로드
+            function loadGradeSettings() {
+                fetch('ajax/member_permissions.php?action=get_grade_settings')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const tbody = document.getElementById('grade-settings-body');
+                            tbody.innerHTML = data.grades.map(grade => `
+                                <tr data-grade-code="${grade.grade_code}">
+                                    <td><code>${grade.grade_code}</code></td>
+                                    <td><input type="text" name="grade_name" value="${grade.grade_name}" style="width:100px;"></td>
+                                    <td><input type="number" name="discount_rate" value="${grade.discount_rate}" step="0.5" min="0" max="100" style="width:70px;">%</td>
+                                    <td><input type="number" name="sort_order" value="${grade.sort_order}" min="1" max="100" style="width:60px;"></td>
+                                    <td><input type="checkbox" name="is_active" ${grade.is_active == 1 ? 'checked' : ''}></td>
+                                </tr>
+                            `).join('');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+
+            // 등급 설정 저장
+            function saveGradeSettings() {
+                const rows = document.querySelectorAll('#grade-settings-body tr');
+                const grades = [];
+
+                rows.forEach(row => {
+                    const gradeCode = row.dataset.gradeCode;
+                    if (gradeCode) {
+                        grades.push({
+                            grade_code: gradeCode,
+                            grade_name: row.querySelector('input[name="grade_name"]').value,
+                            discount_rate: parseFloat(row.querySelector('input[name="discount_rate"]').value),
+                            sort_order: parseInt(row.querySelector('input[name="sort_order"]').value),
+                            is_active: row.querySelector('input[name="is_active"]').checked ? 1 : 0
+                        });
+                    }
+                });
+
+                fetch('ajax/member_permissions.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'save_grade_settings', grades: grades })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const alertDiv = document.getElementById('grade-settings-alert');
+                    if (data.success) {
+                        alertDiv.innerHTML = '<div class="alert alert-success">등급 설정이 저장되었습니다.</div>';
+                    } else {
+                        alertDiv.innerHTML = '<div class="alert alert-error">' + (data.message || '저장 실패') + '</div>';
+                    }
+                    setTimeout(() => alertDiv.innerHTML = '', 3000);
+                })
+                .catch(error => console.error('Error:', error));
+            }
+
+            // 권한 매트릭스 로드
+            function loadPermissionMatrix() {
+                fetch('ajax/member_permissions.php?action=get_permission_matrix')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const tbody = document.getElementById('permission-matrix-body');
+                            tbody.innerHTML = data.permissions.map(perm => {
+                                const grades = ['normal', 'silver', 'gold', 'vip'];
+                                const checkboxes = grades.map(grade => {
+                                    const checked = data.matrix[grade] && data.matrix[grade].includes(perm.permission_code);
+                                    return `<td><input type="checkbox" data-permission="${perm.permission_code}" data-grade="${grade}" ${checked ? 'checked' : ''}></td>`;
+                                }).join('');
+                                return `
+                                    <tr>
+                                        <td>
+                                            <strong>${perm.permission_name}</strong>
+                                            <br><small style="color:#999;">${perm.description || ''}</small>
+                                        </td>
+                                        ${checkboxes}
+                                    </tr>
+                                `;
+                            }).join('');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+
+            // 권한 설정 저장
+            function savePermissions() {
+                const checkboxes = document.querySelectorAll('#permission-matrix-body input[type="checkbox"]');
+                const permissions = {};
+
+                checkboxes.forEach(cb => {
+                    const grade = cb.dataset.grade;
+                    const permission = cb.dataset.permission;
+                    if (!permissions[grade]) {
+                        permissions[grade] = [];
+                    }
+                    if (cb.checked) {
+                        permissions[grade].push(permission);
+                    }
+                });
+
+                fetch('ajax/member_permissions.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'save_permissions', permissions: permissions })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const alertDiv = document.getElementById('permission-matrix-alert');
+                    if (data.success) {
+                        alertDiv.innerHTML = '<div class="alert alert-success">권한 설정이 저장되었습니다.</div>';
+                    } else {
+                        alertDiv.innerHTML = '<div class="alert alert-error">' + (data.message || '저장 실패') + '</div>';
+                    }
+                    setTimeout(() => alertDiv.innerHTML = '', 3000);
+                })
+                .catch(error => console.error('Error:', error));
+            }
+
+            // 일괄 변경 미리보기
+            function previewBulkChange() {
+                const fromGrade = document.getElementById('bulk-from-grade').value;
+                const toGrade = document.getElementById('bulk-to-grade').value;
+
+                if (fromGrade === toGrade) {
+                    alert('현재 등급과 변경할 등급이 같습니다.');
+                    return;
+                }
+
+                fetch(`ajax/member_permissions.php?action=preview_bulk_change&from=${fromGrade}&to=${toGrade}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const preview = document.getElementById('bulk-preview');
+                        if (data.success) {
+                            preview.style.display = 'block';
+                            preview.innerHTML = `
+                                <div style="padding: 16px; background: #E3F2FD; border-radius: 8px;">
+                                    <strong>변경 대상: ${data.count}명</strong>
+                                    <br><small style="color:#666;">변경하려면 "일괄 변경" 버튼을 클릭하세요.</small>
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+
+            // 일괄 등급 변경 실행
+            function executeBulkChange() {
+                const fromGrade = document.getElementById('bulk-from-grade').value;
+                const toGrade = document.getElementById('bulk-to-grade').value;
+
+                if (fromGrade === toGrade) {
+                    alert('현재 등급과 변경할 등급이 같습니다.');
+                    return;
+                }
+
+                if (!confirm('정말 일괄 변경하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                    return;
+                }
+
+                fetch('ajax/member_permissions.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'execute_bulk_change', from: fromGrade, to: toGrade })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const alertDiv = document.getElementById('bulk-change-alert');
+                    if (data.success) {
+                        alertDiv.innerHTML = `<div class="alert alert-success">${data.count}명의 등급이 변경되었습니다.</div>`;
+                        document.getElementById('bulk-preview').style.display = 'none';
+                        loadGradeStats(); // 통계 갱신
+                    } else {
+                        alertDiv.innerHTML = '<div class="alert alert-error">' + (data.message || '변경 실패') + '</div>';
+                    }
+                    setTimeout(() => alertDiv.innerHTML = '', 3000);
+                })
+                .catch(error => console.error('Error:', error));
+            }
+
+            // 관리자 목록 로드
+            function loadAdminList() {
+                fetch('ajax/member_permissions.php?action=get_admin_list')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const tbody = document.getElementById('admin-list-body');
+                            tbody.innerHTML = data.members.map(member => `
+                                <tr>
+                                    <td>${member.user_id}</td>
+                                    <td>${member.name}</td>
+                                    <td>${member.company || '-'}</td>
+                                    <td>
+                                        <button type="button" class="admin-toggle-btn ${member.is_admin == 1 ? 'is-admin' : 'not-admin'}"
+                                                onclick="toggleAdmin(${member.id}, ${member.is_admin})">
+                                            ${member.is_admin == 1 ? '관리자' : '관리자 부여'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+
+            // 관리자 권한 토글
+            function toggleAdmin(memberId, currentStatus) {
+                const action = currentStatus == 1 ? '관리자 권한을 해제하시겠습니까?' : '관리자 권한을 부여하시겠습니까?';
+                if (!confirm(action)) return;
+
+                fetch('ajax/member_permissions.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'toggle_admin', member_id: memberId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const alertDiv = document.getElementById('admin-list-alert');
+                    if (data.success) {
+                        alertDiv.innerHTML = '<div class="alert alert-success">관리자 권한이 변경되었습니다.</div>';
+                        loadAdminList(); // 목록 갱신
+                    } else {
+                        alertDiv.innerHTML = '<div class="alert alert-error">' + (data.message || '변경 실패') + '</div>';
+                    }
+                    setTimeout(() => alertDiv.innerHTML = '', 3000);
+                })
+                .catch(error => console.error('Error:', error));
+            }
+            </script>
+            <?php endif; // end tab === 'permissions' ?>
         <?php endif; ?>
+
+<!-- 목록 페이지용 상태변경/삭제 폼 -->
+<form id="memberActionForm" method="POST" action="admin_members_action.php" style="display: none;">
+    <input type="hidden" name="action" id="memberActionType">
+    <input type="hidden" name="member_id" id="memberActionId">
+    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+</form>
+
+<script>
+// 회원 상태 변경 (목록 페이지용)
+function toggleMemberStatus(memberId) {
+    if (!confirm('상태를 변경하시겠습니까?')) return;
+
+    document.getElementById('memberActionType').value = 'toggle_status';
+    document.getElementById('memberActionId').value = memberId;
+    document.getElementById('memberActionForm').submit();
+}
+
+// 회원 삭제 (목록 페이지용)
+function deleteMember(memberId) {
+    if (!confirm('정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+
+    document.getElementById('memberActionType').value = 'delete_member';
+    document.getElementById('memberActionId').value = memberId;
+    document.getElementById('memberActionForm').submit();
+}
+</script>
 
 <?php require_once 'admin_tail.php'; ?>

@@ -111,7 +111,6 @@ $result = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $group_url = trim($_POST['group_url'] ?? '');
     $only_empty = isset($_POST['only_empty']);
-    $apply_all = isset($_POST['apply_all']);
 
     if (!$group_url) {
         $message = '제품군 URL을 입력하세요.';
@@ -131,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = '파일 크기는 25MB 이하여야 합니다.';
             } else {
                 $upload_dir = dirname(__DIR__) . '/uploads/products/';
-                if (!is_dir($upload_dir)) @mkdir($upload_dir, 0777, true);
+                if (!is_dir($upload_dir)) @mkdir($upload_dir, 0755, true);
                 $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
                 $filename = 'bulk_' . preg_replace('/[^a-z0-9\-_.]/i', '-', $category_code) . '_' . time() . '.' . $ext;
                 $path = $upload_dir . $filename;
@@ -147,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                     // 적용 대상 카운트
-                    if ($only_empty && !$apply_all) {
+                    if ($only_empty) {
                         $stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE category_code = ? AND (main_image IS NULL OR main_image = '')");
                         $stmt->execute([$category_code]);
                     } else {
@@ -157,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $target_count = (int)$stmt->fetchColumn();
 
                     // 업데이트 실행
-                    if ($only_empty && !$apply_all) {
+                    if ($only_empty) {
                         $stmt = $pdo->prepare("UPDATE products SET main_image = ?, updated_at = NOW() WHERE category_code = ? AND (main_image IS NULL OR main_image = '')");
                         $stmt->execute([$web_path, $category_code]);
                     } else {
@@ -286,6 +285,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($desc_image_url)) {
                 $desc_message = $desc_message ?: '이미지 파일을 업로드하거나 URL을 입력해주세요.';
             } else {
+                $replace_existing = isset($_POST['replace_existing']);
+
                 try {
                     // 모든 제품 조회
                     $products_query = "SELECT id, product_name, description FROM products WHERE is_active = 1";
@@ -297,13 +298,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     foreach ($all_products as $product) {
                         $current_desc = $product['description'] ?? '';
 
-                        // 이미 이미지가 있는지 확인
-                        $has_image = preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $current_desc);
+                        // 이미 이미지가 있는지 확인 (문자열 전체에서 검색)
+                        $has_image = preg_match('/\.(jpg|jpeg|png|gif|webp)(\s|$|\n)/i', $current_desc);
 
-                        // 모든 제품에 적용 또는 이미지가 없는 경우만
-                        if ($apply_to_all || !$has_image) {
-                            // 기존 설명이 있으면 유지하고 이미지 URL 추가
-                            $new_desc = trim($current_desc);
+                        // 적용 조건: 이미지 없거나, 추가 적용 체크, 또는 교체 체크
+                        if (!$has_image || $apply_to_all || $replace_existing) {
+                            if ($replace_existing && $has_image) {
+                                // 기존 이미지 URL 제거 (uploads 경로의 이미지만)
+                                $new_desc = preg_replace('/\n?\/uploads\/products\/[^\s\n]+\.(jpg|jpeg|png|gif|webp)/i', '', $current_desc);
+                                $new_desc = trim($new_desc);
+                            } else {
+                                $new_desc = trim($current_desc);
+                            }
+
                             if (!empty($new_desc)) {
                                 $new_desc .= "\n";
                             }
@@ -363,9 +370,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group">
                 <label>
                     <input type="checkbox" name="apply_to_all" <?php echo isset($_POST['apply_to_all']) ? 'checked' : ''; ?>>
-                    이미 이미지가 있는 제품도 덮어쓰기
+                    이미 이미지가 있어도 추가 적용
                 </label>
-                <div class="hint">체크 해제 시 이미지가 없는 제품에만 추가됩니다 (권장).</div>
+                <div class="hint">체크 시 기존 이미지를 유지하고 새 이미지를 추가합니다.</div>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="replace_existing" <?php echo isset($_POST['replace_existing']) ? 'checked' : ''; ?>>
+                    기존 이미지 교체
+                </label>
+                <div class="hint">체크 시 기존 description의 이미지 URL을 제거하고 새 이미지로 교체합니다.</div>
             </div>
 
             <div class="actions">

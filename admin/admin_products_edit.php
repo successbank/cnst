@@ -46,9 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $unit = trim($_POST['unit'] ?? '');
     $min_order_qty = (int)($_POST['min_order_qty'] ?? 1);
     $stock_status = $_POST['stock_status'] ?? 'in_stock';
-    // base_length 컬럼이 존재하는지 확인
-    $stmt = $pdo->query("SHOW COLUMNS FROM products LIKE 'base_length'");
-    $has_base_length = $stmt->fetch() !== false;
     $base_length = (int)($_POST['base_length'] ?? 6);
 
     // 길이 제한 값들
@@ -56,10 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $max_length = isset($_POST['max_length']) && $_POST['max_length'] !== '' ? (float)$_POST['max_length'] : null;
     $standard_length = isset($_POST['standard_length']) && $_POST['standard_length'] !== '' ? (float)$_POST['standard_length'] : null;
 
-    // min_price, max_price 컬럼이 존재하는지 확인
-    $stmt = $pdo->query("SHOW COLUMNS FROM products LIKE 'min_price'");
-    $has_price_range = $stmt->fetch() !== false;
     $features = trim($_POST['features'] ?? '');
+    $dimensions = trim($_POST['dimensions'] ?? '');
+    $weight = trim($_POST['weight'] ?? '');
+    $material = trim($_POST['material'] ?? '');
+    $manufacturer = trim($_POST['manufacturer'] ?? '');
+    $origin = trim($_POST['origin'] ?? '');
     $delivery_info = trim($_POST['delivery_info'] ?? '');
     $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
@@ -78,6 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 제품 상세보기용 필드들
     $quality_cert = trim($_POST['quality_cert'] ?? '');
     $product_features = trim($_POST['product_features'] ?? '');
+
+    // 계산 관련 필드
+    $calculation_type = $_POST['calculation_type'] ?? 'linear';
+    $has_calculator = isset($_POST['has_calculator']) ? 1 : 0;
+    $unit_weight_data_raw = $_POST['unit_weight_data'] ?? '';
+    $unit_weight_data = $unit_weight_data_raw !== '' ? $unit_weight_data_raw : null;
 
     // 대표 이미지 처리
     $main_image = trim($_POST['main_image'] ?? '');
@@ -104,232 +109,369 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (!$errors) {
         try {
-            if ($id > 0) {
-                // 디버그: 어떤 조건이 실행되는지 확인
-                echo "<div style='background: #ffeaa7; padding: 10px; margin: 10px; border-radius: 5px;'>";
-                echo "디버그 정보:<br>";
-                echo "has_base_length: " . ($has_base_length ? 'true' : 'false') . "<br>";
-                echo "has_price_range: " . ($has_price_range ? 'true' : 'false') . "<br>";
-                echo "price 값: " . ($price ?? 'null') . "<br>";
-                echo "</div>";
-                
-                // 수정
-                if ($has_base_length && $has_price_range) {
-                    $stmt = $pdo->prepare("
-                        UPDATE products SET
-                            category_code = ?, product_name = ?, product_code = ?,
-                            specifications = ?, specification = ?, description = ?, price = ?,
-                            min_price = ?, max_price = ?,
-                            unit = ?, min_order_qty = ?, stock_status = ?,
-                            base_length = ?, min_length = ?, max_length = ?, standard_length = ?, features = ?,
-                            available_origins = ?, available_materials = ?, material_price_data = ?,
-                            delivery_info = ?, is_featured = ?, is_active = ?,
-                            show_on_homepage = ?, homepage_display_order = ?,
-                            detailed_description = ?, key_features = ?, technical_specs = ?,
-                            applications = ?, certifications = ?, brochure_url = ?,
-                            show_details = ?, quality_cert = ?, product_features = ?,
-                            main_image = ?,
-                            details_updated_at = NOW()
-                        WHERE id = ?
-                    ");
-                    $stmt->execute([
-                        $category_code, $product_name, $product_code,
-                        $specifications, $specification, $description, $price,
-                        $min_price, $max_price,
-                        $unit, $min_order_qty, $stock_status,
-                        $base_length, $min_length, $max_length, $standard_length, $features,
-                        $available_origins_json, $available_materials_json, $material_price_data,
-                        $delivery_info, $is_featured, $is_active,
-                        $show_on_homepage, $homepage_display_order,
-                        $detailed_description, $key_features, $technical_specs,
-                        $applications, $certifications, $brochure_url,
-                        $show_details, $quality_cert, $product_features,
-                        $main_image,
-                        $id
-                    ]);
-                } else if ($has_base_length) {
-                    $stmt = $pdo->prepare("
-                        UPDATE products SET
-                            category_code = ?, product_name = ?, product_code = ?,
-                            specifications = ?, specification = ?, description = ?, price = ?,
-                            unit = ?, min_order_qty = ?, stock_status = ?,
-                            base_length = ?, min_length = ?, max_length = ?, standard_length = ?, features = ?,
-                            available_origins = ?, available_materials = ?, delivery_info = ?, is_featured = ?, is_active = ?,
-                            show_on_homepage = ?, homepage_display_order = ?,
-                            detailed_description = ?, key_features = ?, technical_specs = ?,
-                            applications = ?, certifications = ?, brochure_url = ?,
-                            show_details = ?, quality_cert = ?, product_features = ?,
-                            main_image = ?,
-                            details_updated_at = NOW()
-                        WHERE id = ?
-                    ");
-                    $stmt->execute([
-                        $category_code, $product_name, $product_code,
-                        $specifications, $specification, $description, $price,
-                        $unit, $min_order_qty, $stock_status,
-                        $base_length, $min_length, $max_length, $standard_length, $features,
-                        $available_origins_json, $available_materials_json, $delivery_info, $is_featured, $is_active,
-                        $show_on_homepage, $homepage_display_order,
-                        $detailed_description, $key_features, $technical_specs,
-                        $applications, $certifications, $brochure_url,
-                        $show_details, $quality_cert, $product_features,
-                        $main_image,
-                        $id
-                    ]);
-                } else if ($has_price_range) {
-                    $stmt = $pdo->prepare("
-                        UPDATE products SET
-                            category_code = ?, product_name = ?, product_code = ?,
-                            specifications = ?, specification = ?, description = ?, price = ?,
-                            min_price = ?, max_price = ?,
-                            unit = ?, min_order_qty = ?, stock_status = ?,
-                            features = ?,
-                            available_origins = ?, available_materials = ?, material_price_data = ?, delivery_info = ?, is_featured = ?, is_active = ?,
-                            show_on_homepage = ?, homepage_display_order = ?,
-                            main_image = ?
-                        WHERE id = ?
-                    ");
-                    $stmt->execute([
-                        $category_code, $product_name, $product_code,
-                        $specifications, $specification, $description, $price,
-                        $min_price, $max_price,
-                        $unit, $min_order_qty, $stock_status,
-                        $features,
-                        $available_origins_json, $available_materials_json, $material_price_data, $delivery_info, $is_featured, $is_active,
-                        $show_on_homepage, $homepage_display_order,
-                        $main_image,
-                        $id
-                    ]);
-                } else {
-                    $stmt = $pdo->prepare("
-                        UPDATE products SET
-                            category_code = ?, product_name = ?, product_code = ?,
-                            specifications = ?, specification = ?, description = ?, price = ?,
-                            unit = ?, min_order_qty = ?, stock_status = ?,
-                            features = ?,
-                            available_origins = ?, available_materials = ?, material_price_data = ?, delivery_info = ?, is_featured = ?, is_active = ?,
-                            show_on_homepage = ?, homepage_display_order = ?,
-                            main_image = ?
-                        WHERE id = ?
-                    ");
-                    $stmt->execute([
-                        $category_code, $product_name, $product_code,
-                        $specifications, $specification, $description, $price,
-                        $unit, $min_order_qty, $stock_status,
-                        $features,
-                        $available_origins_json, $available_materials_json, $material_price_data, $delivery_info, $is_featured, $is_active,
-                        $show_on_homepage, $homepage_display_order,
-                        $main_image,
-                        $id
-                    ]);
-                }
-            } else {
-                // 신규 등록
-                if ($has_base_length && $has_price_range) {
-                    $stmt = $pdo->prepare("
-                        INSERT INTO products (
-                            category_code, product_name, product_code,
-                            specifications, description, price,
-                            min_price, max_price,
-                            unit, min_order_qty, stock_status,
-                            base_length, features, dimensions, weight,
-                            material, manufacturer, origin,
-                            available_origins, delivery_info, is_featured, is_active,
-                            show_on_homepage, homepage_display_order
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ");
-                    $stmt->execute([
-                        $category_code, $product_name, $product_code,
-                        $specifications, $specification, $description, $price,
-                        $min_price, $max_price,
-                        $unit, $min_order_qty, $stock_status,
-                        $base_length, $min_length, $max_length, $standard_length, $features, $dimensions, $weight,
-                        $material, $manufacturer, $origin,
-                        $available_origins_json, $delivery_info, $is_featured, $is_active,
-                        $show_on_homepage, $homepage_display_order
-                    ]);
-                } else if ($has_base_length) {
-                    $stmt = $pdo->prepare("
-                        INSERT INTO products (
-                            category_code, product_name, product_code,
-                            specifications, description, price,
-                            unit, min_order_qty, stock_status,
-                            base_length, features, dimensions, weight,
-                            material, manufacturer, origin,
-                            available_origins, delivery_info, is_featured, is_active,
-                            show_on_homepage, homepage_display_order
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ");
-                    $stmt->execute([
-                        $category_code, $product_name, $product_code,
-                        $specifications, $specification, $description, $price,
-                        $unit, $min_order_qty, $stock_status,
-                        $base_length, $min_length, $max_length, $standard_length, $features, $dimensions, $weight,
-                        $material, $manufacturer, $origin,
-                        $available_origins_json, $delivery_info, $is_featured, $is_active,
-                        $show_on_homepage, $homepage_display_order
-                    ]);
-                } else if ($has_price_range) {
-                    $stmt = $pdo->prepare("
-                        INSERT INTO products (
-                            category_code, product_name, product_code,
-                            specifications, description, price,
-                            min_price, max_price,
-                            unit, min_order_qty, stock_status,
-                            features, dimensions, weight,
-                            material, manufacturer, origin,
-                            available_origins, delivery_info, is_featured, is_active,
-                            show_on_homepage, homepage_display_order
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ");
-                    $stmt->execute([
-                        $category_code, $product_name, $product_code,
-                        $specifications, $specification, $description, $price,
-                        $min_price, $max_price,
-                        $unit, $min_order_qty, $stock_status,
-                        $features, $dimensions, $weight,
-                        $material, $manufacturer, $origin,
-                        $available_origins_json, $delivery_info, $is_featured, $is_active,
-                        $show_on_homepage, $homepage_display_order
-                    ]);
-                } else {
-                    $stmt = $pdo->prepare("
-                        INSERT INTO products (
-                            category_code, product_name, product_code,
-                            specifications, description, price,
-                            unit, min_order_qty, stock_status,
-                            features, dimensions, weight,
-                            material, manufacturer, origin,
-                            available_origins, delivery_info, is_featured, is_active,
-                            show_on_homepage, homepage_display_order
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ");
-                    $stmt->execute([
-                        $category_code, $product_name, $product_code,
-                        $specifications, $specification, $description, $price,
-                        $unit, $min_order_qty, $stock_status,
-                        $features, $dimensions, $weight,
-                        $material, $manufacturer, $origin,
-                        $available_origins_json, $delivery_info, $is_featured, $is_active,
-                        $show_on_homepage, $homepage_display_order
-                    ]);
-                }
+            // 컬럼 존재 여부 확인
+            $columns_check = [
+                'base_length' => false,
+                'min_price' => false,
+                'max_price' => false,
+                'min_length' => false,
+                'max_length' => false,
+                'standard_length' => false,
+                'specification' => false,
+                'detailed_description' => false,
+                'key_features' => false,
+                'technical_specs' => false,
+                'applications' => false,
+                'certifications' => false,
+                'brochure_url' => false,
+                'show_details' => false,
+                'details_updated_at' => false,
+                'material_price_data' => false,
+                'available_materials' => false,
+                'quality_cert' => false,
+                'product_features' => false,
+                'show_on_homepage' => false,
+                'homepage_display_order' => false,
+                'main_image' => false,
+                'calculation_type' => false,
+                'has_calculator' => false,
+                'unit_weight_data' => false
+            ];
+
+            foreach ($columns_check as $column => &$exists) {
+                $stmt = $pdo->query("SHOW COLUMNS FROM products LIKE '$column'");
+                $exists = $stmt->fetch() !== false;
             }
-            
-            // 디버깅을 위해 임시로 리다이렉션 비활성화
-            echo "<div style='background: #d4edda; color: #155724; padding: 15px; margin: 20px; border-radius: 5px;'>";
-            echo "✅ 제품이 성공적으로 업데이트되었습니다.";
-            echo "<br>업데이트된 가격: " . number_format($price ?? 0, 0) . "원";
-            echo "<br><a href='admin_products.php'>제품 목록으로 돌아가기</a> | ";
-            echo "<a href='admin_products_edit.php?id={$id}'>계속 편집하기</a>";
-            echo "</div>";
-            // header("Location: admin_products.php?message=saved");
-            // exit;
+
+            if ($id > 0) {
+                // 수정 - 동적 쿼리 사용
+                $sql = "UPDATE products SET
+                        category_code = :category_code,
+                        product_name = :product_name,
+                        product_code = :product_code,
+                        specifications = :specifications,
+                        description = :description,
+                        price = :price,
+                        unit = :unit,
+                        min_order_qty = :min_order_qty,
+                        stock_status = :stock_status,
+                        features = :features,
+                        dimensions = :dimensions,
+                        weight = :weight,
+                        material = :material,
+                        manufacturer = :manufacturer,
+                        origin = :origin,
+                        available_origins = :available_origins,
+                        delivery_info = :delivery_info,
+                        is_featured = :is_featured,
+                        is_active = :is_active";
+
+                $params = [
+                    ':category_code' => $category_code,
+                    ':product_name' => $product_name,
+                    ':product_code' => $product_code,
+                    ':specifications' => $specifications,
+                    ':description' => $description,
+                    ':price' => $price,
+                    ':unit' => $unit,
+                    ':min_order_qty' => $min_order_qty,
+                    ':stock_status' => $stock_status,
+                    ':features' => $features,
+                    ':dimensions' => $dimensions,
+                    ':weight' => $weight,
+                    ':material' => $material,
+                    ':manufacturer' => $manufacturer,
+                    ':origin' => $origin,
+                    ':available_origins' => $available_origins_json,
+                    ':delivery_info' => $delivery_info,
+                    ':is_featured' => $is_featured,
+                    ':is_active' => $is_active
+                ];
+
+                // 선택적 컬럼 추가
+                if ($columns_check['specification']) {
+                    $sql .= ", specification = :specification";
+                    $params[':specification'] = $specification;
+                }
+                if ($columns_check['base_length']) {
+                    $sql .= ", base_length = :base_length";
+                    $params[':base_length'] = $base_length;
+                }
+                if ($columns_check['min_price']) {
+                    $sql .= ", min_price = :min_price";
+                    $params[':min_price'] = $min_price;
+                }
+                if ($columns_check['max_price']) {
+                    $sql .= ", max_price = :max_price";
+                    $params[':max_price'] = $max_price;
+                }
+                if ($columns_check['min_length']) {
+                    $sql .= ", min_length = :min_length";
+                    $params[':min_length'] = $min_length;
+                }
+                if ($columns_check['max_length']) {
+                    $sql .= ", max_length = :max_length";
+                    $params[':max_length'] = $max_length;
+                }
+                if ($columns_check['standard_length']) {
+                    $sql .= ", standard_length = :standard_length";
+                    $params[':standard_length'] = $standard_length;
+                }
+                if ($columns_check['detailed_description']) {
+                    $sql .= ", detailed_description = :detailed_description";
+                    $params[':detailed_description'] = $detailed_description;
+                }
+                if ($columns_check['key_features']) {
+                    $sql .= ", key_features = :key_features";
+                    $params[':key_features'] = $key_features;
+                }
+                if ($columns_check['technical_specs']) {
+                    $sql .= ", technical_specs = :technical_specs";
+                    $params[':technical_specs'] = $technical_specs;
+                }
+                if ($columns_check['applications']) {
+                    $sql .= ", applications = :applications";
+                    $params[':applications'] = $applications;
+                }
+                if ($columns_check['certifications']) {
+                    $sql .= ", certifications = :certifications";
+                    $params[':certifications'] = $certifications;
+                }
+                if ($columns_check['brochure_url']) {
+                    $sql .= ", brochure_url = :brochure_url";
+                    $params[':brochure_url'] = $brochure_url;
+                }
+                if ($columns_check['show_details']) {
+                    $sql .= ", show_details = :show_details";
+                    $params[':show_details'] = $show_details;
+                }
+                if ($columns_check['details_updated_at']) {
+                    $sql .= ", details_updated_at = NOW()";
+                }
+                if ($columns_check['material_price_data']) {
+                    $sql .= ", material_price_data = :material_price_data";
+                    $params[':material_price_data'] = $material_price_data;
+                }
+                if ($columns_check['available_materials']) {
+                    $sql .= ", available_materials = :available_materials";
+                    $params[':available_materials'] = $available_materials_json;
+                }
+                if ($columns_check['quality_cert']) {
+                    $sql .= ", quality_cert = :quality_cert";
+                    $params[':quality_cert'] = $quality_cert;
+                }
+                if ($columns_check['product_features']) {
+                    $sql .= ", product_features = :product_features";
+                    $params[':product_features'] = $product_features;
+                }
+                if ($columns_check['show_on_homepage']) {
+                    $sql .= ", show_on_homepage = :show_on_homepage";
+                    $params[':show_on_homepage'] = $show_on_homepage;
+                }
+                if ($columns_check['homepage_display_order']) {
+                    $sql .= ", homepage_display_order = :homepage_display_order";
+                    $params[':homepage_display_order'] = $homepage_display_order;
+                }
+                if ($columns_check['main_image']) {
+                    $sql .= ", main_image = :main_image";
+                    $params[':main_image'] = $main_image;
+                }
+                if ($columns_check['calculation_type']) {
+                    $sql .= ", calculation_type = :calculation_type";
+                    $params[':calculation_type'] = $calculation_type;
+                }
+                if ($columns_check['has_calculator']) {
+                    $sql .= ", has_calculator = :has_calculator";
+                    $params[':has_calculator'] = $has_calculator;
+                }
+                if ($columns_check['unit_weight_data']) {
+                    $sql .= ", unit_weight_data = :unit_weight_data";
+                    $params[':unit_weight_data'] = $unit_weight_data;
+                }
+
+                $sql .= " WHERE id = :id";
+                $params[':id'] = $id;
+
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+
+            } else {
+                // 신규 등록 - 동적 쿼리 사용
+                $columns = [
+                    'category_code', 'product_name', 'product_code',
+                    'specifications', 'description', 'price',
+                    'unit', 'min_order_qty', 'stock_status',
+                    'features', 'dimensions', 'weight',
+                    'material', 'manufacturer', 'origin', 'available_origins',
+                    'delivery_info', 'is_featured', 'is_active'
+                ];
+
+                $values = [
+                    ':category_code', ':product_name', ':product_code',
+                    ':specifications', ':description', ':price',
+                    ':unit', ':min_order_qty', ':stock_status',
+                    ':features', ':dimensions', ':weight',
+                    ':material', ':manufacturer', ':origin', ':available_origins',
+                    ':delivery_info', ':is_featured', ':is_active'
+                ];
+
+                $params = [
+                    ':category_code' => $category_code,
+                    ':product_name' => $product_name,
+                    ':product_code' => $product_code,
+                    ':specifications' => $specifications,
+                    ':description' => $description,
+                    ':price' => $price,
+                    ':unit' => $unit,
+                    ':min_order_qty' => $min_order_qty,
+                    ':stock_status' => $stock_status,
+                    ':features' => $features,
+                    ':dimensions' => $dimensions,
+                    ':weight' => $weight,
+                    ':material' => $material,
+                    ':manufacturer' => $manufacturer,
+                    ':origin' => $origin,
+                    ':available_origins' => $available_origins_json,
+                    ':delivery_info' => $delivery_info,
+                    ':is_featured' => $is_featured,
+                    ':is_active' => $is_active
+                ];
+
+                // 선택적 컬럼 추가
+                if ($columns_check['specification']) {
+                    $columns[] = 'specification';
+                    $values[] = ':specification';
+                    $params[':specification'] = $specification;
+                }
+                if ($columns_check['base_length']) {
+                    $columns[] = 'base_length';
+                    $values[] = ':base_length';
+                    $params[':base_length'] = $base_length;
+                }
+                if ($columns_check['min_price']) {
+                    $columns[] = 'min_price';
+                    $values[] = ':min_price';
+                    $params[':min_price'] = $min_price;
+                }
+                if ($columns_check['max_price']) {
+                    $columns[] = 'max_price';
+                    $values[] = ':max_price';
+                    $params[':max_price'] = $max_price;
+                }
+                if ($columns_check['min_length']) {
+                    $columns[] = 'min_length';
+                    $values[] = ':min_length';
+                    $params[':min_length'] = $min_length;
+                }
+                if ($columns_check['max_length']) {
+                    $columns[] = 'max_length';
+                    $values[] = ':max_length';
+                    $params[':max_length'] = $max_length;
+                }
+                if ($columns_check['standard_length']) {
+                    $columns[] = 'standard_length';
+                    $values[] = ':standard_length';
+                    $params[':standard_length'] = $standard_length;
+                }
+                if ($columns_check['detailed_description']) {
+                    $columns[] = 'detailed_description';
+                    $values[] = ':detailed_description';
+                    $params[':detailed_description'] = $detailed_description;
+                }
+                if ($columns_check['key_features']) {
+                    $columns[] = 'key_features';
+                    $values[] = ':key_features';
+                    $params[':key_features'] = $key_features;
+                }
+                if ($columns_check['technical_specs']) {
+                    $columns[] = 'technical_specs';
+                    $values[] = ':technical_specs';
+                    $params[':technical_specs'] = $technical_specs;
+                }
+                if ($columns_check['applications']) {
+                    $columns[] = 'applications';
+                    $values[] = ':applications';
+                    $params[':applications'] = $applications;
+                }
+                if ($columns_check['certifications']) {
+                    $columns[] = 'certifications';
+                    $values[] = ':certifications';
+                    $params[':certifications'] = $certifications;
+                }
+                if ($columns_check['brochure_url']) {
+                    $columns[] = 'brochure_url';
+                    $values[] = ':brochure_url';
+                    $params[':brochure_url'] = $brochure_url;
+                }
+                if ($columns_check['show_details']) {
+                    $columns[] = 'show_details';
+                    $values[] = ':show_details';
+                    $params[':show_details'] = $show_details;
+                }
+                if ($columns_check['material_price_data']) {
+                    $columns[] = 'material_price_data';
+                    $values[] = ':material_price_data';
+                    $params[':material_price_data'] = $material_price_data;
+                }
+                if ($columns_check['available_materials']) {
+                    $columns[] = 'available_materials';
+                    $values[] = ':available_materials';
+                    $params[':available_materials'] = $available_materials_json;
+                }
+                if ($columns_check['quality_cert']) {
+                    $columns[] = 'quality_cert';
+                    $values[] = ':quality_cert';
+                    $params[':quality_cert'] = $quality_cert;
+                }
+                if ($columns_check['product_features']) {
+                    $columns[] = 'product_features';
+                    $values[] = ':product_features';
+                    $params[':product_features'] = $product_features;
+                }
+                if ($columns_check['show_on_homepage']) {
+                    $columns[] = 'show_on_homepage';
+                    $values[] = ':show_on_homepage';
+                    $params[':show_on_homepage'] = $show_on_homepage;
+                }
+                if ($columns_check['homepage_display_order']) {
+                    $columns[] = 'homepage_display_order';
+                    $values[] = ':homepage_display_order';
+                    $params[':homepage_display_order'] = $homepage_display_order;
+                }
+                if ($columns_check['main_image']) {
+                    $columns[] = 'main_image';
+                    $values[] = ':main_image';
+                    $params[':main_image'] = $main_image;
+                }
+                if ($columns_check['calculation_type']) {
+                    $columns[] = 'calculation_type';
+                    $values[] = ':calculation_type';
+                    $params[':calculation_type'] = $calculation_type;
+                }
+                if ($columns_check['has_calculator']) {
+                    $columns[] = 'has_calculator';
+                    $values[] = ':has_calculator';
+                    $params[':has_calculator'] = $has_calculator;
+                }
+                if ($columns_check['unit_weight_data']) {
+                    $columns[] = 'unit_weight_data';
+                    $values[] = ':unit_weight_data';
+                    $params[':unit_weight_data'] = $unit_weight_data;
+                }
+
+                $sql = "INSERT INTO products (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";
+
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+
+                $id = $pdo->lastInsertId();
+            }
+
+            header("Location: admin_products.php?message=saved");
+            exit;
         } catch (PDOException $e) {
             $errors[] = "저장 중 오류가 발생했습니다: " . $e->getMessage();
-            // 디버그 정보 추가
-            error_log("Product update error: " . $e->getMessage());
-            error_log("SQL State: " . $e->getCode());
+            error_log("Product save error: " . $e->getMessage());
         }
     }
 }
@@ -1173,7 +1315,40 @@ include 'admin_head.php';
             </div>
         </div>
     </div>
-    
+
+    <!-- 계산 설정 -->
+    <div class="form-section">
+        <h3 class="section-title">계산 설정</h3>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="calculation_type">계산 유형</label>
+                <select id="calculation_type" name="calculation_type">
+                    <option value="linear" <?php echo ($product['calculation_type'] ?? 'linear') === 'linear' ? 'selected' : ''; ?>>선형 (형강/철근)</option>
+                    <option value="sheet" <?php echo ($product['calculation_type'] ?? '') === 'sheet' ? 'selected' : ''; ?>>판재</option>
+                    <option value="piece" <?php echo ($product['calculation_type'] ?? '') === 'piece' ? 'selected' : ''; ?>>개수 단위</option>
+                </select>
+                <div class="help-text">제품 중량 계산 방식을 선택합니다. 선형: 길이 기반 계산, 판재: 면적 기반 계산</div>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group" style="margin-top: 25px;">
+                    <input type="checkbox" id="has_calculator" name="has_calculator" value="1"
+                           <?php echo ($product['has_calculator'] ?? 0) ? 'checked' : ''; ?>>
+                    <label for="has_calculator" style="margin: 0; font-weight: normal;">계산기 활성화</label>
+                </div>
+                <div class="help-text">체크하면 상품 상세 페이지에서 중량/가격 계산기를 사용할 수 있습니다</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="unit_weight_data">단위중량 데이터 (JSON)</label>
+            <textarea id="unit_weight_data" name="unit_weight_data" rows="5"
+                      placeholder='예: {"100x100":{"SS400":25.5,"SS275":24.8}}'><?php echo htmlspecialchars($product['unit_weight_data'] ?? ''); ?></textarea>
+            <div class="help-text">규격별, 재질별 단위중량(kg/m)을 JSON 형식으로 입력. 형식: {"규격":{"재질":단중, ...}, ...}</div>
+        </div>
+    </div>
+
     <!-- 상세 정보 -->
     <div class="form-section">
         <h3 class="section-title">상세 정보</h3>

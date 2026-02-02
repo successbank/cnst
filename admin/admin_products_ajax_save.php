@@ -87,6 +87,12 @@ try {
     $quality_cert = trim($_POST['quality_cert'] ?? '');
     $product_features = trim($_POST['product_features'] ?? '');
 
+    // 계산 관련 필드
+    $calculation_type = $_POST['calculation_type'] ?? 'linear';
+    $has_calculator = isset($_POST['has_calculator']) ? 1 : 0;
+    $unit_weight_data_raw = $_POST['unit_weight_data'] ?? '';
+    $unit_weight_data = $unit_weight_data_raw !== '' ? $unit_weight_data_raw : null;
+
     // 메인페이지 노출 필드
     $show_on_homepage = isset($_POST['show_on_homepage']) ? 1 : 0;
     $homepage_display_order = isset($_POST['homepage_display_order']) ? (int)$_POST['homepage_display_order'] : 0;
@@ -127,7 +133,10 @@ try {
         'show_on_homepage' => false,
         'homepage_display_order' => false,
         'rebar_manual_min_price' => false,
-        'rebar_manual_max_price' => false
+        'rebar_manual_max_price' => false,
+        'calculation_type' => false,
+        'has_calculator' => false,
+        'unit_weight_data' => false
     ];
     
     foreach ($columns_check as $column => &$exists) {
@@ -277,6 +286,18 @@ try {
         if ($columns_check['rebar_manual_max_price']) {
             $sql .= ", rebar_manual_max_price = :rebar_manual_max_price";
             $params[':rebar_manual_max_price'] = $rebar_manual_max_price;
+        }
+        if ($columns_check['calculation_type']) {
+            $sql .= ", calculation_type = :calculation_type";
+            $params[':calculation_type'] = $calculation_type;
+        }
+        if ($columns_check['has_calculator']) {
+            $sql .= ", has_calculator = :has_calculator";
+            $params[':has_calculator'] = $has_calculator;
+        }
+        if ($columns_check['unit_weight_data']) {
+            $sql .= ", unit_weight_data = :unit_weight_data";
+            $params[':unit_weight_data'] = $unit_weight_data;
         }
 
         $sql .= " WHERE id = :id";
@@ -444,6 +465,21 @@ try {
             $columns[] = 'rebar_manual_max_price';
             $values[] = ':rebar_manual_max_price';
             $params[':rebar_manual_max_price'] = $rebar_manual_max_price;
+        }
+        if ($columns_check['calculation_type']) {
+            $columns[] = 'calculation_type';
+            $values[] = ':calculation_type';
+            $params[':calculation_type'] = $calculation_type;
+        }
+        if ($columns_check['has_calculator']) {
+            $columns[] = 'has_calculator';
+            $values[] = ':has_calculator';
+            $params[':has_calculator'] = $has_calculator;
+        }
+        if ($columns_check['unit_weight_data']) {
+            $columns[] = 'unit_weight_data';
+            $values[] = ':unit_weight_data';
+            $params[':unit_weight_data'] = $unit_weight_data;
         }
 
         $sql = "INSERT INTO products (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";
