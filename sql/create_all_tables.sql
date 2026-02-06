@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS board_quote (
 CREATE TABLE IF NOT EXISTS board_notice (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL,
+    content MEDIUMTEXT NOT NULL COMMENT '공지사항 본문 (MEDIUMTEXT: 최대 16MB)',
     writer VARCHAR(100) NOT NULL,
     password VARCHAR(255) NOT NULL,
     attachment VARCHAR(255),
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS board_notice (
 CREATE TABLE IF NOT EXISTS board_news (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL,
+    content MEDIUMTEXT NOT NULL COMMENT '뉴스 본문 (MEDIUMTEXT: 최대 16MB)',
     writer VARCHAR(100) NOT NULL,
     password VARCHAR(255) NOT NULL,
     source VARCHAR(200),

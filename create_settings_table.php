@@ -7,7 +7,9 @@ try {
         id INT AUTO_INCREMENT PRIMARY KEY,
         setting_key VARCHAR(100) UNIQUE NOT NULL,
         setting_value TEXT,
-        setting_group VARCHAR(50),
+        setting_type VARCHAR(50) DEFAULT 'text',
+        setting_group VARCHAR(50) DEFAULT NULL,
+        description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )";

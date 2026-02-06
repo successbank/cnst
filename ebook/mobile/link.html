@@ -1,90 +1,642 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style type="text/css">
-        a{font-size: 10px; line-height: 110%;text-decoration: none;}
-        p{font-size: 10px; color: 000; line-height: 110%;}
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            padding: 10px;
+            margin: 0;
+            background-color: #fafafa;
+        }
+
+        /* 헤더 영역 */
+        .toc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #2196F3;
+        }
+        .toc-title {
+            font-size: 14pt;
+            color: #0f192a;
+            margin: 0;
+        }
+        .header-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        .btn {
+            padding: 5px 10px;
+            font-size: 11px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-edit {
+            background-color: #fff;
+            border: 1px solid #2196F3;
+            color: #2196F3;
+        }
+        .btn-edit:hover {
+            background-color: #e3f2fd;
+        }
+        .btn-save {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-save:hover {
+            background-color: #45a049;
+        }
+        .btn-cancel {
+            background-color: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+        .btn-cancel:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* 카테고리 */
+        .category {
+            font-size: 12px;
+            color: #2196F3;
+            font-weight: bold;
+            margin: 15px 0 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .category-icon {
+            margin-right: 5px;
+        }
+
+        /* 목차 아이템 (뷰 모드) */
+        .toc-item {
+            margin: 4px 0;
+            padding: 4px 0;
+        }
+        .toc-item a {
+            font-size: 11px;
+            color: #333;
+            text-decoration: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px 8px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        .toc-item a:hover {
+            background-color: #e3f2fd;
+        }
+        .toc-item a:active {
+            background-color: #bbdefb;
+            color: #1976D2;
+        }
+        .page-num {
+            color: #999;
+            font-size: 10px;
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+
+        /* 로딩 / 에러 */
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+        }
+        .loading-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .error {
+            color: #d32f2f;
+            padding: 15px;
+            background-color: #ffebee;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        /* 비밀번호 모달 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 280px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .modal-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .modal-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        .modal-input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        .modal-error {
+            color: #d32f2f;
+            font-size: 11px;
+            margin-bottom: 10px;
+            display: none;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 8px 16px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .modal-btn-confirm {
+            background-color: #2196F3;
+            color: white;
+        }
+        .modal-btn-cancel {
+            background-color: #f5f5f5;
+            color: #666;
+        }
+
+        /* 편집 모드 스타일 */
+        .edit-category {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            margin: 10px 0;
+            padding: 10px;
+        }
+        .edit-category-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .edit-icon-input {
+            width: 40px;
+            padding: 5px;
+            font-size: 14px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .edit-category-name {
+            flex: 1;
+            padding: 5px 8px;
+            font-size: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn-delete-category {
+            background-color: #ffebee;
+            color: #d32f2f;
+            padding: 5px 8px;
+            font-size: 10px;
+            border: 1px solid #ffcdd2;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-delete-category:hover {
+            background-color: #ffcdd2;
+        }
+
+        /* 편집 아이템 */
+        .edit-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 6px 0;
+            padding: 6px;
+            background-color: #fafafa;
+            border-radius: 4px;
+        }
+        .edit-item-title {
+            flex: 1;
+            padding: 5px 8px;
+            font-size: 11px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .edit-item-page {
+            width: 50px;
+            padding: 5px;
+            font-size: 11px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn-delete-item {
+            background-color: #fff;
+            color: #999;
+            padding: 4px 6px;
+            font-size: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-delete-item:hover {
+            background-color: #ffebee;
+            color: #d32f2f;
+            border-color: #ffcdd2;
+        }
+
+        /* 추가 버튼 */
+        .btn-add {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            margin-top: 8px;
+            font-size: 11px;
+            color: #2196F3;
+            background-color: #fff;
+            border: 1px dashed #2196F3;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-add:hover {
+            background-color: #e3f2fd;
+        }
+        .btn-add-category {
+            margin: 15px 0;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        /* 토스트 메시지 */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background-color: #333;
+            color: white;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        .toast.success {
+            background-color: #4CAF50;
+        }
+        .toast.error {
+            background-color: #d32f2f;
+        }
     </style>
 </head>
 <body>
-<p style="font-size: 14pt;color: #0f192a">목차 페이지</p>
-<p><a href="repage.html?id=2" target="ebook_main"># 안내글<br /><br /></a></p>
 
-<p><a href="repage.html?id=3" target="ebook_main"># 목차<br /><br /></a></p>
+<!-- 헤더 -->
+<div class="toc-header">
+    <p class="toc-title">목차 페이지</p>
+    <div class="header-buttons" id="headerButtons">
+        <button class="btn btn-edit" id="btnEdit" onclick="showPasswordModal()">편집</button>
+    </div>
+</div>
 
-<p><a href="repage.html?id=4" target="ebook_main"># 철근류<br /></a></p>
-<p><a href="repage.html?id=4" target="ebook_main">- 화학성분 및 표시방법<br /></a></p>
-<p><a href="repage.html?id=5" target="ebook_main">- 기계적 성질<br /></a></p>
-<p><a href="repage.html?id=6" target="ebook_main">- 철근 콘크리트용 봉강 제원표<br /></a></p>
-<p><a href="repage.html?id=7" target="ebook_main">- 나사형 철근 제원표(7/79)<br /></a></p>
-<p><a href="repage.html?id=8" target="ebook_main">- 철근 길이별 중량표 D10~D25 1TON묶음<br /></a></p>
-<p><a href="repage.html?id=10" target="ebook_main">- 철근 길이별 중량표 D29~D51 1TON묶음<br /></a></p>
-<p><a href="repage.html?id=12" target="ebook_main">- 철근 길이별 중량표 D10~D25 2TON묶음<br /></a></p>
-<p><a href="repage.html?id=14" target="ebook_main">- 철근 길이별 중량표 D29~D51 2TON묶음<br /><br /></a></p>
+<!-- 목차 컨테이너 -->
+<div id="tocContainer">
+    <div class="loading">
+        <div class="loading-icon">📚</div>
+        <div>목차를 불러오는 중...</div>
+    </div>
+</div>
 
-<p><a href="repage.html?id=16" target="ebook_main"># 형강류<br /></a></p>
-<p><a href="repage.html?id=16" target="ebook_main">- H형강 중량표<br /></a></p>
-<p><a href="repage.html?id=18" target="ebook_main">- 경량H형강 중량표<br /></a></p>
-<p><a href="repage.html?id=19" target="ebook_main">- I형강 중량표<br /></a></p>
-<p><a href="repage.html?id=20" target="ebook_main">- 등변ㄱ형강 중량표<br /></a></p>
-<p><a href="repage.html?id=21" target="ebook_main">- 부등변 ㄱ형강 / 부등변 부등후 ㄱ형강 중량표 <br /></a></p>
-<p><a href="repage.html?id=22" target="ebook_main">- ㄷ형강 / 강널말뚝[쉬트파일] 중량표<br /></a></p>
-<p><a href="repage.html?id=23" target="ebook_main">- 레일 중량표<br /></a></p>
-<p><a href="repage.html?id=24" target="ebook_main">- 환봉(원형강) 중량표<br /></a></p>
-<p><a href="repage.html?id=25" target="ebook_main">- 사각강 / 육각강 / 팔각강 중량표<br /></a></p>
-<p><a href="repage.html?id=26" target="ebook_main">- 평철 중량표<br /></a></p>
-<p><a href="repage.html?id=28" target="ebook_main">- C형강 중량표 (28/79)<br /></a></p>
-<p><a href="repage.html?id=29" target="ebook_main">- 일반 데크플레이트 제원 및 중량표<br /></a></p>
-<p><a href="repage.html?id=30" target="ebook_main">- SPEED 데크플레이트 제원표<br /></a></p>
-<p><a href="repage.html?id=31" target="ebook_main">- TRUSS 데크플레이트 제원표<br /></a></p>
-<p><a href="repage.html?id=32" target="ebook_main">- FERRO 데크플레이트 제원표<br /></a></p>
-<p><a href="repage.html?id=33" target="ebook_main">- SUPER 데크플레이트 제원표<br /></a></p>
-<p><a href="repage.html?id=34" target="ebook_main">- ACE 데크플레이트 제원 및 중량표<br /></a></p>
-<p><a href="repage.html?id=35" target="ebook_main">- 내화구조용 HI 데크플레이트 제원 및 중량표<br /></a></p>
-<p><a href="repage.html?id=36" target="ebook_main">- 내화구조용 KEM 데크플레이트 제원 및 중량표<br /></a></p>
-<p><a href="repage.html?id=37" target="ebook_main">- 내화구조용 JIF 데크플레이트 제원 및 중량표<br /></a></p>
-<p><a href="repage.html?id=38" target="ebook_main">- 주차 데크플레이트 제원 및 중량표<br /><br /></a></p>
+<!-- 비밀번호 모달 -->
+<div class="modal-overlay" id="passwordModal">
+    <div class="modal">
+        <div class="modal-title">편집 비밀번호 입력</div>
+        <input type="password" class="modal-input" id="passwordInput" placeholder="비밀번호" onkeypress="handlePasswordKeypress(event)">
+        <div class="modal-error" id="passwordError">비밀번호가 일치하지 않습니다.</div>
+        <div class="modal-buttons">
+            <button class="modal-btn modal-btn-cancel" onclick="hidePasswordModal()">취소</button>
+            <button class="modal-btn modal-btn-confirm" onclick="verifyPassword()">확인</button>
+        </div>
+    </div>
+</div>
 
-<p><a href="repage.html?id=40" target="ebook_main"># 강관류<br /></a></p>
-<p><a href="repage.html?id=40" target="ebook_main">- 일반구조용 탄소강관[BS] 중량표<br /></a></p>
-<p><a href="repage.html?id=41" target="ebook_main">- 일반배관용 탄소강관[KS] 중량표<br /></a></p>
-<p><a href="repage.html?id=42" target="ebook_main">- 압력배관용 탄소강관 중량표<br /></a></p>
-<p><a href="repage.html?id=43" target="ebook_main">- ASTM A53 배관용 탄소강관 중량표<br /></a></p>
-<p><a href="repage.html?id=44" target="ebook_main">- 일반구조용 각형강관 중량표<br /></a></p>
-<p><a href="repage.html?id=45" target="ebook_main">- 비닐하우스 아연도 강관 / 단관파이프(단관비계) / 전선관 중량표<br /></a></p>
-<p><a href="repage.html?id=46" target="ebook_main">- 강관파일 중량표<br /><br /></a></p>
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
 
-<p><a href="repage.html?id=48" target="ebook_main"># 철판류<br /></a></p>
-<p><a href="repage.html?id=48" target="ebook_main">- 열연철판[철판/HR] 중량표<br /></a></p>
-<p><a href="repage.html?id=50" target="ebook_main">- 무늬철판[HR] / 망철판[EX-METAL] 중량표<br /></a></p>
-<p><a href="repage.html?id=51" target="ebook_main">- 냉연철판[CR] / 아연철판[GI, GA, EGI] 중량표<br /></a></p>
-<p><a href="repage.html?id=52" target="ebook_main">- 일반 복공판 / MMA코팅 복공판 / 환기구 복공판 중량표<br /><br /></a></p>
+<script>
+// 전역 변수
+var tocData = [];
+var isEditMode = false;
+var currentPassword = '';
 
-<p><a href="repage.html?id=54" target="ebook_main"># 스테인리스<br /></a></p>
-<p><a href="repage.html?id=54" target="ebook_main">- SUS 철판 중량표<br /></a></p>
-<p><a href="repage.html?id=55" target="ebook_main">- SUS 환봉 / SUS 사각강 / SUS 육각강 중량표<br /></a></p>
-<p><a href="repage.html?id=56" target="ebook_main">- SUS 배관용 파이프 / SUS 구조용 파이프 중량표<br /></a></p>
-<p><a href="repage.html?id=57" target="ebook_main">- SUS ㄱ형강 중량표<br /></a></p>
-<p><a href="repage.html?id=58" target="ebook_main">- SUS ㄷ형강 중량표<br /></a></p>
-<p><a href="repage.html?id=59" target="ebook_main">- SUS 평철 중량표<br /><br /></a></p>
+// 초기 로드
+fetch('toc_data.json?t=' + Date.now())
+    .then(function(response) {
+        if (!response.ok) {
+            throw new Error('목차 데이터를 불러올 수 없습니다.');
+        }
+        return response.json();
+    })
+    .then(function(data) {
+        tocData = data;
+        renderToc(data);
+    })
+    .catch(function(error) {
+        document.getElementById('tocContainer').innerHTML =
+            '<div class="error">오류: ' + error.message + '</div>';
+    });
 
-<p><a href="repage.html?id=60" target="ebook_main"># 기타<br /></a></p>
-<p><a href="repage.html?id=60" target="ebook_main">- H형강 치수 허용차 <br /></a></p>
-<p><a href="repage.html?id=61" target="ebook_main">- ㄱ형강 / ㄷ형강 / 원형강 / 환봉 허용차<br /></a></p>
-<p><a href="repage.html?id=62" target="ebook_main">- 원형 / 사각 파이프 허용차 <br /></a></p>
-<p><a href="repage.html?id=63" target="ebook_main">- C형강 허용차 <br /></a></p>
-<p><a href="repage.html?id=64" target="ebook_main">- 규격 및 약호<br /></a></p>
-<p><a href="repage.html?id=66" target="ebook_main">- 각국 규격 대비표 <br /></a></p>
-<p><a href="repage.html?id=68" target="ebook_main">- 강판 규격 약호 및 용도<br /></a></p>
-<p><a href="repage.html?id=70" target="ebook_main">- 사각 / 원형 / C형강 중량표 <br /></a></p>
-<p><a href="repage.html?id=72" target="ebook_main">- 제조사별 포장 수량 <br /></a></p>
-<p><a href="repage.html?id=74" target="ebook_main">- 토목자재 밀 가설재 소개<br /></a></p>
-<p><a href="repage.html?id=76" target="ebook_main">- 철스크랩[고철] 안내표 <br /></a></p>
-<p><a href="repage.html?id=78" target="ebook_main">- 철근 양각 표시법<br /></a></p>
+// 뷰 모드 렌더링
+function renderToc(data) {
+    var html = '';
 
+    for (var i = 0; i < data.length; i++) {
+        var category = data[i];
+
+        html += '<p class="category">';
+        html += '<span class="category-icon">' + category.icon + '</span>';
+        html += category.category;
+        html += '</p>';
+
+        for (var j = 0; j < category.items.length; j++) {
+            var item = category.items[j];
+            html += '<div class="toc-item">';
+            html += '<a href="repage.html?id=' + item.page + '" target="ebook_main">';
+            html += '- ' + item.title;
+            html += '<span class="page-num">[p.' + item.page + ']</span>';
+            html += '</a>';
+            html += '</div>';
+        }
+    }
+
+    document.getElementById('tocContainer').innerHTML = html;
+}
+
+// 편집 모드 렌더링
+function renderEditMode(data) {
+    var html = '';
+
+    // 카테고리 추가 버튼
+    html += '<button class="btn-add btn-add-category" onclick="addCategory()">+ 카테고리 추가</button>';
+
+    for (var i = 0; i < data.length; i++) {
+        var category = data[i];
+
+        html += '<div class="edit-category">';
+
+        // 카테고리 헤더
+        html += '<div class="edit-category-header">';
+        html += '<input type="text" class="edit-icon-input" value="' + escapeHtml(category.icon) + '" onchange="updateCategoryIcon(' + i + ', this.value)" title="아이콘">';
+        html += '<input type="text" class="edit-category-name" value="' + escapeHtml(category.category) + '" onchange="updateCategoryName(' + i + ', this.value)" placeholder="카테고리 이름">';
+        html += '<button class="btn-delete-category" onclick="deleteCategory(' + i + ')">삭제</button>';
+        html += '</div>';
+
+        // 아이템 목록
+        for (var j = 0; j < category.items.length; j++) {
+            var item = category.items[j];
+            html += '<div class="edit-item">';
+            html += '<span style="color:#999;font-size:10px;">-</span>';
+            html += '<input type="text" class="edit-item-title" value="' + escapeHtml(item.title) + '" onchange="updateItemTitle(' + i + ',' + j + ', this.value)" placeholder="제목">';
+            html += '<input type="number" class="edit-item-page" value="' + item.page + '" onchange="updateItemPage(' + i + ',' + j + ', this.value)" min="1" title="페이지">';
+            html += '<button class="btn-delete-item" onclick="deleteItem(' + i + ',' + j + ')">X</button>';
+            html += '</div>';
+        }
+
+        // 항목 추가 버튼
+        html += '<button class="btn-add" onclick="addItem(' + i + ')">+ 항목 추가</button>';
+
+        html += '</div>';
+    }
+
+    document.getElementById('tocContainer').innerHTML = html;
+}
+
+// HTML 이스케이프
+function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML.replace(/"/g, '&quot;');
+}
+
+// 비밀번호 모달 표시
+function showPasswordModal() {
+    document.getElementById('passwordModal').classList.add('show');
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordError').style.display = 'none';
+    document.getElementById('passwordInput').focus();
+}
+
+// 비밀번호 모달 숨김
+function hidePasswordModal() {
+    document.getElementById('passwordModal').classList.remove('show');
+}
+
+// 비밀번호 입력 키 핸들러
+function handlePasswordKeypress(e) {
+    if (e.key === 'Enter') {
+        verifyPassword();
+    }
+}
+
+// 비밀번호 검증
+function verifyPassword() {
+    var password = document.getElementById('passwordInput').value;
+
+    fetch('toc_save.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'verify_password',
+            password: password
+        })
+    })
+    .then(function(response) {
+        return response.json().then(function(data) {
+            return { ok: response.ok, data: data };
+        });
+    })
+    .then(function(result) {
+        if (result.ok && result.data.success) {
+            currentPassword = password;
+            hidePasswordModal();
+            enterEditMode();
+        } else {
+            document.getElementById('passwordError').style.display = 'block';
+        }
+    })
+    .catch(function(error) {
+        showToast('서버 오류가 발생했습니다.', 'error');
+    });
+}
+
+// 편집 모드 진입
+function enterEditMode() {
+    isEditMode = true;
+
+    // 헤더 버튼 변경
+    document.getElementById('headerButtons').innerHTML =
+        '<button class="btn btn-save" onclick="saveToc()">저장</button>' +
+        '<button class="btn btn-cancel" onclick="cancelEdit()">취소</button>';
+
+    // 편집 UI 렌더링
+    renderEditMode(tocData);
+}
+
+// 편집 모드 종료
+function exitEditMode() {
+    isEditMode = false;
+    currentPassword = '';
+
+    // 헤더 버튼 복원
+    document.getElementById('headerButtons').innerHTML =
+        '<button class="btn btn-edit" id="btnEdit" onclick="showPasswordModal()">편집</button>';
+
+    // 뷰 모드 렌더링
+    renderToc(tocData);
+}
+
+// 편집 취소
+function cancelEdit() {
+    // 데이터 다시 로드
+    fetch('toc_data.json?t=' + Date.now())
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            tocData = data;
+            exitEditMode();
+        });
+}
+
+// 저장
+function saveToc() {
+    fetch('toc_save.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'save',
+            password: currentPassword,
+            data: tocData
+        })
+    })
+    .then(function(response) {
+        return response.json().then(function(data) {
+            return { ok: response.ok, data: data };
+        });
+    })
+    .then(function(result) {
+        if (result.ok && result.data.success) {
+            showToast('저장되었습니다.', 'success');
+            exitEditMode();
+        } else {
+            showToast(result.data.message || '저장 실패', 'error');
+        }
+    })
+    .catch(function(error) {
+        showToast('서버 오류가 발생했습니다.', 'error');
+    });
+}
+
+// === CRUD 함수 ===
+
+// 카테고리 아이콘 수정
+function updateCategoryIcon(catIdx, value) {
+    tocData[catIdx].icon = value;
+}
+
+// 카테고리 이름 수정
+function updateCategoryName(catIdx, value) {
+    tocData[catIdx].category = value;
+}
+
+// 카테고리 추가
+function addCategory() {
+    tocData.unshift({
+        category: '새 카테고리',
+        icon: '📁',
+        items: []
+    });
+    renderEditMode(tocData);
+}
+
+// 카테고리 삭제
+function deleteCategory(catIdx) {
+    if (confirm('이 카테고리와 모든 항목을 삭제하시겠습니까?')) {
+        tocData.splice(catIdx, 1);
+        renderEditMode(tocData);
+    }
+}
+
+// 아이템 제목 수정
+function updateItemTitle(catIdx, itemIdx, value) {
+    tocData[catIdx].items[itemIdx].title = value;
+}
+
+// 아이템 페이지 수정
+function updateItemPage(catIdx, itemIdx, value) {
+    tocData[catIdx].items[itemIdx].page = parseInt(value) || 1;
+}
+
+// 아이템 추가
+function addItem(catIdx) {
+    tocData[catIdx].items.push({
+        title: '새 항목',
+        page: 1
+    });
+    renderEditMode(tocData);
+}
+
+// 아이템 삭제
+function deleteItem(catIdx, itemIdx) {
+    tocData[catIdx].items.splice(itemIdx, 1);
+    renderEditMode(tocData);
+}
+
+// 토스트 메시지
+function showToast(message, type) {
+    var toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = 'toast ' + (type || '');
+    toast.classList.add('show');
+
+    setTimeout(function() {
+        toast.classList.remove('show');
+    }, 2000);
+}
+</script>
 
 </body>
 </html>

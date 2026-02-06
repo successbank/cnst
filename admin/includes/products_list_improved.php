@@ -567,7 +567,7 @@ a, button, .btn, .category-tab {
 
         <!-- 다운로드 드롭다운 -->
         <div class="dropdown" id="downloadDropdown">
-            <button type="button" class="btn btn-success dropdown-toggle" onclick="toggleDropdown('downloadDropdown')">
+            <button type="button" class="btn btn-success dropdown-toggle" onclick="toggleProductDropdown('downloadDropdown')">
                 📥 다운로드 ▾
             </button>
             <div class="dropdown-menu">
@@ -780,8 +780,8 @@ function updateSelectedCount() {
     }
 }
 
-// 드롭다운 토글
-function toggleDropdown(dropdownId) {
+// 드롭다운 토글 (제품 페이지용 - admin_head.php의 toggleDropdown과 충돌 방지)
+function toggleProductDropdown(dropdownId) {
     const dropdown = document.getElementById(dropdownId);
     const menu = dropdown.querySelector('.dropdown-menu');
     menu.classList.toggle('show');

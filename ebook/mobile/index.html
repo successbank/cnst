@@ -219,113 +219,20 @@
 
 <!-- 목차 JavaScript -->
 <script>
-// 충남스틸 제품 목차 데이터 (전자책 6페이지 목차 기준)
-var tocData = [
-    {
-        category: "철근류",
-        icon: "🔗",
-        items: [
-            { title: "철근 콘크리트용 봉강", page: 7 },
-            { title: "나사형 철근", page: 10 },
-            { title: "철근", page: 11 }
-        ]
-    },
-    {
-        category: "형강류",
-        icon: "🔩",
-        items: [
-            { title: "H형강", page: 19 },
-            { title: "경량H형강", page: 21 },
-            { title: "T형강", page: 22 },
-            { title: "등변 ㄱ형강", page: 23 },
-            { title: "부등변 ㄱ형강", page: 24 },
-            { title: "C형강, 강널말뚝", page: 25 },
-            { title: "레일", page: 26 },
-            { title: "원형강", page: 27 },
-            { title: "사각강, 육각강, 팔각강", page: 28 },
-            { title: "평강", page: 29 },
-            { title: "와셔", page: 30 },
-            { title: "일반 데크플레이트", page: 32 },
-            { title: "철근일체형 데크플레이트", page: 33 },
-            { title: "내화구조형 데크플레이트", page: 38 },
-            { title: "주차데크", page: 41 }
-        ]
-    },
-    {
-        category: "강관류",
-        icon: "⭕",
-        items: [
-            { title: "일반구조용 탄소강관", page: 43 },
-            { title: "일반배관용 탄소강관", page: 44 },
-            { title: "압력/고온/저온배관용", page: 45 },
-            { title: "ASTMA53 배관용", page: 46 },
-            { title: "일반구조용 각형강관", page: 47 },
-            { title: "아연도 강관, 단관파이프", page: 48 },
-            { title: "강관파일", page: 49 }
-        ]
-    },
-    {
-        category: "철판류",
-        icon: "📋",
-        items: [
-            { title: "열간압연강판", page: 51 },
-            { title: "무늬강판, 망철판", page: 53 },
-            { title: "냉간압연강판, 아연도금강판", page: 54 },
-            { title: "복합판", page: 55 },
-            { title: "복공판", page: 56 }
-        ]
-    },
-    {
-        category: "스테인리스",
-        icon: "✨",
-        items: [
-            { title: "스테인리스 강판", page: 57 },
-            { title: "스테인리스 원형강/사각강/육각강", page: 58 },
-            { title: "스테인리스 배관/구조용 강관", page: 59 },
-            { title: "스테인리스 ㄱ형강", page: 60 },
-            { title: "스테인리스 C형강", page: 61 },
-            { title: "스테인리스 평철", page: 62 }
-        ]
-    },
-    {
-        category: "기타",
-        icon: "📦",
-        items: [
-            { title: "치수허용차", page: 63 },
-            { title: "규격 및 약호", page: 67 },
-            { title: "각종 규격 대비표", page: 69 },
-            { title: "각판 규격 약호", page: 71 },
-            { title: "중량표, C형강", page: 73 },
-            { title: "업체별 빔드수량", page: 75 }
-        ]
-    },
-    {
-        category: "토목자재",
-        icon: "🏗️",
-        items: [
-            { title: "형강류, 마구리판, 연결판", page: 77 }
-        ]
-    },
-    {
-        category: "철스크랩",
-        icon: "♻️",
-        items: [
-            { title: "각종 압연재, 고철류", page: 79 }
-        ]
-    },
-    {
-        category: "철근 표시법",
-        icon: "📐",
-        items: [
-            { title: "KS D 3504 철근 강자 표시", page: 81 }
-        ]
-    }
-];
+// 목차 데이터 저장 변수
+var tocData = [];
 
 // jQuery를 사용한 구현
 $(document).ready(function() {
-    // 목차 렌더링
-    renderTableOfContents();
+    // toc_data.json에서 목차 데이터 로드 (캐시 방지)
+    $.getJSON('toc_data.json?t=' + Date.now())
+        .done(function(data) {
+            tocData = data;
+            renderTableOfContents();
+        })
+        .fail(function() {
+            $('#tocBody').html('<div style="text-align: center; padding: 40px; color: #d32f2f;">목차 데이터를 불러올 수 없습니다.</div>');
+        });
 
     // 플로팅 버튼 클릭
     $('#floatingTocButton').on('click', function() {

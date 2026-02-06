@@ -150,6 +150,7 @@ CREATE TABLE IF NOT EXISTS site_settings (
     setting_key VARCHAR(100) NOT NULL UNIQUE,
     setting_value TEXT,
     setting_type VARCHAR(50) DEFAULT 'text',
+    setting_group VARCHAR(50) DEFAULT NULL,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
