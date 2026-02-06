@@ -236,18 +236,18 @@ if (isset($pdo)) {
         <div class="stat-meta">진행중: <?php echo number_format($consignmentActive); ?>건</div>
     </div>
     
-    <div class="stat-card">
+    <!--<div class="stat-card">
         <div class="stat-icon icon-members">👥</div>
         <div class="stat-value"><?php echo number_format($memberCount); ?></div>
         <div class="stat-label">회원</div>
     </div>
     
-    <div class="stat-card">
+     <div class="stat-card">
         <div class="stat-icon icon-kakao">💬</div>
         <div class="stat-value"><?php echo number_format($kakaoSent); ?></div>
         <div class="stat-label">오늘 카카오톡 발송</div>
         <div class="stat-meta">전체: <?php echo number_format($kakaoTotal); ?>건</div>
-    </div>
+    </div>-->
 </div>
 
 <!-- 빠른 작업 -->
@@ -259,7 +259,7 @@ if (isset($pdo)) {
         <a href="admin_quotes.php" class="quick-action-btn">견적문의 확인</a>
         <a href="admin_consignment.php" class="quick-action-btn">위탁판매 관리</a>
         <a href="admin_members.php" class="quick-action-btn">회원 관리</a>
-        <a href="admin_kakao.php" class="quick-action-btn">카카오톡 현황</a>
+        <!-- <a href="admin_kakao.php" class="quick-action-btn">카카오톡 현황</a> -->
     </div>
 </div>
 

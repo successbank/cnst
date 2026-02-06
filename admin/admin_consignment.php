@@ -366,14 +366,48 @@ try {
         <?php if($totalPages > 1): ?>
             <div class="pagination">
                 <?php
-                $queryString = http_build_query(array_merge($_GET, ['page' => '']));
-                for($i = 1; $i <= $totalPages; $i++):
+                $queryParams = $_GET;
+                unset($queryParams['page']);
+                $queryString = http_build_query($queryParams);
+                $queryPrefix = $queryString ? '?' . $queryString . '&page=' : '?page=';
+
+                $pagesPerGroup = 10;
+                $currentGroup = ceil($page / $pagesPerGroup);
+                $totalGroups = ceil($totalPages / $pagesPerGroup);
+                $groupStart = ($currentGroup - 1) * $pagesPerGroup + 1;
+                $groupEnd = min($currentGroup * $pagesPerGroup, $totalPages);
                 ?>
-                    <a href="?<?php echo $queryString . $i; ?>" 
+
+                <?php if($page > 1): ?>
+                    <a href="<?php echo $queryPrefix . 1; ?>" class="page-link" title="첫 페이지">≪</a>
+                <?php endif; ?>
+
+                <?php if($currentGroup > 1): ?>
+                    <a href="<?php echo $queryPrefix . (($currentGroup - 2) * $pagesPerGroup + 1); ?>" class="page-link" title="이전 10페이지">◀</a>
+                <?php endif; ?>
+
+                <?php if($page > 1): ?>
+                    <a href="<?php echo $queryPrefix . ($page - 1); ?>" class="page-link" title="이전 페이지">＜</a>
+                <?php endif; ?>
+
+                <?php for($i = $groupStart; $i <= $groupEnd; $i++): ?>
+                    <a href="<?php echo $queryPrefix . $i; ?>"
                        class="page-link <?php echo $page == $i ? 'active' : ''; ?>">
                         <?php echo $i; ?>
                     </a>
                 <?php endfor; ?>
+
+                <?php if($page < $totalPages): ?>
+                    <a href="<?php echo $queryPrefix . ($page + 1); ?>" class="page-link" title="다음 페이지">＞</a>
+                <?php endif; ?>
+
+                <?php if($currentGroup < $totalGroups): ?>
+                    <a href="<?php echo $queryPrefix . ($currentGroup * $pagesPerGroup + 1); ?>" class="page-link" title="다음 10페이지">▶</a>
+                <?php endif; ?>
+
+                <?php if($page < $totalPages): ?>
+                    <a href="<?php echo $queryPrefix . $totalPages; ?>" class="page-link" title="마지막 페이지">≫</a>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 

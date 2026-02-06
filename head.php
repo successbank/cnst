@@ -8,6 +8,11 @@ require_once 'db.php';
 if(file_exists('includes/settings.php')) {
     require_once 'includes/settings.php';
 }
+
+// 방문자 추적
+if (file_exists(__DIR__ . '/includes/visitor_tracker.php')) {
+    require_once __DIR__ . '/includes/visitor_tracker.php';
+}
 ?>
 <!DOCTYPE html>
 <html lang="ko">
