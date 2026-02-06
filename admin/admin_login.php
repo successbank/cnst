@@ -1,5 +1,7 @@
 <?php
 session_start();
+require_once '../db.php';
+require_once '../includes/input_validator.php';
 
 // 이미 관리자로 로그인되어 있으면 관리자 페이지로 리다이렉트
 if(isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
@@ -7,27 +9,41 @@ if(isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true)
     exit;
 }
 
+// 세션 타임아웃 메시지
+if(isset($_GET['msg']) && $_GET['msg'] === 'timeout') {
+    $error_msg = "세션이 만료되었습니다. 다시 로그인해주세요.";
+}
+
 // 로그인 처리
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $admin_id = $_POST['admin_id'] ?? '';
-    $admin_pw = $_POST['admin_pw'] ?? '';
-    
-    // 기본 관리자 계정 (실제 운영시에는 DB에서 관리)
-    if($admin_id === 'admin' && $admin_pw === 'admin1234') {
-        // 기존 세션 완전히 초기화
-        session_destroy();
-        session_start();
-        
-        // 관리자 세션만 설정
-        $_SESSION['admin_logged_in'] = true;
-        $_SESSION['admin_id'] = $admin_id;
-        $_SESSION['user_role'] = 'admin'; // 역할 추가
-        $_SESSION['admin_login_time'] = time();
-        
-        header('Location: admin_index.php');
-        exit;
+    // Rate limiting: 5분 내 5회 초과 시 차단
+    if (!checkRateLimit('admin_login', 5, 300)) {
+        $error_msg = "로그인 시도가 너무 많습니다. 5분 후 다시 시도해주세요.";
     } else {
-        $error_msg = "아이디 또는 비밀번호가 올바르지 않습니다.";
+        $admin_id = $_POST['admin_id'] ?? '';
+        $admin_pw = $_POST['admin_pw'] ?? '';
+
+        // DB 기반 관리자 인증
+        $pdo = getDB();
+        $stmt = $pdo->prepare("SELECT id, username, password_hash FROM admin_users WHERE username = ?");
+        $stmt->execute([$admin_id]);
+        $admin = $stmt->fetch();
+
+        if ($admin && password_verify($admin_pw, $admin['password_hash'])) {
+            // 세션 고정 공격 방지
+            session_regenerate_id(true);
+
+            // 관리자 세션 설정
+            $_SESSION['admin_logged_in'] = true;
+            $_SESSION['admin_id'] = $admin['username'];
+            $_SESSION['user_role'] = 'admin';
+            $_SESSION['admin_login_time'] = time();
+
+            header('Location: admin_index.php');
+            exit;
+        } else {
+            $error_msg = "아이디 또는 비밀번호가 올바르지 않습니다.";
+        }
     }
 }
 ?>

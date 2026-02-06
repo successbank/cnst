@@ -61,9 +61,10 @@ try {
     }
 
 } catch (Exception $e) {
+    error_log("update_category_structure error: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => $e->getMessage()
+        'message' => '처리 중 오류가 발생했습니다.'
     ]);
 }
 
@@ -77,12 +78,9 @@ function updateAllPaths($pdo) {
     ");
     $topCategories = $stmt->fetchAll();
 
+    $updatePathStmt = $pdo->prepare("UPDATE product_categories SET path = ? WHERE id = ?");
     foreach ($topCategories as $category) {
-        $pdo->exec("
-            UPDATE product_categories
-            SET path = '{$category['category_code']}'
-            WHERE id = {$category['id']}
-        ");
+        $updatePathStmt->execute([$category['category_code'], $category['id']]);
 
         // 하위 카테고리들 재귀적으로 업데이트
         updateChildPaths($pdo, $category['id'], $category['category_code']);
@@ -99,14 +97,11 @@ function updateChildPaths($pdo, $parentId, $parentPath) {
     $stmt->execute([$parentId]);
     $children = $stmt->fetchAll();
 
+    $updatePathStmt = $pdo->prepare("UPDATE product_categories SET path = ? WHERE id = ?");
     foreach ($children as $child) {
         $childPath = $parentPath . '/' . $child['category_code'];
 
-        $pdo->exec("
-            UPDATE product_categories
-            SET path = '$childPath'
-            WHERE id = {$child['id']}
-        ");
+        $updatePathStmt->execute([$childPath, $child['id']]);
 
         // 재귀적으로 하위 카테고리 업데이트
         updateChildPaths($pdo, $child['id'], $childPath);

@@ -2,9 +2,10 @@
 session_start();
 require_once '../../db.php';
 
-// 관리자 권한 체크
-if (!isset($_SESSION['admin_id']) || !$_SESSION['admin_id']) {
-    echo json_encode(['success' => false, 'message' => '관리자 권한이 필요합니다.']);
+// H3: 관리자 권한 확인 (표준 패턴)
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => '관리자 인증이 필요합니다.']);
     exit;
 }
 
@@ -45,6 +46,7 @@ try {
     ]);
     
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => '오류가 발생했습니다: ' . $e->getMessage()]);
+    error_log("delete_product_image error: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => '처리 중 오류가 발생했습니다.']);
 }
 ?>

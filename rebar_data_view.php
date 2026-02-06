@@ -24,9 +24,11 @@ try {
         $params[':length'] = $length_filter;
     }
 
-    // Add sorting
+    // Add sorting (H1: ORDER BY 화이트리스트 검증)
     $allowed_sorts = ['spec_name', 'length', 'pieces_per_length', 'piece_weight', 'created_at'];
-    if (in_array($sort, $allowed_sorts)) {
+    $allowed_orders = ['ASC', 'DESC'];
+    $order = strtoupper($order);
+    if (in_array($sort, $allowed_sorts) && in_array($order, $allowed_orders)) {
         $query .= " ORDER BY $sort $order";
     }
 

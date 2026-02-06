@@ -5,9 +5,10 @@ require_once '../../db.php';
 // 디버깅을 위한 헤더 설정
 header('Content-Type: application/json; charset=utf-8');
 
-// 관리자 권한 체크
-if (!isset($_SESSION['admin_id']) || !$_SESSION['admin_id']) {
-    echo json_encode(['success' => false, 'message' => '관리자 권한이 필요합니다.']);
+// H3: 관리자 권한 확인 (표준 패턴)
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => '관리자 인증이 필요합니다.']);
     exit;
 }
 
@@ -24,6 +25,21 @@ $file = $_FILES['image'];
 $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 if (!in_array($file['type'], $allowed_types)) {
     echo json_encode(['success' => false, 'message' => '허용되지 않은 파일 형식입니다.']);
+    exit;
+}
+
+// H2: 확장자 화이트리스트 검증
+$allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+$extCheck = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+if (!in_array($extCheck, $allowedExtensions)) {
+    echo json_encode(['success' => false, 'message' => '허용되지 않는 파일 확장자입니다.']);
+    exit;
+}
+
+// H2: 실제 이미지 파일 검증
+$imgCheck = @getimagesize($file['tmp_name']);
+if ($imgCheck === false) {
+    echo json_encode(['success' => false, 'message' => '유효한 이미지 파일이 아닙니다.']);
     exit;
 }
 
@@ -120,7 +136,7 @@ try {
     
 } catch (Exception $e) {
     error_log('Upload error: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => '오류가 발생했습니다: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => '처리 중 오류가 발생했습니다.']);
 }
 ?>
 <?php

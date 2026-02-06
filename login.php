@@ -72,10 +72,10 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if($member && password_verify($password, $member['password'])) {
                 if($member['is_active'] == 1) {
-                    // 기존 세션 완전히 초기화 (관리자 세션 포함)
-                    session_destroy();
-                    session_start();
-                    
+                    // M5: 세션 고정 공격 방지
+                    session_regenerate_id(true);
+                    $_SESSION = []; // 세션 데이터 초기화 (관리자 세션 포함)
+
                     // 로그인 성공 - 회원 세션만 설정
                     $_SESSION['member_id'] = $member['id'];
                     $_SESSION['user_id'] = $member['user_id'];

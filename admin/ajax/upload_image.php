@@ -34,6 +34,23 @@ if (!in_array($file['type'], $allowedTypes)) {
     exit;
 }
 
+// H2: 확장자 화이트리스트 검증
+$allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+$extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+if (!in_array($extension, $allowedExtensions)) {
+    $response['message'] = '허용되지 않는 파일 확장자입니다.';
+    echo json_encode($response);
+    exit;
+}
+
+// H2: 실제 이미지 파일 검증
+$imageInfo = @getimagesize($file['tmp_name']);
+if ($imageInfo === false) {
+    $response['message'] = '유효한 이미지 파일이 아닙니다.';
+    echo json_encode($response);
+    exit;
+}
+
 if ($file['size'] > $maxSize) {
     $response['message'] = '파일 크기는 5MB를 초과할 수 없습니다.';
     echo json_encode($response);

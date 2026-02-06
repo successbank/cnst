@@ -2,10 +2,10 @@
 session_start();
 require_once '../../db.php';
 
-// 관리자 권한 확인
-if (!isset($_SESSION['admin_id'])) {
+// H3: 관리자 권한 확인 (표준 패턴)
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => '인증되지 않은 요청입니다.']);
+    echo json_encode(['success' => false, 'message' => '관리자 인증이 필요합니다.']);
     exit;
 }
 
@@ -35,5 +35,6 @@ try {
     }
     
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    error_log("toggle_icon_status error: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => '처리 중 오류가 발생했습니다.']);
 }

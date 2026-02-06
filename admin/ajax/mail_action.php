@@ -2,18 +2,18 @@
 session_start();
 
 // 관리자 권한 확인
-if (!isset($_SESSION['admin_id'])) {
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => '인증되지 않은 요청입니다.']);
+    echo json_encode(['success' => false, 'message' => '관리자 인증이 필요합니다.']);
     exit;
 }
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Mailcow API 설정
-define('MAILCOW_URL', 'https://mail.cnst.co.kr');
-define('MAILCOW_ADMIN_USER', 'admin@cnst.co.kr');
-define('MAILCOW_ADMIN_PASS', 'cndskatmxlf!@#4');
+// Mailcow API 설정 (환경변수에서 로드)
+define('MAILCOW_URL', getenv('MAILCOW_URL') ?: '');
+define('MAILCOW_ADMIN_USER', getenv('MAILCOW_ADMIN_USER') ?: '');
+define('MAILCOW_ADMIN_PASS', getenv('MAILCOW_ADMIN_PASS') ?: '');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
@@ -248,5 +248,6 @@ try {
             echo json_encode(['success' => false, 'message' => '알 수 없는 액션입니다.']);
     }
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => '오류: ' . $e->getMessage()]);
+    error_log("mail_action error: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => '처리 중 오류가 발생했습니다.']);
 }
