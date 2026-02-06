@@ -1,6 +1,7 @@
 <?php
 require_once '../member_check.php';
 require_once '../db.php';
+require_once '../includes/input_validator.php';
 
 // JSON 응답 설정
 header('Content-Type: application/json; charset=utf-8');
@@ -33,6 +34,22 @@ if (!$product || !$company || !$author || !$phone) {
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode(['success' => false, 'message' => '올바른 이메일 주소를 입력해주세요.']);
+    exit;
+}
+
+// 입력값 검증 (SQL 인젝션 패턴 차단)
+$validation = validateQuoteInput([
+    'product' => $product, 'company' => $company, 'author' => $author,
+    'specifications' => $specifications, 'additional_notes' => $additional_notes
+]);
+if (!$validation['valid']) {
+    echo json_encode(['success' => false, 'message' => $validation['message']]);
+    exit;
+}
+
+// Rate Limiting (1분 내 3회 제한)
+if (!checkRateLimit('quote_submit', 3, 60)) {
+    echo json_encode(['success' => false, 'message' => '잠시 후 다시 시도해주세요.']);
     exit;
 }
 

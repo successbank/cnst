@@ -44,7 +44,9 @@
       "Bash(sudo docker exec:*)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://103.124.103.229/products_new.php?category=rebar\")",
       "Bash(sudo docker logs:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(curl:*)",
+      "Skill(commit-commands:commit)"
     ]
   },
   "enableAllProjectMcpServers": true,

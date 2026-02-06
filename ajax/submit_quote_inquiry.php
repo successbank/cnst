@@ -1,6 +1,7 @@
 <?php
 require_once '../db.php';
 require_once '../member_check.php';
+require_once '../includes/input_validator.php';
 
 header('Content-Type: application/json');
 
@@ -48,7 +49,23 @@ try {
         echo json_encode(['success' => false, 'message' => '올바른 이메일 형식이 아닙니다.']);
         exit;
     }
-    
+
+    // 입력값 검증 (SQL 인젝션 패턴 차단)
+    $validation = validateQuoteInput([
+        'product' => $product, 'company' => $company, 'author' => $author,
+        'specifications' => $specifications, 'additional_notes' => $additional_notes
+    ]);
+    if (!$validation['valid']) {
+        echo json_encode(['success' => false, 'message' => $validation['message']]);
+        exit;
+    }
+
+    // Rate Limiting (1분 내 3회 제한)
+    if (!checkRateLimit('quote_inquiry_submit', 3, 60)) {
+        echo json_encode(['success' => false, 'message' => '잠시 후 다시 시도해주세요.']);
+        exit;
+    }
+
     // 세션에서 사용자 정보 가져오기
     $member_id = $_SESSION['member_id'] ?? null;
     $user_id = $_SESSION['user_id'] ?? '';
