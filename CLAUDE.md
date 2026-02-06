@@ -20,6 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - UPDATE/DELETE 전 SELECT로 대상 확인
    - 트랜잭션 사용 권장
 4. **테스트**: 수정 후 반드시 실제 페이지 테스트, 에러 로그 확인
+5. **별도 요청 없이 수정 금지** - 명시적으로 요청하지 않은 파일, 코드, 설정은 절대 수정/변경하지 말 것
 
 ## 서버 환경
 

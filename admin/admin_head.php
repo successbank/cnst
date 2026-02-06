@@ -611,7 +611,7 @@ $currentFile = basename($_SERVER['PHP_SELF']);
                 
                 <!-- 시스템 관리 드롭다운 -->
                 <div class="nav-dropdown" id="systemDropdown">
-                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_statistics.php', 'admin_site.php', 'admin_banners.php', 'admin_product_icons.php', 'admin_product_icon_edit.php', 'admin_layer_popups.php', 'admin_layer_popup_edit.php', 'admin_backup.php', 'admin_logs.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('systemDropdown'); return false;">
+                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_statistics.php', 'admin_site.php', 'admin_banners.php', 'admin_product_icons.php', 'admin_product_icon_edit.php', 'admin_layer_popups.php', 'admin_layer_popup_edit.php', 'admin_backup.php', 'admin_mail_manage.php', 'admin_logs.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('systemDropdown'); return false;">
                         시스템 관리
                     </a>
                     <div class="nav-dropdown-menu">
@@ -621,6 +621,7 @@ $currentFile = basename($_SERVER['PHP_SELF']);
                         <a href="admin_layer_popups.php" class="nav-dropdown-item <?php echo in_array($currentFile, ['admin_layer_popups.php', 'admin_layer_popup_edit.php']) ? 'active' : ''; ?>">레이어팝업 관리</a>
                         <a href="admin_product_icons.php" class="nav-dropdown-item <?php echo in_array($currentFile, ['admin_product_icons.php', 'admin_product_icon_edit.php']) ? 'active' : ''; ?>">제품 아이콘 관리</a>
                         <a href="admin_backup.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_backup.php' ? 'active' : ''; ?>">백업/복원</a>
+                        <a href="admin_mail_manage.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_mail_manage.php' ? 'active' : ''; ?>">메일 관리</a>
                         <a href="admin_logs.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_logs.php' ? 'active' : ''; ?>">로그 관리</a>
                     </div>
                 </div>
