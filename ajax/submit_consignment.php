@@ -1,6 +1,7 @@
 <?php
 require_once '../member_check.php';
 require_once '../db.php';
+require_once '../includes/input_validator.php';
 
 // JSON 응답 설정
 header('Content-Type: application/json; charset=utf-8');
@@ -34,6 +35,29 @@ if (!$title || !$category || !$company_name || !$contact_person || !$contact_pho
 
 if ($contact_email && !filter_var($contact_email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode(['success' => false, 'message' => '올바른 이메일 주소를 입력해주세요.']);
+    exit;
+}
+
+// SQL 인젝션 패턴 검증
+$validation = validateFormInput([
+    'title' => $title,
+    'company_name' => $company_name,
+    'stock_quantity' => $stock_quantity,
+    'price_info' => $price_info,
+    'contact_person' => $contact_person,
+    'contact_phone' => $contact_phone,
+    'contact_email' => $contact_email,
+    'location' => $location,
+    'content' => $content
+]);
+if (!$validation['valid']) {
+    echo json_encode(['success' => false, 'message' => $validation['message']]);
+    exit;
+}
+
+// Rate Limiting (60초 내 최대 3회)
+if (!checkRateLimit('consignment_submit', 3, 60)) {
+    echo json_encode(['success' => false, 'message' => '너무 많은 요청이 감지되었습니다. 잠시 후 다시 시도해주세요.']);
     exit;
 }
 

@@ -3,32 +3,48 @@ session_start();
 require_once '../db.php';
 require_once 'admin_check.php';
 
+// CSRF 토큰 생성
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrf_token = $_SESSION['csrf_token'];
+
 // 액션 처리 (헤더 출력 전에 처리)
 $action = $_GET['action'] ?? 'list';
 
-// 견적문의 삭제 처리
-if($action === 'delete' && isset($_GET['id'])) {
-    $id = (int)$_GET['id'];
-    try {
-        $stmt = $pdo->prepare("DELETE FROM board_quote WHERE id = ?");
-        $stmt->execute([$id]);
-        header('Location: admin_quotes.php?msg=deleted');
-        exit;
-    } catch(PDOException $e) {
-        $error = "삭제 중 오류가 발생했습니다.";
+// 견적문의 삭제 처리 (POST + CSRF 필수)
+if($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
+    $token = $_POST['csrf_token'] ?? '';
+    if (empty($token) || !hash_equals($_SESSION['csrf_token'], $token)) {
+        $error = "보안 토큰이 유효하지 않습니다.";
+    } else {
+        $id = (int)$_POST['id'];
+        try {
+            $stmt = $pdo->prepare("DELETE FROM board_quote WHERE id = ?");
+            $stmt->execute([$id]);
+            header('Location: admin_quotes.php?msg=deleted');
+            exit;
+        } catch(PDOException $e) {
+            $error = "삭제 중 오류가 발생했습니다.";
+        }
     }
 }
 
-// 답변완료 처리
-if($action === 'toggle_answer' && isset($_GET['id'])) {
-    $id = (int)$_GET['id'];
-    try {
-        $stmt = $pdo->prepare("UPDATE board_quote SET is_answered = IF(is_answered = 1, 0, 1) WHERE id = ?");
-        $stmt->execute([$id]);
-        header('Location: admin_quotes.php');
-        exit;
-    } catch(PDOException $e) {
-        $error = "상태 변경 중 오류가 발생했습니다.";
+// 답변완료 처리 (POST + CSRF 필수)
+if($action === 'toggle_answer' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
+    $token = $_POST['csrf_token'] ?? '';
+    if (empty($token) || !hash_equals($_SESSION['csrf_token'], $token)) {
+        $error = "보안 토큰이 유효하지 않습니다.";
+    } else {
+        $id = (int)$_POST['id'];
+        try {
+            $stmt = $pdo->prepare("UPDATE board_quote SET is_answered = IF(is_answered = 1, 0, 1) WHERE id = ?");
+            $stmt->execute([$id]);
+            header('Location: admin_quotes.php');
+            exit;
+        } catch(PDOException $e) {
+            $error = "상태 변경 중 오류가 발생했습니다.";
+        }
     }
 }
 
@@ -126,7 +142,8 @@ try {
     $quotes = [];
     $totalPages = 0;
     $total = 0;
-    $error = "데이터베이스 오류: " . $e->getMessage() . " (쿼리: " . ($countQuery ?? "N/A") . ")";
+    error_log("admin_quotes DB error: " . $e->getMessage() . " (쿼리: " . ($countQuery ?? "N/A") . ")");
+    $error = "데이터베이스 오류가 발생했습니다.";
 } catch(Exception $e) {
     $quotes = [];
     $totalPages = 0;
@@ -211,10 +228,17 @@ try {
                                 <td>
                                     <div class="action-links">
                                         <a href="admin_quote_view.php?id=<?php echo $quote['id']; ?>" class="btn-view">상세보기</a>
-                                        <a href="?action=toggle_answer&id=<?php echo $quote['id']; ?>" class="btn-toggle">상태변경</a>
-                                        <a href="?action=delete&id=<?php echo $quote['id']; ?>" 
-                                           class="btn-delete"
-                                           onclick="return confirm('정말 삭제하시겠습니까?');">삭제</a>
+                                        <form method="POST" action="?action=toggle_answer" style="display:inline;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                                            <input type="hidden" name="id" value="<?php echo $quote['id']; ?>">
+                                            <button type="submit" class="btn-toggle">상태변경</button>
+                                        </form>
+                                        <form method="POST" action="?action=delete" style="display:inline;"
+                                              onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                                            <input type="hidden" name="id" value="<?php echo $quote['id']; ?>">
+                                            <button type="submit" class="btn-delete">삭제</button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

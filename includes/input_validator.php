@@ -76,3 +76,11 @@ function checkRateLimit($key = 'quote_submit', $maxAttempts = 3, $windowSeconds 
     $_SESSION[$sessionKey][] = $now;
     return true;
 }
+
+/**
+ * validateQuoteInput의 범용 alias
+ * 견적 외 게시판(위탁판매 등)에서도 동일한 검증 로직 사용
+ */
+function validateFormInput($fields) {
+    return validateQuoteInput($fields);
+}

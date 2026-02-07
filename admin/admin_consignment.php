@@ -2,71 +2,100 @@
 // 데이터베이스 연결 먼저 포함
 require_once '../db.php';
 session_start();
+require_once 'admin_check.php';
+
+// CSRF 토큰 생성
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrf_token = $_SESSION['csrf_token'];
+
+// CSRF 토큰 검증 함수
+function verify_csrf_token() {
+    $token = $_POST['csrf_token'] ?? '';
+    return !empty($token) && hash_equals($_SESSION['csrf_token'], $token);
+}
 
 // 액션 처리 (header 출력 전에 처리)
 $action = $_GET['action'] ?? 'list';
 
-// 위탁판매 삭제 처리
-if($action === 'delete' && isset($_GET['id'])) {
-    $id = (int)$_GET['id'];
-    try {
-        $stmt = $pdo->prepare("DELETE FROM board_consignment WHERE id = ?");
-        $stmt->execute([$id]);
-        header('Location: admin_consignment.php?msg=deleted');
-        exit;
-    } catch(PDOException $e) {
-        $error = "삭제 중 오류가 발생했습니다.";
-    }
-}
-
-// 일괄 삭제 처리
-if($action === 'bulk_delete' && isset($_POST['selected_ids'])) {
-    $ids = $_POST['selected_ids'];
-    $placeholders = str_repeat('?,', count($ids) - 1) . '?';
-    
-    try {
-        $stmt = $pdo->prepare("DELETE FROM board_consignment WHERE id IN ($placeholders)");
-        $stmt->execute($ids);
-        header('Location: admin_consignment.php?msg=bulk_deleted');
-        exit;
-    } catch(PDOException $e) {
-        $error = "일괄 삭제 중 오류가 발생했습니다.";
-    }
-}
-
-// 일괄 상태 변경 처리
-if($action === 'bulk_status' && isset($_POST['selected_ids']) && isset($_POST['status'])) {
-    $ids = $_POST['selected_ids'];
-    $status = $_POST['status'];
-    
-    if(in_array($status, ['active', 'sold', 'inactive'])) {
-        $placeholders = str_repeat('?,', count($ids) - 1) . '?';
-        
+// 위탁판매 삭제 처리 (POST + CSRF 필수)
+if($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
+    if (!verify_csrf_token()) {
+        $error = "보안 토큰이 유효하지 않습니다.";
+    } else {
+        $id = (int)$_POST['id'];
         try {
-            $stmt = $pdo->prepare("UPDATE board_consignment SET status = ? WHERE id IN ($placeholders)");
-            $params = array_merge([$status], $ids);
-            $stmt->execute($params);
-            header('Location: admin_consignment.php?msg=bulk_status_changed');
+            $stmt = $pdo->prepare("DELETE FROM board_consignment WHERE id = ?");
+            $stmt->execute([$id]);
+            header('Location: admin_consignment.php?msg=deleted');
             exit;
         } catch(PDOException $e) {
-            $error = "일괄 상태 변경 중 오류가 발생했습니다.";
+            $error = "삭제 중 오류가 발생했습니다.";
         }
     }
 }
 
-// 상태 변경 처리
-if($action === 'toggle_status' && isset($_GET['id'])) {
-    $id = (int)$_GET['id'];
-    $new_status = $_GET['status'] ?? 'active';
-    
-    if(in_array($new_status, ['active', 'sold', 'inactive'])) {
+// 일괄 삭제 처리 (POST + CSRF 필수)
+if($action === 'bulk_delete' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['selected_ids'])) {
+    if (!verify_csrf_token()) {
+        $error = "보안 토큰이 유효하지 않습니다.";
+    } else {
+        $ids = $_POST['selected_ids'];
+        $placeholders = str_repeat('?,', count($ids) - 1) . '?';
+
         try {
-            $stmt = $pdo->prepare("UPDATE board_consignment SET status = ? WHERE id = ?");
-            $stmt->execute([$new_status, $id]);
-            header('Location: admin_consignment.php?msg=status_changed');
+            $stmt = $pdo->prepare("DELETE FROM board_consignment WHERE id IN ($placeholders)");
+            $stmt->execute($ids);
+            header('Location: admin_consignment.php?msg=bulk_deleted');
             exit;
         } catch(PDOException $e) {
-            $error = "상태 변경 중 오류가 발생했습니다.";
+            $error = "일괄 삭제 중 오류가 발생했습니다.";
+        }
+    }
+}
+
+// 일괄 상태 변경 처리 (POST + CSRF 필수)
+if($action === 'bulk_status' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['selected_ids']) && isset($_POST['status'])) {
+    if (!verify_csrf_token()) {
+        $error = "보안 토큰이 유효하지 않습니다.";
+    } else {
+        $ids = $_POST['selected_ids'];
+        $status = $_POST['status'];
+
+        if(in_array($status, ['active', 'sold', 'inactive'])) {
+            $placeholders = str_repeat('?,', count($ids) - 1) . '?';
+
+            try {
+                $stmt = $pdo->prepare("UPDATE board_consignment SET status = ? WHERE id IN ($placeholders)");
+                $params = array_merge([$status], $ids);
+                $stmt->execute($params);
+                header('Location: admin_consignment.php?msg=bulk_status_changed');
+                exit;
+            } catch(PDOException $e) {
+                $error = "일괄 상태 변경 중 오류가 발생했습니다.";
+            }
+        }
+    }
+}
+
+// 상태 변경 처리 (POST + CSRF 필수)
+if($action === 'toggle_status' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
+    if (!verify_csrf_token()) {
+        $error = "보안 토큰이 유효하지 않습니다.";
+    } else {
+        $id = (int)$_POST['id'];
+        $new_status = $_POST['status'] ?? 'active';
+
+        if(in_array($new_status, ['active', 'sold', 'inactive'])) {
+            try {
+                $stmt = $pdo->prepare("UPDATE board_consignment SET status = ? WHERE id = ?");
+                $stmt->execute([$new_status, $id]);
+                header('Location: admin_consignment.php?msg=status_changed');
+                exit;
+            } catch(PDOException $e) {
+                $error = "상태 변경 중 오류가 발생했습니다.";
+            }
         }
     }
 }
@@ -223,7 +252,8 @@ try {
     $consignments = [];
     $totalPages = 0;
     $total = 0;
-    $error = "데이터베이스 오류: " . $e->getMessage();
+    error_log("admin_consignment DB error: " . $e->getMessage());
+    $error = "데이터베이스 오류가 발생했습니다.";
 } catch(Exception $e) {
     $consignments = [];
     $totalPages = 0;
@@ -272,6 +302,7 @@ try {
         </div>
         
         <form id="bulkActionForm" method="POST" action="">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
             <div class="bulk-actions" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
                 <button type="button" onclick="executeAction('bulk_delete')" class="btn btn-danger" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">
                     선택 삭제
@@ -350,9 +381,12 @@ try {
                                 <td>
                                     <div class="action-links">
                                         <a href="admin_consignment_view.php?id=<?php echo $consignment['id']; ?>" class="btn-view">보기</a>
-                                        <a href="?action=delete&id=<?php echo $consignment['id']; ?>" 
-                                           class="btn-delete"
-                                           onclick="return confirm('정말 삭제하시겠습니까?');">삭제</a>
+                                        <form method="POST" action="?action=delete" style="display:inline;"
+                                              onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                                            <input type="hidden" name="id" value="<?php echo $consignment['id']; ?>">
+                                            <button type="submit" class="btn-delete">삭제</button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -457,14 +491,7 @@ function executeAction(action) {
     form.submit();
 }
 
-// 개별 삭제 확인
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('btn-delete')) {
-        if (!confirm('이 위탁판매를 삭제하시겠습니까?')) {
-            e.preventDefault();
-        }
-    }
-});
+// 개별 삭제는 각 폼의 onsubmit에서 처리
 </script>
 
 <?php require_once 'admin_tail.php'; ?>

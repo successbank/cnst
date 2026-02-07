@@ -2,6 +2,7 @@
 require_once 'db.php';
 require_once 'board/board_template.php';
 require_once 'member_check.php';
+require_once 'includes/input_validator.php';
 
 // 게시판 타입 확인
 $boardType = isset($_GET['type']) ? $_GET['type'] : '';
@@ -17,7 +18,29 @@ $board = new BoardTemplate($pdo, $boardType);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 출력 버퍼링 시작
     ob_start();
-    
+
+    // 위탁판매 게시판: SQL 인젝션 검증 + Rate Limiting
+    if ($boardType === 'consignment') {
+        $validation = validateFormInput([
+            'title' => $_POST['title'] ?? '',
+            'content' => $_POST['content'] ?? '',
+            'writer' => $_POST['writer'] ?? '',
+            'company_name' => $_POST['company_name'] ?? '',
+            'stock_quantity' => $_POST['stock_quantity'] ?? '',
+            'price_info' => $_POST['price_info'] ?? '',
+            'contact_person' => $_POST['contact_person'] ?? '',
+            'contact_phone' => $_POST['contact_phone'] ?? '',
+            'contact_email' => $_POST['contact_email'] ?? '',
+            'location' => $_POST['location'] ?? ''
+        ]);
+        if (!$validation['valid']) {
+            $error = $validation['message'];
+        }
+        if (!isset($error) && !checkRateLimit('consignment_submit', 3, 60)) {
+            $error = '너무 많은 요청이 감지되었습니다. 잠시 후 다시 시도해주세요.';
+        }
+    }
+
     $data = [
         'title' => $_POST['title'],
         'content' => $_POST['content'],

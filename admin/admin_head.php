@@ -502,13 +502,16 @@ $currentFile = basename($_SERVER['PHP_SELF']);
             justify-content: center;
         }
         
-        .action-links a {
+        .action-links a,
+        .action-links button {
             padding: 5px 10px;
             border-radius: 6px;
             font-size: 12px;
             text-decoration: none;
             transition: all 0.3s ease;
             white-space: nowrap;
+            border: none;
+            cursor: pointer;
         }
         
         .btn-view {

@@ -7,7 +7,7 @@ if (!isset($_GET['file']) || !isset($_GET['type'])) {
 }
 
 $type = $_GET['type'];
-$filename = $_GET['file']; // rawurldecode는 자동으로 처리됨
+$filename = basename($_GET['file']);
 
 // 허용된 디렉토리만 접근 가능
 $allowedTypes = ['quote', 'notice', 'news', 'consignment'];
