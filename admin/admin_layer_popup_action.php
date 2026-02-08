@@ -48,13 +48,23 @@ function createPopup() {
         $startDate = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
         $endDate = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
 
+        // 표시 페이지 처리
+        $displayPages = $_POST['display_pages'] ?? ['main'];
+        if (!is_array($displayPages)) {
+            $displayPages = ['main'];
+        }
+        if (in_array('all', $displayPages)) {
+            $displayPages = ['all'];
+        }
+        $displayPagesJson = json_encode(array_values(array_unique($displayPages)));
+
         // 데이터 삽입
         $stmt = $pdo->prepare("
             INSERT INTO layer_popups (
                 title, image_path, content, link_url, link_target,
                 position_top, position_left, width, height,
-                start_date, end_date, is_active, display_order, hide_today
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                start_date, end_date, is_active, display_order, hide_today, display_pages
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmt->execute([
@@ -71,7 +81,8 @@ function createPopup() {
             $endDate,
             isset($_POST['is_active']) ? 1 : 0,
             intval($_POST['display_order'] ?? 0),
-            isset($_POST['hide_today']) ? 1 : 0
+            isset($_POST['hide_today']) ? 1 : 0,
+            $displayPagesJson
         ]);
 
         $_SESSION['message'] = '팝업이 성공적으로 추가되었습니다.';
@@ -127,12 +138,23 @@ function updatePopup() {
         $startDate = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
         $endDate = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
 
+        // 표시 페이지 처리
+        $displayPages = $_POST['display_pages'] ?? ['main'];
+        if (!is_array($displayPages)) {
+            $displayPages = ['main'];
+        }
+        if (in_array('all', $displayPages)) {
+            $displayPages = ['all'];
+        }
+        $displayPagesJson = json_encode(array_values(array_unique($displayPages)));
+
         // 데이터 업데이트
         $stmt = $pdo->prepare("
             UPDATE layer_popups
             SET title = ?, image_path = ?, content = ?, link_url = ?, link_target = ?,
                 position_top = ?, position_left = ?, width = ?, height = ?,
-                start_date = ?, end_date = ?, is_active = ?, display_order = ?, hide_today = ?
+                start_date = ?, end_date = ?, is_active = ?, display_order = ?, hide_today = ?,
+                display_pages = ?
             WHERE id = ?
         ");
 
@@ -151,6 +173,7 @@ function updatePopup() {
             isset($_POST['is_active']) ? 1 : 0,
             intval($_POST['display_order'] ?? 0),
             isset($_POST['hide_today']) ? 1 : 0,
+            $displayPagesJson,
             $id
         ]);
 

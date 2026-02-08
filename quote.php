@@ -1,6 +1,11 @@
 <?php
 require_once 'db.php';
 require_once 'board/board_template.php';
+require_once 'member_check.php';
+require_once 'includes/BoardPermissionHelper.php';
+
+// 게시판 목록 접근 권한 체크
+BoardPermissionHelper::requireAccess('quote', 'list');
 
 $currentPage = 'quote';
 $pageTitle = '견적문의';
@@ -380,6 +385,7 @@ $pagination = $result['pagination'];
                     <tr>
                         <td><?php echo $post['display_order'] ?? $post['id']; ?></td>
                         <td style="text-align: left;">
+                            <?php if (BoardPermissionHelper::canAccess('quote', 'read')): ?>
                             <a href="board_view.php?type=quote&id=<?php echo $post['id']; ?>">
                                 🔒 <?php echo escape($post['title']); ?>
                                 <?php if ($post['attachment']): ?>
@@ -393,6 +399,11 @@ $pagination = $result['pagination'];
                                     ?>
                                 <?php endif; ?>
                             </a>
+                            <?php else: ?>
+                            <span class="title-locked">
+                                🔒 <?php echo escape($post['title']); ?>
+                            </span>
+                            <?php endif; ?>
                         </td>
                         <td><?php echo escape($post['writer']); ?></td>
                         <td><?php echo formatDate($post['created_at']); ?></td>
@@ -411,9 +422,11 @@ $pagination = $result['pagination'];
         </table>
 
         <!-- 글쓰기 버튼 -->
+        <?php if (BoardPermissionHelper::canAccess('quote', 'write')): ?>
         <div class="board-buttons">
             <a href="board_write.php?type=quote" class="submit-btn">견적문의 작성</a>
         </div>
+        <?php endif; ?>
 
         <!-- 페이지네이션 -->
         <?php if ($pagination['totalPages'] > 1): ?>

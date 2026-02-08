@@ -3,12 +3,18 @@ require_once 'db.php';
 require_once 'board/board_template.php';
 require_once 'member_check.php';
 require_once 'includes/input_validator.php';
+require_once 'includes/BoardPermissionHelper.php';
 
 // 게시판 타입 확인
 $boardType = isset($_GET['type']) ? $_GET['type'] : '';
 if (!in_array($boardType, ['quote', 'notice', 'news', 'consignment'])) {
     header('Location: index.php');
     exit;
+}
+
+// 게시판 쓰기 권한 체크 (중계판매, 견적문의)
+if (in_array($boardType, ['consignment', 'quote'])) {
+    BoardPermissionHelper::requireAccess($boardType, 'write');
 }
 
 // 게시판 객체 생성

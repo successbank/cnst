@@ -2,6 +2,7 @@
 require_once 'db.php';
 require_once 'board/board_template.php';
 require_once 'member_check.php';
+require_once 'includes/BoardPermissionHelper.php';
 
 // 게시판 타입과 ID 확인
 $boardType = isset($_GET['type']) ? $_GET['type'] : '';
@@ -10,6 +11,11 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if (!in_array($boardType, ['quote', 'notice', 'news', 'consignment']) || !$id) {
     header('Location: index.php');
     exit;
+}
+
+// 게시판 권한 체크 (중계판매, 견적문의)
+if (in_array($boardType, ['consignment', 'quote'])) {
+    BoardPermissionHelper::requireAccess($boardType, 'read');
 }
 
 // 게시판 객체 생성
@@ -306,6 +312,14 @@ include 'head.php';
                 </div>
                 <?php endif; ?>
                 
+                <?php
+                // 댓글 섹션 (중계판매, 견적문의만)
+                if (in_array($boardType, ['consignment', 'quote'])) {
+                    $canComment = BoardPermissionHelper::canAccess($boardType, 'comment');
+                    include 'includes/comment_section.php';
+                }
+                ?>
+
                 <div class="post-buttons">
                     <a href="<?php echo $boardType; ?>.php" class="btn-list">목록</a>
                     <div class="right-buttons">

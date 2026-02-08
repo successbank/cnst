@@ -42,6 +42,12 @@ try {
     $popup['link_url'] = $popup['link_url'] ?? '';
     $popup['link_target'] = $popup['link_target'] ?? '_self';
 
+    // display_pages를 배열로 변환
+    $popup['display_pages'] = json_decode($popup['display_pages'] ?? '["main"]', true);
+    if (!is_array($popup['display_pages'])) {
+        $popup['display_pages'] = ['main'];
+    }
+
     echo json_encode([
         'success' => true,
         'popup' => $popup

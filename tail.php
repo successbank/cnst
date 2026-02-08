@@ -378,5 +378,7 @@
             <script src="<?php echo $js; ?>"></script>
         <?php endforeach; ?>
     <?php endif; ?>
+
+    <?php require_once __DIR__ . '/includes/layer_popup.php'; ?>
 </body>
 </html>

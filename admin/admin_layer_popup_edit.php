@@ -258,6 +258,69 @@ textarea.form-control {
     border-radius: 8px;
 }
 
+/* 표시 페이지 체크박스 그리드 */
+.display-pages-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 768px) {
+    .display-pages-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.display-page-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.display-page-item:hover {
+    border-color: #1A237E;
+    background: #f5f7ff;
+}
+
+.display-page-item.checked {
+    border-color: #1A237E;
+    background: #e8eaf6;
+}
+
+.display-page-item.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.display-page-item.all-pages {
+    grid-column: 1 / -1;
+    background: #f5f5f5;
+    border-style: dashed;
+}
+
+.display-page-item.all-pages.checked {
+    background: #e8eaf6;
+    border-style: solid;
+    border-color: #1A237E;
+}
+
+.display-page-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.display-page-item label {
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+}
+
 .btn {
     display: inline-flex;
     align-items: center;
@@ -412,6 +475,31 @@ textarea.form-control {
 
 // 추가 스크립트
 $additionalScripts = '
+function toggleDisplayPage(el, value) {
+    const checkbox = el.querySelector("input[type=checkbox]");
+    if (checkbox.disabled) return;
+
+    checkbox.checked = !checkbox.checked;
+    el.classList.toggle("checked", checkbox.checked);
+
+    if (value === "all") {
+        // "전체 페이지" 토글 시 개별 항목 비활성화/활성화
+        const items = document.querySelectorAll(".display-page-item:not(.all-pages)");
+        items.forEach(function(item) {
+            const cb = item.querySelector("input[type=checkbox]");
+            if (checkbox.checked) {
+                cb.disabled = true;
+                cb.checked = false;
+                item.classList.add("disabled");
+                item.classList.remove("checked");
+            } else {
+                cb.disabled = false;
+                item.classList.remove("disabled");
+            }
+        });
+    }
+}
+
 function previewImage(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
@@ -766,6 +854,52 @@ require_once 'admin_head.php';
                 <label for="is_active">활성화</label>
             </div>
             <div class="form-help">체크 해제 시 팝업이 표시되지 않습니다.</div>
+        </div>
+
+        <!-- 표시 페이지 -->
+        <h3 class="section-title"><i class="fas fa-sitemap"></i> 표시 페이지</h3>
+
+        <?php
+        $displayPages = ['main']; // 기본값
+        if ($isEdit && isset($popup['display_pages'])) {
+            $decoded = json_decode($popup['display_pages'], true);
+            if (is_array($decoded)) {
+                $displayPages = $decoded;
+            }
+        }
+
+        $pageOptions = [
+            'all'          => '전체 페이지',
+            'main'         => '메인 페이지 (홈)',
+            'products'     => '판매제품',
+            'about'        => '회사소개',
+            'consignment'  => '중계판매',
+            'quote'        => '견적문의',
+            'notice'       => '공지사항',
+            'news'         => '철강뉴스',
+            'calculator'   => '제품 계산기',
+            'location'     => '오시는길',
+            'contact'      => '문의하기',
+        ];
+        $isAllSelected = in_array('all', $displayPages);
+        ?>
+
+        <div class="form-group">
+            <div class="display-pages-grid">
+                <?php foreach ($pageOptions as $value => $label): ?>
+                <div class="display-page-item <?php echo $value === 'all' ? 'all-pages' : ''; ?> <?php echo ($isAllSelected && $value === 'all') || (!$isAllSelected && in_array($value, $displayPages)) ? 'checked' : ''; ?> <?php echo ($isAllSelected && $value !== 'all') ? 'disabled' : ''; ?>"
+                     onclick="toggleDisplayPage(this, '<?php echo $value; ?>')">
+                    <input type="checkbox" name="display_pages[]" value="<?php echo $value; ?>"
+                           id="dp_<?php echo $value; ?>"
+                           <?php echo ($isAllSelected && $value === 'all') || (!$isAllSelected && in_array($value, $displayPages)) ? 'checked' : ''; ?>
+                           <?php echo ($isAllSelected && $value !== 'all') ? 'disabled' : ''; ?>>
+                    <label for="dp_<?php echo $value; ?>"><?php echo $label; ?></label>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <div class="form-help" style="margin-top: 8px;">
+                <i class="fas fa-info-circle"></i> "전체 페이지" 선택 시 모든 페이지에 팝업이 표시됩니다. 개별 페이지를 선택하면 해당 페이지에서만 표시됩니다.
+            </div>
         </div>
 
         <div class="form-actions">

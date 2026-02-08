@@ -11,7 +11,7 @@ if(!isset($_SESSION['member_id']) && isset($_COOKIE['remember_me'])) {
         if($member_id) {
             // 토큰이 유효한 경우 자동 로그인
             try {
-                $stmt = $pdo->prepare("SELECT id, user_id, name, email FROM members WHERE id = ? AND is_active = 1");
+                $stmt = $pdo->prepare("SELECT id, user_id, name, email, member_grade, is_admin FROM members WHERE id = ? AND is_active = 1");
                 $stmt->execute([$member_id]);
                 $member = $stmt->fetch();
 
@@ -20,6 +20,8 @@ if(!isset($_SESSION['member_id']) && isset($_COOKIE['remember_me'])) {
                     $_SESSION['user_id'] = $member['user_id'];
                     $_SESSION['member_name'] = $member['name'];
                     $_SESSION['member_email'] = $member['email'];
+                    $_SESSION['member_grade'] = $member['member_grade'] ?? 'normal';
+                    $_SESSION['is_admin'] = $member['is_admin'] ?? 0;
 
                     // 새 토큰 생성 (단일 사용 원칙)
                     $prefs = getMemberSessionPreferences($member_id);
@@ -66,7 +68,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if($user_id && $password) {
         try {
-            $stmt = $pdo->prepare("SELECT id, user_id, password, name, email, is_active FROM members WHERE user_id = ?");
+            $stmt = $pdo->prepare("SELECT id, user_id, password, name, email, is_active, member_grade, is_admin FROM members WHERE user_id = ?");
             $stmt->execute([$user_id]);
             $member = $stmt->fetch();
             
@@ -81,7 +83,9 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_id'] = $member['user_id'];
                     $_SESSION['member_name'] = $member['name'];
                     $_SESSION['member_email'] = $member['email'];
-                    
+                    $_SESSION['member_grade'] = $member['member_grade'] ?? 'normal';
+                    $_SESSION['is_admin'] = $member['is_admin'] ?? 0;
+
                     // Remember Me 기능 처리
                     $remember_me = isset($_POST['remember']) && $_POST['remember'] == 'on';
                     if($remember_me) {

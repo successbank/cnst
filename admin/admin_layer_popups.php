@@ -177,6 +177,22 @@ $additionalStyles = '
     margin-right: 6px;
 }
 
+.badge-page {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    margin: 2px;
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.badge-page-all {
+    background: #1A237E;
+    color: white;
+}
+
 .date-range {
     font-size: 12px;
     color: #666;
@@ -339,8 +355,8 @@ function getPopupStatus($popup) {
     </div>
 
     <div class="page-description" style="background: #e3f2fd; padding: 16px; border-radius: 8px; margin-bottom: 24px; color: #1565c0;">
-        <i class="fas fa-info-circle"></i> 메인 페이지(index)에 표시되는 레이어 팝업을 관리합니다.
-        팝업은 설정된 기간 동안 방문자에게 표시되며, "오늘 하루 보지 않기" 옵션을 제공할 수 있습니다.
+        <i class="fas fa-info-circle"></i> 레이어 팝업을 관리합니다. 팝업별로 표시할 페이지를 선택할 수 있으며,
+        설정된 기간 동안 방문자에게 표시됩니다. "오늘 하루 보지 않기" 옵션을 제공할 수 있습니다.
     </div>
 
     <?php if (isset($_SESSION['message'])): ?>
@@ -374,6 +390,7 @@ function getPopupStatus($popup) {
             <tr>
                 <th style="width: 100px;">이미지</th>
                 <th>제목</th>
+                <th style="width: 140px;">표시 페이지</th>
                 <th style="width: 120px;">노출 기간</th>
                 <th style="width: 100px;">위치/크기</th>
                 <th style="width: 80px;">상태</th>
@@ -409,6 +426,26 @@ function getPopupStatus($popup) {
                     <br>
                     <small style="color: #888;"><i class="fas fa-eye-slash"></i> 오늘 하루 보지 않기</small>
                     <?php endif; ?>
+                </td>
+                <td>
+                    <?php
+                    $dpPages = json_decode($popup['display_pages'] ?? '["main"]', true);
+                    if (!is_array($dpPages)) $dpPages = ['main'];
+                    $pageLabels = [
+                        'all' => '전체 페이지', 'main' => '메인', 'products' => '판매제품',
+                        'about' => '회사소개', 'consignment' => '중계판매', 'quote' => '견적문의',
+                        'notice' => '공지사항', 'news' => '철강뉴스', 'calculator' => '계산기',
+                        'location' => '오시는길', 'contact' => '문의하기',
+                    ];
+                    if (in_array('all', $dpPages)): ?>
+                        <span class="badge-page badge-page-all">전체 페이지</span>
+                    <?php else:
+                        foreach ($dpPages as $pg):
+                            $pgLabel = $pageLabels[$pg] ?? $pg;
+                    ?>
+                        <span class="badge-page"><?php echo htmlspecialchars($pgLabel); ?></span>
+                    <?php endforeach;
+                    endif; ?>
                 </td>
                 <td>
                     <?php if ($popup['start_date'] || $popup['end_date']): ?>

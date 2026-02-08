@@ -2,6 +2,10 @@
 require_once 'db.php';
 require_once 'board/board_template.php';
 require_once 'member_check.php';
+require_once 'includes/BoardPermissionHelper.php';
+
+// 게시판 목록 접근 권한 체크
+BoardPermissionHelper::requireAccess('consignment', 'list');
 
 $currentPage = 'consignment';
 $pageTitle = '중계판매';
@@ -178,12 +182,19 @@ function maskTitle($title) {
                             </span>
                         </td>
                         <td style="text-align: left;">
+                            <?php if (BoardPermissionHelper::canAccess('consignment', 'read')): ?>
                             <a href="board_view.php?type=consignment&id=<?php echo $post['id']; ?>">
                                 <?php echo escape(maskTitle($post['title'])); ?>
                                 <?php if ($post['attachment']): ?>
                                     <span class="file-icon">📎</span>
                                 <?php endif; ?>
                             </a>
+                            <?php else: ?>
+                            <span class="title-locked">
+                                <?php echo escape(maskTitle($post['title'])); ?>
+                                <span class="lock-icon" title="로그인 후 열람 가능">🔒</span>
+                            </span>
+                            <?php endif; ?>
                         </td>
                         <td><?php echo escape(maskCompanyName($post['company_name'] ?? $post['writer'])); ?></td>
                         <td><?php echo escape($post['stock_quantity'] ?? '-'); ?></td>
@@ -196,9 +207,11 @@ function maskTitle($title) {
         </table>
 
         <!-- 글쓰기 버튼 -->
+        <?php if (BoardPermissionHelper::canAccess('consignment', 'write')): ?>
         <div class="board-buttons">
             <a href="board_write.php?type=consignment" class="write-btn">중계판매 등록</a>
         </div>
+        <?php endif; ?>
 
         <!-- 페이지네이션 -->
         <?php if ($pagination['totalPages'] > 1): ?>

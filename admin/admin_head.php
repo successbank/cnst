@@ -578,12 +578,13 @@ $currentFile = basename($_SERVER['PHP_SELF']);
                 
                 <!-- 게시판 관리 드롭다운 -->
                 <div class="nav-dropdown" id="boardDropdown">
-                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_notices.php', 'admin_notice_write.php', 'admin_news.php', 'admin_news_write.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('boardDropdown'); return false;">
+                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_notices.php', 'admin_notice_write.php', 'admin_news.php', 'admin_news_write.php', 'admin_board_permissions.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('boardDropdown'); return false;">
                         게시판 관리
                     </a>
                     <div class="nav-dropdown-menu">
                         <a href="admin_notices.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_notices.php' || $currentFile === 'admin_notice_write.php' ? 'active' : ''; ?>">공지사항 관리</a>
                         <a href="admin_news.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_news.php' || $currentFile === 'admin_news_write.php' ? 'active' : ''; ?>">철강뉴스 관리</a>
+                        <a href="admin_board_permissions.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_board_permissions.php' ? 'active' : ''; ?>">게시판 권한 설정</a>
                     </div>
                 </div>
                 
