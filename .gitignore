@@ -47,3 +47,12 @@ Thumbs.db
 
 # YoYo AI version control directory
 .yoyo/
+
+# Python virtual environment
+venv/
+
+# Database backups
+backups/
+
+# Webmail config (contains credentials)
+webmail/config/config.inc.php
