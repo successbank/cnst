@@ -1,26 +1,44 @@
 <?php
-// 카카오 API 설정
-define('KAKAO_API_KEY', 'YOUR_KAKAO_API_KEY'); // 실제 API 키로 변경 필요
-define('KAKAO_API_SECRET', 'YOUR_KAKAO_API_SECRET'); // 실제 API 시크릿으로 변경 필요
-define('KAKAO_SENDER_KEY', 'YOUR_SENDER_KEY'); // 발신프로필키
-define('KAKAO_CHANNEL_ID', '@chungnamsteel'); // 카카오톡 채널 ID
+// 카카오 API 설정 - DB에서 로드
+// RCE 방지: 설정값을 PHP 파일에 직접 쓰지 않고 DB에서 조회
 
-// ============================================================
-// 카카오맵 JavaScript API 설정
-// ============================================================
-// 카카오 개발자 사이트(https://developers.kakao.com)에서 발급받은 JavaScript 키
-// 앱 설정 > 플랫폼 > Web 사이트 도메인에 "http://103.124.103.229" 등록 필요
-define('KAKAO_MAP_API_KEY', 'a58e0ccf44be12cbe273b073a846cafa'); // JavaScript 키
+if (!function_exists('getKakaoSettings')) {
+    function getKakaoSettings() {
+        static $settings = null;
+        if ($settings !== null) return $settings;
 
-// 카카오 알림톡 API 엔드포인트
-define('KAKAO_API_URL', 'https://api-alimtalk.cloud.toast.com/alimtalk/v2.2');
+        try {
+            $pdo = getDB();
+            $stmt = $pdo->prepare("SELECT setting_key, setting_value FROM site_settings WHERE setting_group = 'kakao'");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
 
-// 알림 설정
-define('KAKAO_NOTIFICATION_ENABLED', true); // 알림 전송 활성화 여부
-define('KAKAO_TEST_MODE', true); // 테스트 모드 (true일 경우 실제 발송하지 않음)
-define('KAKAO_TEST_PHONE', '010-0000-0000'); // 테스트 모드에서 사용할 번호
+            $settings = [];
+            foreach ($rows as $row) {
+                $settings[$row['setting_key']] = $row['setting_value'];
+            }
+            return $settings;
+        } catch (Exception $e) {
+            error_log("Failed to load kakao settings: " . $e->getMessage());
+            return [];
+        }
+    }
+}
 
-// 메시지 발송 제한
-define('KAKAO_DAILY_LIMIT', 1000); // 일일 발송 제한
-define('KAKAO_RETRY_COUNT', 3); // 발송 실패시 재시도 횟수
+$kakaoSettings = getKakaoSettings();
+
+// define 상수로 유지 (기존 코드 호환성)
+if (!defined('KAKAO_API_KEY')) {
+    define('KAKAO_API_KEY', $kakaoSettings['kakao_api_key'] ?? '');
+    define('KAKAO_API_SECRET', $kakaoSettings['kakao_api_secret'] ?? '');
+    define('KAKAO_SENDER_KEY', $kakaoSettings['kakao_sender_key'] ?? '');
+    define('KAKAO_CHANNEL_ID', $kakaoSettings['kakao_channel_id'] ?? '@chungnamsteel');
+    define('KAKAO_MAP_API_KEY', $kakaoSettings['kakao_map_api_key'] ?? '');
+    define('KAKAO_API_URL', $kakaoSettings['kakao_api_url'] ?? 'https://api-alimtalk.cloud.toast.com/alimtalk/v2.2');
+    define('KAKAO_NOTIFICATION_ENABLED', ($kakaoSettings['kakao_notification_enabled'] ?? '0') === '1');
+    define('KAKAO_TEST_MODE', ($kakaoSettings['kakao_test_mode'] ?? '1') === '1');
+    define('KAKAO_TEST_PHONE', $kakaoSettings['kakao_test_phone'] ?? '');
+    define('KAKAO_DAILY_LIMIT', (int)($kakaoSettings['kakao_daily_limit'] ?? 1000));
+    define('KAKAO_RETRY_COUNT', (int)($kakaoSettings['kakao_retry_count'] ?? 3));
+}
 ?>

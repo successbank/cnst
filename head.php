@@ -1,6 +1,10 @@
 <?php
-// 세션 시작 및 회원 체크 (HTML 출력 전에 실행)
+// 세션 보안 설정 (session_start 전에 설정)
 if(!isset($_SESSION)) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.cookie_secure', 1);
+    ini_set('session.cookie_samesite', 'Lax');
+    ini_set('session.use_strict_mode', 1);
     session_start();
 }
 require_once 'member_check.php';

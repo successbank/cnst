@@ -48,17 +48,17 @@ $origin_stats = $origin_stmt->fetchAll();
     
     <?php if (isset($_SESSION['success'])): ?>
     <div class="alert alert-success">
-        <?php 
-        echo $_SESSION['success'];
+        <?php
+        echo htmlspecialchars($_SESSION['success'], ENT_QUOTES, 'UTF-8');
         unset($_SESSION['success']);
         ?>
     </div>
     <?php endif; ?>
-    
+
     <?php if (isset($_SESSION['error'])): ?>
     <div class="alert alert-danger">
-        <?php 
-        echo $_SESSION['error'];
+        <?php
+        echo htmlspecialchars($_SESSION['error'], ENT_QUOTES, 'UTF-8');
         unset($_SESSION['error']);
         ?>
     </div>

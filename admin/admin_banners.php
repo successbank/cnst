@@ -190,8 +190,8 @@ try {
     </div>
 
     <?php if (isset($_SESSION['message'])): ?>
-    <div class="alert alert-<?php echo $_SESSION['message_type'] ?? 'info'; ?>">
-        <?php echo $_SESSION['message']; ?>
+    <div class="alert alert-<?php echo htmlspecialchars($_SESSION['message_type'] ?? 'info', ENT_QUOTES, 'UTF-8'); ?>">
+        <?php echo htmlspecialchars($_SESSION['message'], ENT_QUOTES, 'UTF-8'); ?>
     </div>
     <?php 
         unset($_SESSION['message']);

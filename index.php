@@ -5,8 +5,12 @@ include 'head.php';
 require_once 'db.php';
 
 // 활성화된 배너 가져오기
-$stmt = $pdo->query("SELECT * FROM banners WHERE is_active = 1 ORDER BY display_order ASC, id DESC");
-$banners = $stmt->fetchAll();
+try {
+    $stmt = $pdo->query("SELECT * FROM banners WHERE is_active = 1 ORDER BY display_order ASC, id DESC");
+    $banners = $stmt->fetchAll();
+} catch (Exception $e) {
+    $banners = [];
+}
 ?>
 
 <!-- 메인 비주얼 캐러셀 -->
@@ -454,16 +458,20 @@ $defaultIcons = [
 <!-- 추천 제품 (메인페이지 노출 제품) -->
 <?php
 // 메인페이지 노출 제품 가져오기
-$stmt = $pdo->query("
-    SELECT p.*, pc.category_name,
-    CONCAT(p.product_name, IF(p.specification IS NOT NULL AND p.specification != '', CONCAT(' ', p.specification), IF(p.specifications IS NOT NULL AND p.specifications != '', CONCAT(' ', p.specifications), ''))) AS display_name
-    FROM products p
-    JOIN product_categories pc ON p.category_code = pc.category_code
-    WHERE p.show_on_homepage = 1 AND p.is_active = 1
-    ORDER BY p.homepage_display_order ASC, p.id DESC
-    LIMIT 12
-");
-$featured_products = $stmt->fetchAll();
+try {
+    $stmt = $pdo->query("
+        SELECT p.*, pc.category_name,
+        CONCAT(p.product_name, IF(p.specification IS NOT NULL AND p.specification != '', CONCAT(' ', p.specification), IF(p.specifications IS NOT NULL AND p.specifications != '', CONCAT(' ', p.specifications), ''))) AS display_name
+        FROM products p
+        JOIN product_categories pc ON p.category_code = pc.category_code
+        WHERE p.show_on_homepage = 1 AND p.is_active = 1
+        ORDER BY p.homepage_display_order ASC, p.id DESC
+        LIMIT 12
+    ");
+    $featured_products = $stmt->fetchAll();
+} catch (Exception $e) {
+    $featured_products = [];
+}
 
 if (!empty($featured_products)):
 ?>

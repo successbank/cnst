@@ -476,7 +476,7 @@ try {
         <div class="header-content">
             <h1 class="header-title">충남스틸 관리자</h1>
             <div class="header-info">
-                <span class="admin-info">관리자: <?php echo $_SESSION['admin_id']; ?></span>
+                <span class="admin-info">관리자: <?php echo htmlspecialchars($_SESSION['admin_id'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
                 <a href="admin_logout.php" class="logout-btn">로그아웃</a>
             </div>
         </div>

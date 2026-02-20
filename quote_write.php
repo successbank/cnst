@@ -7,6 +7,12 @@ require_once 'includes/input_validator.php';
 // 로그인 체크
 checkLogin();
 
+// CSRF 토큰 생성
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrf_token = $_SESSION['csrf_token'];
+
 $user_id = $_SESSION['user_id'] ?? '';
 $member_id = $_SESSION['member_id'] ?? '';
 
@@ -37,6 +43,12 @@ $success = '';
 
 // POST 처리 - 견적문의 저장
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF 토큰 검증
+    $posted_token = $_POST['csrf_token'] ?? '';
+    if (empty($posted_token) || !hash_equals($_SESSION['csrf_token'], $posted_token)) {
+        $error = '보안 토큰이 유효하지 않습니다. 페이지를 새로고침 후 다시 시도해주세요.';
+    }
+
     $product = trim($_POST['product'] ?? '');
     $quantity = trim($_POST['quantity'] ?? '');
     $specifications = trim($_POST['specifications'] ?? '');
@@ -142,6 +154,7 @@ myPageSidebar('inquiries');
         <?php endif; ?>
         
         <form method="POST" action="" class="quote-form">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
             <!-- 제품 정보 -->
             <div class="form-section">
                 <h3>제품 정보</h3>

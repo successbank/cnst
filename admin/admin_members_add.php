@@ -162,7 +162,7 @@ require_once 'admin_head.php';
 <?php
 // 메시지 표시
 if (isset($_SESSION['error_message'])) {
-    echo '<div class="msg error">' . $_SESSION['error_message'] . '</div>';
+    echo '<div class="msg error">' . htmlspecialchars($_SESSION['error_message'], ENT_QUOTES, 'UTF-8') . '</div>';
     unset($_SESSION['error_message']);
 }
 ?>

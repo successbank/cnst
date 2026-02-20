@@ -316,7 +316,7 @@ include 'admin_head.php';
         <div class="alert success">단중표 데이터가 저장되었습니다.</div>
     <?php elseif ($_GET['message'] == 'generated'): ?>
         <div class="alert success">
-            <?php echo isset($_GET['count']) ? $_GET['count'] : '0'; ?>개의 제품이 자동 생성되었습니다.
+            <?php echo isset($_GET['count']) ? (int)$_GET['count'] : '0'; ?>개의 제품이 자동 생성되었습니다.
         </div>
     <?php endif; ?>
 <?php endif; ?>

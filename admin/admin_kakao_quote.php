@@ -292,7 +292,7 @@ $stats = $kakaoService->getStatistics('quote', $dateFrom . ' 00:00:00', $dateTo 
         <?php if ($totalPages > 1): ?>
         <div class="pagination">
             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                <a href="?page=<?php echo $i; ?>&<?php echo http_build_query(array_diff_key($_GET, ['page' => ''])); ?>" 
+                <a href="?page=<?php echo $i; ?>&<?php echo htmlspecialchars(http_build_query(array_diff_key($_GET, ['page' => ''])), ENT_QUOTES, 'UTF-8'); ?>"
                    class="page-link <?php echo $page == $i ? 'active' : ''; ?>">
                     <?php echo $i; ?>
                 </a>

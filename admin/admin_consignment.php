@@ -4,46 +4,33 @@ require_once '../db.php';
 session_start();
 require_once 'admin_check.php';
 
-// CSRF 토큰 생성
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-$csrf_token = $_SESSION['csrf_token'];
-
-// CSRF 토큰 검증 함수
-function verify_csrf_token() {
-    $token = $_POST['csrf_token'] ?? '';
-    return !empty($token) && hash_equals($_SESSION['csrf_token'], $token);
-}
+// CSRF: admin_check.php에서 공통 csrf.php를 통해 POST 시 자동 검증됨
+// generateCsrfToken()으로 토큰 가져오기
+$csrf_token = generateCsrfToken();
 
 // 액션 처리 (header 출력 전에 처리)
 $action = $_GET['action'] ?? 'list';
 
-// 위탁판매 삭제 처리 (POST + CSRF 필수)
+// 위탁판매 삭제 처리 (POST, CSRF는 admin_check.php에서 검증됨)
 if($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
-    if (!verify_csrf_token()) {
-        $error = "보안 토큰이 유효하지 않습니다.";
-    } else {
-        $id = (int)$_POST['id'];
-        try {
-            $stmt = $pdo->prepare("DELETE FROM board_consignment WHERE id = ?");
-            $stmt->execute([$id]);
-            header('Location: admin_consignment.php?msg=deleted');
-            exit;
-        } catch(PDOException $e) {
-            $error = "삭제 중 오류가 발생했습니다.";
-        }
+    $id = (int)$_POST['id'];
+    try {
+        $stmt = $pdo->prepare("DELETE FROM board_consignment WHERE id = ?");
+        $stmt->execute([$id]);
+        header('Location: admin_consignment.php?msg=deleted');
+        exit;
+    } catch(PDOException $e) {
+        $error = "삭제 중 오류가 발생했습니다.";
     }
 }
 
-// 일괄 삭제 처리 (POST + CSRF 필수)
+// 일괄 삭제 처리
 if($action === 'bulk_delete' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['selected_ids'])) {
-    if (!verify_csrf_token()) {
-        $error = "보안 토큰이 유효하지 않습니다.";
-    } else {
-        $ids = $_POST['selected_ids'];
-        $placeholders = str_repeat('?,', count($ids) - 1) . '?';
+    $ids = array_map('intval', $_POST['selected_ids']);
+    $ids = array_filter($ids, function($id) { return $id > 0; });
 
+    if (!empty($ids)) {
+        $placeholders = str_repeat('?,', count($ids) - 1) . '?';
         try {
             $stmt = $pdo->prepare("DELETE FROM board_consignment WHERE id IN ($placeholders)");
             $stmt->execute($ids);
@@ -55,47 +42,39 @@ if($action === 'bulk_delete' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($
     }
 }
 
-// 일괄 상태 변경 처리 (POST + CSRF 필수)
+// 일괄 상태 변경 처리
 if($action === 'bulk_status' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['selected_ids']) && isset($_POST['status'])) {
-    if (!verify_csrf_token()) {
-        $error = "보안 토큰이 유효하지 않습니다.";
-    } else {
-        $ids = $_POST['selected_ids'];
-        $status = $_POST['status'];
+    $ids = array_map('intval', $_POST['selected_ids']);
+    $ids = array_filter($ids, function($id) { return $id > 0; });
+    $status = $_POST['status'];
 
-        if(in_array($status, ['active', 'sold', 'inactive'])) {
-            $placeholders = str_repeat('?,', count($ids) - 1) . '?';
-
-            try {
-                $stmt = $pdo->prepare("UPDATE board_consignment SET status = ? WHERE id IN ($placeholders)");
-                $params = array_merge([$status], $ids);
-                $stmt->execute($params);
-                header('Location: admin_consignment.php?msg=bulk_status_changed');
-                exit;
-            } catch(PDOException $e) {
-                $error = "일괄 상태 변경 중 오류가 발생했습니다.";
-            }
+    if(!empty($ids) && in_array($status, ['active', 'sold', 'inactive'])) {
+        $placeholders = str_repeat('?,', count($ids) - 1) . '?';
+        try {
+            $stmt = $pdo->prepare("UPDATE board_consignment SET status = ? WHERE id IN ($placeholders)");
+            $params = array_merge([$status], $ids);
+            $stmt->execute($params);
+            header('Location: admin_consignment.php?msg=bulk_status_changed');
+            exit;
+        } catch(PDOException $e) {
+            $error = "일괄 상태 변경 중 오류가 발생했습니다.";
         }
     }
 }
 
-// 상태 변경 처리 (POST + CSRF 필수)
+// 상태 변경 처리
 if($action === 'toggle_status' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
-    if (!verify_csrf_token()) {
-        $error = "보안 토큰이 유효하지 않습니다.";
-    } else {
-        $id = (int)$_POST['id'];
-        $new_status = $_POST['status'] ?? 'active';
+    $id = (int)$_POST['id'];
+    $new_status = $_POST['status'] ?? 'active';
 
-        if(in_array($new_status, ['active', 'sold', 'inactive'])) {
-            try {
-                $stmt = $pdo->prepare("UPDATE board_consignment SET status = ? WHERE id = ?");
-                $stmt->execute([$new_status, $id]);
-                header('Location: admin_consignment.php?msg=status_changed');
-                exit;
-            } catch(PDOException $e) {
-                $error = "상태 변경 중 오류가 발생했습니다.";
-            }
+    if(in_array($new_status, ['active', 'sold', 'inactive'])) {
+        try {
+            $stmt = $pdo->prepare("UPDATE board_consignment SET status = ? WHERE id = ?");
+            $stmt->execute([$new_status, $id]);
+            header('Location: admin_consignment.php?msg=status_changed');
+            exit;
+        } catch(PDOException $e) {
+            $error = "상태 변경 중 오류가 발생했습니다.";
         }
     }
 }
@@ -276,7 +255,7 @@ try {
         <?php endif; ?>
         
         <?php if(isset($error)): ?>
-            <div class="msg error"><?php echo $error; ?></div>
+            <div class="msg error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
         
         <div class="page-header">

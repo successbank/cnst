@@ -11,6 +11,7 @@ $currentFile = basename($_SERVER['PHP_SELF']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(generateCsrfToken()); ?>">
     <title><?php echo $pageTitle ?? '관리자'; ?> | 충남스틸</title>
     <style>
         * {
@@ -562,7 +563,7 @@ $currentFile = basename($_SERVER['PHP_SELF']);
             <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
             <h1 class="header-title">충남스틸 관리자</h1>
             <div class="header-info">
-                <span class="admin-info">관리자: <?php echo $_SESSION['admin_id']; ?></span>
+                <span class="admin-info">관리자: <?php echo htmlspecialchars($_SESSION['admin_id'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
                 <a href="admin_logout.php" class="logout-btn">로그아웃</a>
             </div>
         </div>
@@ -615,7 +616,7 @@ $currentFile = basename($_SERVER['PHP_SELF']);
                 
                 <!-- 시스템 관리 드롭다운 -->
                 <div class="nav-dropdown" id="systemDropdown">
-                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_statistics.php', 'admin_site.php', 'admin_banners.php', 'admin_product_icons.php', 'admin_product_icon_edit.php', 'admin_layer_popups.php', 'admin_layer_popup_edit.php', 'admin_backup.php', 'admin_mail_manage.php', 'admin_logs.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('systemDropdown'); return false;">
+                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_statistics.php', 'admin_site.php', 'admin_banners.php', 'admin_product_icons.php', 'admin_product_icon_edit.php', 'admin_layer_popups.php', 'admin_layer_popup_edit.php', 'admin_backup.php', 'admin_mail_manage.php', 'admin_logs.php', 'admin_2fa_setup.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('systemDropdown'); return false;">
                         시스템 관리
                     </a>
                     <div class="nav-dropdown-menu">
@@ -627,6 +628,7 @@ $currentFile = basename($_SERVER['PHP_SELF']);
                         <a href="admin_backup.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_backup.php' ? 'active' : ''; ?>">백업/복원</a>
                         <a href="admin_mail_manage.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_mail_manage.php' ? 'active' : ''; ?>">메일 관리</a>
                         <a href="admin_logs.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_logs.php' ? 'active' : ''; ?>">로그 관리</a>
+                        <a href="admin_2fa_setup.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_2fa_setup.php' ? 'active' : ''; ?>">2FA 설정</a>
                     </div>
                 </div>
                 <a href="../index.php" class="nav-item" target="_blank">사이트 보기</a>
@@ -714,6 +716,43 @@ $currentFile = basename($_SERVER['PHP_SELF']);
             });
         });
     });
+    // [보안] CSRF 토큰 자동 주입 - 모든 fetch/XHR에 X-CSRF-TOKEN 헤더 추가
+    (function() {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) return;
+        const token = csrfToken.getAttribute('content');
+
+        // fetch 인터셉터
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options) {
+            options = options || {};
+            options.headers = options.headers || {};
+            if (options.headers instanceof Headers) {
+                if (!options.headers.has('X-CSRF-TOKEN')) {
+                    options.headers.append('X-CSRF-TOKEN', token);
+                }
+            } else {
+                if (!options.headers['X-CSRF-TOKEN']) {
+                    options.headers['X-CSRF-TOKEN'] = token;
+                }
+            }
+            return originalFetch.call(this, url, options);
+        };
+
+        // XMLHttpRequest 인터셉터
+        const originalOpen = XMLHttpRequest.prototype.open;
+        const originalSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.open = function(method, url) {
+            this._csrfMethod = method;
+            return originalOpen.apply(this, arguments);
+        };
+        XMLHttpRequest.prototype.send = function(data) {
+            if (this._csrfMethod && ['POST', 'PUT', 'DELETE'].includes(this._csrfMethod.toUpperCase())) {
+                this.setRequestHeader('X-CSRF-TOKEN', token);
+            }
+            return originalSend.apply(this, arguments);
+        };
+    })();
     </script>
-    
+
     <main class="admin-content">

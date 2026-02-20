@@ -360,8 +360,8 @@ function getPopupStatus($popup) {
     </div>
 
     <?php if (isset($_SESSION['message'])): ?>
-    <div class="alert alert-<?php echo $_SESSION['message_type'] ?? 'info'; ?>" style="background: <?php echo ($_SESSION['message_type'] ?? '') === 'success' ? '#d4edda' : '#f8d7da'; ?>; padding: 16px; border-radius: 8px; margin-bottom: 24px; color: <?php echo ($_SESSION['message_type'] ?? '') === 'success' ? '#155724' : '#721c24'; ?>;">
-        <?php echo $_SESSION['message']; ?>
+    <div class="alert alert-<?php echo htmlspecialchars($_SESSION['message_type'] ?? 'info', ENT_QUOTES, 'UTF-8'); ?>" style="background: <?php echo ($_SESSION['message_type'] ?? '') === 'success' ? '#d4edda' : '#f8d7da'; ?>; padding: 16px; border-radius: 8px; margin-bottom: 24px; color: <?php echo ($_SESSION['message_type'] ?? '') === 'success' ? '#155724' : '#721c24'; ?>;">
+        <?php echo htmlspecialchars($_SESSION['message'], ENT_QUOTES, 'UTF-8'); ?>
     </div>
     <?php
         unset($_SESSION['message']);
@@ -371,7 +371,7 @@ function getPopupStatus($popup) {
 
     <?php if (isset($error)): ?>
     <div class="alert alert-danger" style="background: #f8d7da; padding: 16px; border-radius: 8px; margin-bottom: 24px; color: #721c24;">
-        <?php echo $error; ?>
+        <?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?>
     </div>
     <?php endif; ?>
 

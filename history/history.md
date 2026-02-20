@@ -99,7 +99,7 @@ This session continued from a previous conversation that ran out of context. The
   DB_PORT: 3306
   DB_NAME: project1_db
   DB_USER: root
-  DB_PASS: rootpassword
+  DB_PASS: [REMOVED]
   ```
 
 ### 2.2 데이터베이스 테이블
@@ -237,7 +237,7 @@ docker exec project1_web chmod -R 777 /var/www/html/uploads
 docker exec project1_web nginx -s reload
 
 # DB 접속
-docker exec -it project1_mysql mysql -u root -prootpassword project1_db
+docker exec -it project1_mysql mysql -u root -p'[PASSWORD]' project1_db
 ```
 
 ### 9.3 디버깅 페이지

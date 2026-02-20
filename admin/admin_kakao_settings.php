@@ -151,35 +151,30 @@ require_once '../includes/kakao_config.php';
 // 설정 저장 처리
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
-    
+
     if ($action === 'update_config') {
-        // 설정 파일 업데이트 (실제 환경에서는 환경변수나 DB에 저장)
-        $configContent = "<?php
-// 카카오 API 설정
-define('KAKAO_API_KEY', '" . addslashes($_POST['api_key']) . "');
-define('KAKAO_API_SECRET', '" . addslashes($_POST['api_secret']) . "');
-define('KAKAO_SENDER_KEY', '" . addslashes($_POST['sender_key']) . "');
-define('KAKAO_CHANNEL_ID', '" . addslashes($_POST['channel_id']) . "');
+        // DB에 설정 저장 (RCE 방지: file_put_contents 사용하지 않음)
+        $settingsMap = [
+            'kakao_api_key' => trim($_POST['api_key'] ?? ''),
+            'kakao_api_secret' => trim($_POST['api_secret'] ?? ''),
+            'kakao_sender_key' => trim($_POST['sender_key'] ?? ''),
+            'kakao_channel_id' => trim($_POST['channel_id'] ?? ''),
+            'kakao_notification_enabled' => ($_POST['enabled'] ?? '0') === '1' ? '1' : '0',
+            'kakao_test_mode' => ($_POST['test_mode'] ?? '0') === '1' ? '1' : '0',
+            'kakao_test_phone' => trim($_POST['test_phone'] ?? ''),
+            'kakao_daily_limit' => (string)(int)($_POST['daily_limit'] ?? 1000),
+            'kakao_retry_count' => (string)max(0, min(5, (int)($_POST['retry_count'] ?? 3))),
+        ];
 
-// 카카오 알림톡 API 엔드포인트
-define('KAKAO_API_URL', 'https://api-alimtalk.cloud.toast.com/alimtalk/v2.2');
-
-// 알림 설정
-define('KAKAO_NOTIFICATION_ENABLED', " . ($_POST['enabled'] === '1' ? 'true' : 'false') . ");
-define('KAKAO_TEST_MODE', " . ($_POST['test_mode'] === '1' ? 'true' : 'false') . ");
-define('KAKAO_TEST_PHONE', '" . addslashes($_POST['test_phone']) . "');
-
-// 메시지 발송 제한
-define('KAKAO_DAILY_LIMIT', " . (int)$_POST['daily_limit'] . ");
-define('KAKAO_RETRY_COUNT', " . (int)$_POST['retry_count'] . ");
-?>";
-        
-        file_put_contents('../includes/kakao_config.php', $configContent);
+        $stmt = $pdo->prepare("INSERT INTO site_settings (setting_key, setting_value, setting_group) VALUES (?, ?, 'kakao') ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        foreach ($settingsMap as $key => $value) {
+            $stmt->execute([$key, $value]);
+        }
         $message = "설정이 저장되었습니다.";
     }
-    
+
     if ($action === 'update_template') {
-        $templateId = $_POST['template_id'];
+        $templateId = (int)($_POST['template_id'] ?? 0);
         $stmt = $pdo->prepare("UPDATE kakao_templates SET message_format = ?, is_active = ? WHERE id = ?");
         $stmt->execute([$_POST['message_format'], $_POST['is_active'] ?? 0, $templateId]);
         $message = "템플릿이 업데이트되었습니다.";
@@ -207,7 +202,7 @@ $templates = $stmt->fetchAll();
         </div>
         
         <?php if (isset($message)): ?>
-        <div class="msg success"><?php echo $message; ?></div>
+        <div class="msg success"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
         
         <form method="POST" action="">

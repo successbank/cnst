@@ -349,8 +349,8 @@ $pageTitle = $isEdit ? '목차 수정' : '목차 추가';
         </div>
 
         <?php if ($message): ?>
-        <div class="alert alert-<?php echo $messageType; ?>">
-            <?php echo $message; ?>
+        <div class="alert alert-<?php echo htmlspecialchars($messageType, ENT_QUOTES, 'UTF-8'); ?>">
+            <?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?>
         </div>
         <?php endif; ?>
 
