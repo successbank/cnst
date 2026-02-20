@@ -2,6 +2,7 @@
 require_once 'member_check.php';
 require_once 'db.php';
 require_once 'includes/sub_layout.php';
+require_once 'includes/csrf.php';
 
 // 로그인 체크
 checkLogin();
@@ -27,6 +28,11 @@ try {
 
 // 정보 수정 처리
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF 검증
+    if (!verifyCsrfToken(false)) {
+        $error = '잘못된 요청입니다. 페이지를 새로고침 해주세요.';
+    }
+
     $name = trim($_POST['name'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
@@ -43,7 +49,9 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     $new_password_confirm = $_POST['new_password_confirm'] ?? '';
     
     // 유효성 검사
-    if(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if($error) {
+        // CSRF 실패 시 건너뛰기
+    } elseif(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = '올바른 이메일 주소를 입력해주세요.';
     } else {
         try {
@@ -57,8 +65,10 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if($new_password) {
                     if(!password_verify($current_password, $member['password'])) {
                         $error = '현재 비밀번호가 올바르지 않습니다.';
-                    } elseif(strlen($new_password) < 6) {
-                        $error = '새 비밀번호는 6자 이상이어야 합니다.';
+                    } elseif(strlen($new_password) < 8 || strlen($new_password) > 64) {
+                        $error = '새 비밀번호는 8자 이상이어야 합니다.';
+                    } elseif(!preg_match('/[A-Za-z]/', $new_password) || !preg_match('/[0-9]/', $new_password)) {
+                        $error = '새 비밀번호는 영문자와 숫자를 모두 포함해야 합니다.';
                     } elseif($new_password !== $new_password_confirm) {
                         $error = '새 비밀번호가 일치하지 않습니다.';
                     } else {
@@ -119,6 +129,7 @@ myPageSidebar('edit');
         <?php endif; ?>
         
         <form method="POST" action="" id="edit-profile-form">
+            <?php echo csrfField(); ?>
             <!-- 기본정보 -->
             <div class="info-section">
                 <h3>기본정보</h3>
@@ -269,12 +280,12 @@ myPageSidebar('edit');
                 
                 <div class="form-group">
                     <label>새 비밀번호</label>
-                    <input type="password" name="new_password" minlength="6">
+                    <input type="password" name="new_password" minlength="8" maxlength="64" placeholder="영문+숫자 8자 이상">
                 </div>
-                
+
                 <div class="form-group">
                     <label>새 비밀번호 확인</label>
-                    <input type="password" name="new_password_confirm" minlength="6">
+                    <input type="password" name="new_password_confirm" minlength="8" maxlength="64">
                 </div>
             </div>
             

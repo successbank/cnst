@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'db.php';
+require_once 'includes/csrf.php';
 
 // 이미 로그인한 경우 메인으로 리다이렉트
 if(isset($_SESSION['member_id'])) {
@@ -12,6 +13,11 @@ $error = '';
 $success = '';
 
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF 검증
+    if (!verifyCsrfToken(false)) {
+        $error = '잘못된 요청입니다. 페이지를 새로고침 해주세요.';
+    }
+
     $user_id = trim($_POST['user_id'] ?? '');
     $password = $_POST['password'] ?? '';
     $password_confirm = $_POST['password_confirm'] ?? '';
@@ -25,12 +31,16 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     $zipcode = trim($_POST['zipcode'] ?? '');
     $address = trim($_POST['address'] ?? '');
     $address_detail = trim($_POST['address_detail'] ?? '');
-    
+
     // 유효성 검사
-    if(strlen($user_id) < 4) {
+    if($error) {
+        // CSRF 실패 시 건너뛰기
+    } elseif(strlen($user_id) < 4) {
         $error = '아이디는 4자 이상이어야 합니다.';
-    } elseif(strlen($password) < 4 || strlen($password) > 8) {
-        $error = '비밀번호는 4자 이상 8자 이하여야 합니다.';
+    } elseif(strlen($password) < 8 || strlen($password) > 64) {
+        $error = '비밀번호는 8자 이상이어야 합니다.';
+    } elseif(!preg_match('/[A-Za-z]/', $password) || !preg_match('/[0-9]/', $password)) {
+        $error = '비밀번호는 영문자와 숫자를 모두 포함해야 합니다.';
     } elseif($password !== $password_confirm) {
         $error = '비밀번호가 일치하지 않습니다.';
     } elseif(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -62,6 +72,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute([$user_id, $hashed_password, $name, $email, $phone, $landline, $company, $homepage, $position, $zipcode, $address, $address_detail]);
                     
                     // 회원가입 성공 시 자동 로그인 처리
+                    session_regenerate_id(true);
                     $_SESSION['member_id'] = $pdo->lastInsertId();
                     $_SESSION['user_id'] = $user_id;
                     $_SESSION['member_name'] = $name;
@@ -73,8 +84,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         } catch(PDOException $e) {
-            $error = '회원가입 중 오류가 발생했습니다: ' . $e->getMessage();
-            // 개발 중에만 사용 - 운영 환경에서는 제거
+            $error = '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.';
             error_log('Register error: ' . $e->getMessage());
         }
     }
@@ -251,6 +261,7 @@ include 'head.php';
             <?php endif; ?>
             
             <form method="POST" action="">
+                <?php echo csrfField(); ?>
                 <div class="form-group">
                     <label for="user_id">아이디 <span>*</span></label>
                     <input type="text" id="user_id" name="user_id" required 
@@ -263,12 +274,12 @@ include 'head.php';
                 <div class="form-row">
                     <div class="form-group">
                         <label for="password">비밀번호 <span>*</span></label>
-                        <input type="password" id="password" name="password" required minlength="4" maxlength="8">
+                        <input type="password" id="password" name="password" required minlength="8" maxlength="64" placeholder="영문+숫자 8자 이상">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="password_confirm">비밀번호 확인 <span>*</span></label>
-                        <input type="password" id="password_confirm" name="password_confirm" required minlength="4" maxlength="8">
+                        <input type="password" id="password_confirm" name="password_confirm" required minlength="8" maxlength="64">
                     </div>
                 </div>
                 

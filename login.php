@@ -2,6 +2,7 @@
 session_start();
 require_once 'db.php';
 require_once 'includes/auth_tokens.php';
+require_once 'includes/csrf.php';
 
 // Remember Me 토큰 확인 (세션이 없는 경우)
 if(!isset($_SESSION['member_id']) && isset($_COOKIE['remember_me'])) {
@@ -61,12 +62,36 @@ if(isset($_SESSION['member_id'])) {
 
 $error = '';
 $redirect = $_GET['redirect'] ?? 'index.php';
+// [보안] 오픈 리다이렉트 방지 - 내부 경로만 허용
+if (preg_match('/^https?:\/\//i', $redirect) || preg_match('/^\/\//i', $redirect)) {
+    $redirect = 'index.php';
+}
 
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF 검증
+    if (!verifyCsrfToken(false)) {
+        $error = '잘못된 요청입니다. 페이지를 새로고침 해주세요.';
+    }
     $user_id = trim($_POST['user_id'] ?? '');
     $password = $_POST['password'] ?? '';
-    
-    if($user_id && $password) {
+
+    // [보안] IP 기반 로그인 Rate Limiting (15분 내 10회 실패 시 차단)
+    $client_ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    if (!$error) {
+        try {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM member_login_logs WHERE login_ip = ? AND login_status = 'failed' AND login_date > DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
+            $stmt->execute([$client_ip]);
+            if ($stmt->fetchColumn() >= 10) {
+                $error = '로그인 시도가 너무 많습니다. 15분 후 다시 시도해주세요.';
+            }
+        } catch(Exception $e) {
+            // 테이블 없으면 무시
+        }
+    }
+
+    if($error) {
+        // CSRF 검증 실패 또는 Rate Limit 초과 시 처리 건너뛰기
+    } elseif($user_id && $password) {
         try {
             $stmt = $pdo->prepare("SELECT id, user_id, password, name, email, is_active, member_grade, is_admin FROM members WHERE user_id = ?");
             $stmt->execute([$user_id]);
@@ -162,6 +187,14 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } else {
                 $error = '아이디 또는 비밀번호가 올바르지 않습니다.';
+                // [보안] 로그인 실패 로그 기록
+                try {
+                    $fail_member_id = $member ? $member['id'] : null;
+                    $stmt = $pdo->prepare("INSERT INTO member_login_logs (member_id, login_date, login_ip, user_agent, login_status) VALUES (?, NOW(), ?, ?, 'failed')");
+                    $stmt->execute([$fail_member_id, $client_ip, $_SERVER['HTTP_USER_AGENT'] ?? '']);
+                } catch(Exception $e) {
+                    error_log("Login failure log error: " . $e->getMessage());
+                }
             }
         } catch(PDOException $e) {
             $error = '로그인 중 오류가 발생했습니다.';
@@ -349,6 +382,7 @@ include 'head.php';
             <?php endif; ?>
             
             <form method="POST" action="">
+                <?php echo csrfField(); ?>
                 <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect); ?>">
                 
                 <div class="form-group">

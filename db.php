@@ -1,4 +1,18 @@
 <?php
+// [보안] WAF - 모든 요청에 대한 보안 검사 (최상단 실행)
+require_once __DIR__ . '/includes/waf.php';
+
+// 세션 쿠키 보안 설정 (세션 시작 전 설정 필요)
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => true,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+}
+
 // 데이터베이스 연결 설정 - MySQL 사용 (현재 실행 중)
 if (!defined('DB_HOST')) {
     // Docker 컨테이너 실행 시: 'project1_mysql' 사용
@@ -19,7 +33,12 @@ if (!defined('DB_HOST')) {
     define('DB_PORT', '3306');
     define('DB_NAME', 'project1_db');
     define('DB_USER', 'user');
-    define('DB_PASS', 'userpassword');
+    $db_password = getenv('MYSQL_PASSWORD');
+    if (empty($db_password)) {
+        error_log("CRITICAL: MYSQL_PASSWORD environment variable not set");
+        die("시스템 설정 오류입니다. 관리자에게 문의하세요.");
+    }
+    define('DB_PASS', $db_password);
 }
 
 // PDO를 사용한 MySQL 연결 함수
@@ -55,10 +74,12 @@ function getDB() {
                 
                 return $pdo;
             } catch (PDOException $e2) {
-                die("데이터베이스 연결 실패: " . $e2->getMessage());
+                error_log("데이터베이스 연결 실패: " . $e2->getMessage());
+                die("일시적인 서비스 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
             }
         }
-        die("데이터베이스 연결 실패: " . $e->getMessage());
+        error_log("데이터베이스 연결 실패: " . $e->getMessage());
+        die("일시적인 서비스 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
 }
 }
@@ -119,7 +140,24 @@ if (!function_exists('uploadFile')) {
         error_log("Invalid file extension: " . $fileExt);
         return false;
     }
-    
+
+    // MIME 타입 검증 (magic bytes 기반)
+    $allowedMimes = [
+        'image/jpeg', 'image/png', 'image/gif',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/octet-stream', // 일부 오피스 파일이 이 타입으로 감지될 수 있음
+    ];
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $detectedMime = $finfo->file($file['tmp_name']);
+    if (!in_array($detectedMime, $allowedMimes)) {
+        error_log("Invalid MIME type: " . $detectedMime . " for file: " . $file['name']);
+        return false;
+    }
+
     // 파일 크기 검증 (10MB)
     if ($file['size'] > 10 * 1024 * 1024) {
         error_log("File too large: " . $file['size']);
@@ -139,7 +177,7 @@ if (!function_exists('uploadFile')) {
     
     // 디렉토리 생성
     if (!is_dir($uploadDir)) {
-        if (!mkdir($uploadDir, 0777, true)) {
+        if (!mkdir($uploadDir, 0755, true)) {
             error_log("Failed to create directory: " . $uploadDir);
             return false;
         }
