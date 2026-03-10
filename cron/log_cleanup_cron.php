@@ -36,6 +36,35 @@ try {
         exit(0);
     }
 
+    // rate_limits 임시 파일 클린업 (1시간 초과)
+    $rateLimitDir = '/tmp/rate_limits/';
+    if (is_dir($rateLimitDir)) {
+        $cleaned = 0;
+        foreach (glob($rateLimitDir . '*.json') as $file) {
+            if (filemtime($file) < (time() - 3600)) {
+                @unlink($file);
+                $cleaned++;
+            }
+        }
+        if ($cleaned > 0) {
+            echo "[" . date('Y-m-d H:i:s') . "] rate_limits 클린업: {$cleaned}건 삭제\n";
+        }
+    }
+
+    // CSP 로그 로테이션 (10MB 초과 시)
+    $cspLogFile = $basePath . '/logs/csp_violations.log';
+    if (file_exists($cspLogFile) && filesize($cspLogFile) > 10485760) {
+        @rename($cspLogFile, $cspLogFile . '.' . date('Ymd'));
+        echo "[" . date('Y-m-d H:i:s') . "] CSP 로그 로테이션 완료\n";
+    }
+
+    // 30일 초과 로테이션 로그 삭제
+    foreach (glob($basePath . '/logs/*.log.*') as $oldLog) {
+        if (filemtime($oldLog) < (time() - 2592000)) {
+            @unlink($oldLog);
+        }
+    }
+
     // 정리 실행
     $result = $cleanupService->autoCleanup();
 

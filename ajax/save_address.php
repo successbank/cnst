@@ -2,8 +2,15 @@
 session_start();
 require_once '../db.php';
 require_once '../member_check.php';
+require_once '../includes/csrf.php';
 
 header('Content-Type: application/json');
+
+// CSRF 토큰 검증
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verifyCsrfToken(false)) {
+    echo json_encode(['success' => false, 'message' => 'CSRF 토큰이 유효하지 않습니다.']);
+    exit;
+}
 
 // 로그인 체크
 if (!isset($_SESSION['member_id'])) {

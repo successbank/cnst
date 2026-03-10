@@ -1,11 +1,21 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 require_once '../db.php';
+require_once '../includes/input_validator.php';
+if (!checkIpRateLimit('api_calculate_weight', 30, 60)) {
+    http_response_code(429);
+    echo json_encode(['success' => false, 'error' => 'Too many requests'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
-// CORS 설정
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
-header('Access-Control-Allow-Headers: Content-Type');
+// CORS 설정 (허용 도메인 제한)
+$allowed_origins = ['https://cnst.co.kr', 'https://www.cnst.co.kr'];
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($origin, $allowed_origins)) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Access-Control-Allow-Methods: POST');
+    header('Access-Control-Allow-Headers: Content-Type');
+}
 
 $response = ['success' => false, 'data' => null, 'error' => null];
 

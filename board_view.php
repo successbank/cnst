@@ -50,8 +50,8 @@ if ($boardType === 'consignment') {
     // 비로그인 작성 글인 경우 - 비밀번호 확인
     elseif (empty($post['member_id']) && !empty($post['password'])) {
         if (isset($_POST['password'])) {
-            // 기존 password 필드와 비교
-            if ($post['password'] === $_POST['password']) {
+            // bcrypt 비밀번호 검증
+            if (password_verify($_POST['password'], $post['password'])) {
                 $canView = true;
             } else {
                 $passwordError = true;

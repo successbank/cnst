@@ -1,11 +1,32 @@
 <?php
 require_once '../db.php';
 require_once '../member_check.php';
+require_once '../includes/input_validator.php';
+require_once '../includes/csrf.php';
 
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => '잘못된 요청입니다.']);
+    exit;
+}
+
+// CSRF 토큰 검증
+if (!verifyCsrfToken(false)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'CSRF 토큰이 유효하지 않습니다.']);
+    exit;
+}
+
+// IP 기반 Rate Limiting (5분 내 10회)
+if (!checkIpRateLimit('product_quote', 10, 300)) {
+    echo json_encode(['success' => false, 'message' => '너무 많은 요청이 감지되었습니다. 잠시 후 다시 시도해주세요.']);
+    exit;
+}
+
+// 세션 기반 Rate Limiting (1분 내 3회)
+if (!checkRateLimit('product_quote_submit', 3, 60)) {
+    echo json_encode(['success' => false, 'message' => '잠시 후 다시 시도해주세요.']);
     exit;
 }
 
@@ -21,10 +42,22 @@ try {
     $products = $_POST['products'] ?? '';
     $notes = $_POST['notes'] ?? '';
     $items = isset($_POST['items']) ? json_decode($_POST['items'], true) : [];
-    
+
     // 필수 항목 검증
     if (empty($customer_name) || empty($phone) || empty($products)) {
         echo json_encode(['success' => false, 'message' => '필수 항목을 입력해주세요.']);
+        exit;
+    }
+
+    // 입력값 검증 (SQL 인젝션 패턴 차단)
+    $validation = validateQuoteInput([
+        'customer_name' => $customer_name,
+        'company' => $company,
+        'notes' => $notes,
+        'products' => $products
+    ]);
+    if (!$validation['valid']) {
+        echo json_encode(['success' => false, 'message' => $validation['message']]);
         exit;
     }
     
@@ -109,7 +142,7 @@ try {
 } catch (PDOException $e) {
     $pdo->rollBack();
     error_log("Product Quote DB Error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => '데이터베이스 오류가 발생했습니다. 관리자에게 문의해주세요.', 'error' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => '데이터베이스 오류가 발생했습니다. 관리자에게 문의해주세요.']);
 } catch (Exception $e) {
     $pdo->rollBack();
     error_log("Product Quote Error: " . $e->getMessage());

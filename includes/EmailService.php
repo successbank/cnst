@@ -103,12 +103,13 @@ class EmailService {
         $socket = null;
 
         try {
-            // SSL 컨텍스트 (인증서 검증 건너뛰기 - 자체 서명 인증서 지원)
+            // SSL 컨텍스트 (인증서 검증 활성화)
             $context = stream_context_create([
                 'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true
+                    'verify_peer' => true,
+                    'verify_peer_name' => true,
+                    'allow_self_signed' => false,
+                    'cafile' => '/etc/ssl/certs/ca-certificates.crt'
                 ]
             ]);
 
@@ -133,10 +134,10 @@ class EmailService {
             // STARTTLS (포트 25 또는 587에서)
             if ($this->smtpSecure === 'starttls') {
                 $this->sendCommand($socket, "STARTTLS", 220);
-                // SSL 옵션 설정 (자체 서명 인증서 허용)
-                stream_context_set_option($socket, 'ssl', 'verify_peer', false);
-                stream_context_set_option($socket, 'ssl', 'verify_peer_name', false);
-                stream_context_set_option($socket, 'ssl', 'allow_self_signed', true);
+                stream_context_set_option($socket, 'ssl', 'verify_peer', true);
+                stream_context_set_option($socket, 'ssl', 'verify_peer_name', true);
+                stream_context_set_option($socket, 'ssl', 'allow_self_signed', false);
+                stream_context_set_option($socket, 'ssl', 'cafile', '/etc/ssl/certs/ca-certificates.crt');
                 $crypto = stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT);
                 if (!$crypto) {
                     throw new Exception("TLS 암호화 시작 실패");
@@ -151,11 +152,13 @@ class EmailService {
                 $this->sendCommand($socket, base64_encode($this->smtpPass), 235);
             }
 
-            // 발신자
-            $this->sendCommand($socket, "MAIL FROM:<{$this->fromEmail}>", 250);
+            // 발신자 이메일 검증
+            $safeFrom = filter_var($this->fromEmail, FILTER_SANITIZE_EMAIL);
+            $this->sendCommand($socket, "MAIL FROM:<{$safeFrom}>", 250);
 
-            // 수신자
-            $this->sendCommand($socket, "RCPT TO:<$to>", 250);
+            // 수신자 이메일 검증
+            $safeTo = filter_var($to, FILTER_SANITIZE_EMAIL);
+            $this->sendCommand($socket, "RCPT TO:<$safeTo>", 250);
 
             // 데이터 전송 시작
             $this->sendCommand($socket, "DATA", 354);
@@ -222,8 +225,11 @@ class EmailService {
      * 이메일 헤더 구성
      */
     private function buildEmailHeaders($to, $subject) {
+        // 이메일 주소 CRLF 인젝션 방어
+        $to = filter_var($to, FILTER_SANITIZE_EMAIL);
+        $safeFrom = filter_var($this->fromEmail, FILTER_SANITIZE_EMAIL);
         $headers = "Date: " . date('r') . "\r\n";
-        $headers .= "From: " . $this->encodeHeader($this->fromName) . " <{$this->fromEmail}>\r\n";
+        $headers .= "From: " . $this->encodeHeader($this->fromName) . " <{$safeFrom}>\r\n";
         $headers .= "To: <$to>\r\n";
         $headers .= "Subject: " . $this->encodeHeader($subject) . "\r\n";
         $headers .= "MIME-Version: 1.0\r\n";
@@ -237,6 +243,8 @@ class EmailService {
      * 헤더 인코딩 (한글 지원)
      */
     private function encodeHeader($str) {
+        // CRLF 인젝션 방어
+        $str = str_replace(["\r", "\n", "\0"], '', $str);
         if (preg_match('/[^\x20-\x7E]/', $str)) {
             return '=?UTF-8?B?' . base64_encode($str) . '?=';
         }
@@ -394,12 +402,13 @@ class EmailService {
         $socket = null;
 
         try {
-            // SSL 컨텍스트 (인증서 검증 건너뛰기 - 자체 서명 인증서 지원)
+            // SSL 컨텍스트 (인증서 검증 활성화)
             $context = stream_context_create([
                 'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true
+                    'verify_peer' => true,
+                    'verify_peer_name' => true,
+                    'allow_self_signed' => false,
+                    'cafile' => '/etc/ssl/certs/ca-certificates.crt'
                 ]
             ]);
 
@@ -424,9 +433,10 @@ class EmailService {
             // STARTTLS (포트 25 또는 587에서)
             if ($this->smtpSecure === 'starttls') {
                 $this->sendCommand($socket, "STARTTLS", 220);
-                stream_context_set_option($socket, 'ssl', 'verify_peer', false);
-                stream_context_set_option($socket, 'ssl', 'verify_peer_name', false);
-                stream_context_set_option($socket, 'ssl', 'allow_self_signed', true);
+                stream_context_set_option($socket, 'ssl', 'verify_peer', true);
+                stream_context_set_option($socket, 'ssl', 'verify_peer_name', true);
+                stream_context_set_option($socket, 'ssl', 'allow_self_signed', false);
+                stream_context_set_option($socket, 'ssl', 'cafile', '/etc/ssl/certs/ca-certificates.crt');
                 $crypto = stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT);
                 if (!$crypto) {
                     throw new Exception("TLS 암호화 시작 실패");
@@ -441,11 +451,13 @@ class EmailService {
                 $this->sendCommand($socket, base64_encode($this->smtpPass), 235);
             }
 
-            // 발신자
-            $this->sendCommand($socket, "MAIL FROM:<{$this->fromEmail}>", 250);
+            // 발신자 이메일 검증
+            $safeFrom = filter_var($this->fromEmail, FILTER_SANITIZE_EMAIL);
+            $this->sendCommand($socket, "MAIL FROM:<{$safeFrom}>", 250);
 
-            // 수신자
-            $this->sendCommand($socket, "RCPT TO:<$to>", 250);
+            // 수신자 이메일 검증
+            $safeTo = filter_var($to, FILTER_SANITIZE_EMAIL);
+            $this->sendCommand($socket, "RCPT TO:<$safeTo>", 250);
 
             // 데이터 전송 시작
             $this->sendCommand($socket, "DATA", 354);
@@ -490,9 +502,13 @@ class EmailService {
     private function buildMultipartMessage($to, $subject, $body, $attachmentPath, $attachmentName) {
         $boundary = "----=_Part_" . md5(uniqid(time()));
 
+        // 이메일 주소 CRLF 인젝션 방어
+        $to = filter_var($to, FILTER_SANITIZE_EMAIL);
+        $safeFrom = filter_var($this->fromEmail, FILTER_SANITIZE_EMAIL);
+
         // 헤더 구성
         $headers = "Date: " . date('r') . "\r\n";
-        $headers .= "From: " . $this->encodeHeader($this->fromName) . " <{$this->fromEmail}>\r\n";
+        $headers .= "From: " . $this->encodeHeader($this->fromName) . " <{$safeFrom}>\r\n";
         $headers .= "To: <$to>\r\n";
         $headers .= "Subject: " . $this->encodeHeader($subject) . "\r\n";
         $headers .= "MIME-Version: 1.0\r\n";

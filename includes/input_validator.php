@@ -78,9 +78,86 @@ function checkRateLimit($key = 'quote_submit', $maxAttempts = 3, $windowSeconds 
 }
 
 /**
+ * IP 기반 Rate Limiting (세션 우회 방지)
+ * 파일 기반으로 IP별 요청 횟수 추적 (WAF와 동일 방식)
+ * @param string $key 제한 키 (예: 'product_quote')
+ * @param int $maxAttempts 시간 윈도우 내 최대 허용 횟수
+ * @param int $windowSeconds 시간 윈도우 (초)
+ * @return bool true이면 허용, false이면 제한 초과
+ */
+function checkIpRateLimit($key, $maxAttempts = 10, $windowSeconds = 300) {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $dir = '/tmp/rate_limits/';
+    if (!is_dir($dir)) @mkdir($dir, 0700, true);
+    $file = $dir . md5($key . '_' . $ip) . '.json';
+    $data = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
+    $now = time();
+    $data = array_filter($data ?? [], fn($t) => ($now - $t) < $windowSeconds);
+    if (count($data) >= $maxAttempts) return false;
+    $data[] = $now;
+    file_put_contents($file, json_encode(array_values($data)), LOCK_EX);
+    return true;
+}
+
+/**
  * validateQuoteInput의 범용 alias
  * 견적 외 게시판(위탁판매 등)에서도 동일한 검증 로직 사용
  */
 function validateFormInput($fields) {
     return validateQuoteInput($fields);
+}
+
+/**
+ * 스팸/봇 제출 탐지
+ * 테스트 이메일, 테스트 전화번호, 숫자만 이름 등 자동화 스팸 패턴 탐지
+ * @param array $data 검사할 폼 데이터 (email, phone, writer, company 등)
+ * @return array ['spam' => bool, 'reason' => string]
+ */
+function isSpamSubmission($data) {
+    // 테스트 이메일 도메인 차단
+    $email = $data['email'] ?? $data['contact_email'] ?? '';
+    if (!empty($email)) {
+        $spamEmailPatterns = [
+            '/\.tst$/i',
+            '/\.test$/i',
+            '/@example\.(com|org|net)$/i',
+            '/@test\./i',
+            '/sample@email/i',
+        ];
+        foreach ($spamEmailPatterns as $pattern) {
+            if (preg_match($pattern, $email)) {
+                return ['spam' => true, 'reason' => '유효하지 않은 이메일 주소입니다.'];
+            }
+        }
+    }
+
+    // 테스트 전화번호 패턴 차단
+    $phone = $data['phone'] ?? $data['contact_phone'] ?? '';
+    if (!empty($phone)) {
+        $spamPhonePatterns = [
+            '/555-666/',
+            '/555-555/',
+            '/000-000/',
+            '/123-456/',
+        ];
+        foreach ($spamPhonePatterns as $pattern) {
+            if (preg_match($pattern, $phone)) {
+                return ['spam' => true, 'reason' => '유효하지 않은 연락처입니다.'];
+            }
+        }
+    }
+
+    // writer가 숫자만인 경우 차단
+    $writer = $data['writer'] ?? '';
+    if (!empty($writer) && preg_match('/^\d+$/', $writer)) {
+        return ['spam' => true, 'reason' => '작성자명을 올바르게 입력해주세요.'];
+    }
+
+    // 회사명에 알려진 스캐너 시그니처
+    $company = $data['company'] ?? $data['company_name'] ?? '';
+    if (!empty($company) && preg_match('/acunetix|sqlmap|nmap|nikto|havij|nessus/i', $company)) {
+        return ['spam' => true, 'reason' => '허용되지 않는 입력값입니다.'];
+    }
+
+    return ['spam' => false, 'reason' => ''];
 }

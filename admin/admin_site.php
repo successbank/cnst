@@ -278,6 +278,7 @@ try {
     <div class="settings-card">
         <h2 class="settings-title">회사 정보</h2>
         <form method="POST" action="">
+            <?php echo csrfField(); ?>
             <input type="hidden" name="setting_type" value="company">
             
             <div class="form-group">
@@ -314,6 +315,7 @@ try {
     <div class="settings-card">
         <h2 class="settings-title">SEO 설정</h2>
         <form method="POST" action="">
+            <?php echo csrfField(); ?>
             <input type="hidden" name="setting_type" value="seo">
             
             <div class="form-group">
@@ -344,6 +346,7 @@ try {
     <div class="settings-card">
         <h2 class="settings-title">문의 설정</h2>
         <form method="POST" action="">
+            <?php echo csrfField(); ?>
             <input type="hidden" name="setting_type" value="contact">
             
             <div class="form-group">

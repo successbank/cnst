@@ -5,10 +5,20 @@
  */
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET');
+$allowed_origins = ['https://cnst.co.kr', 'https://www.cnst.co.kr'];
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($origin, $allowed_origins)) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Access-Control-Allow-Methods: GET');
+}
 
 require_once '../db.php';
+require_once '../includes/input_validator.php';
+if (!checkIpRateLimit('api_ebook_toc', 30, 60)) {
+    http_response_code(429);
+    echo json_encode(['success' => false, 'error' => 'Too many requests'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 try {
     $pdo = getDB();
@@ -62,20 +72,18 @@ try {
     ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 
 } catch (PDOException $e) {
-    // 오류 응답
+    error_log("Ebook TOC DB Error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'error' => '데이터베이스 오류가 발생했습니다.',
-        'message' => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        'error' => '데이터베이스 오류가 발생했습니다.'
+    ], JSON_UNESCAPED_UNICODE);
 } catch (Exception $e) {
-    // 기타 오류
+    error_log("Ebook TOC Error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'error' => '서버 오류가 발생했습니다.',
-        'message' => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        'error' => '서버 오류가 발생했습니다.'
+    ], JSON_UNESCAPED_UNICODE);
 }
 ?>

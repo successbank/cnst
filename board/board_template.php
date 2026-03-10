@@ -135,11 +135,11 @@ class BoardTemplate {
             ':attachment' => $data['attachment'] ?? null
         ];
         
-        // 비밀번호 처리 (기존 password 필드)
+        // 비밀번호 처리 (bcrypt 해시)
         if (!empty($data['password'])) {
             $fields[] = 'password';
             $values[] = ':password';
-            $params[':password'] = $data['password'];
+            $params[':password'] = password_hash($data['password'], PASSWORD_BCRYPT);
         }
         
         // member_id 처리 - 로그인한 경우에만 저장
@@ -379,25 +379,26 @@ class BoardTemplate {
         return $stmt->execute();
     }
     
-    // 게시글 삭제
+    // 게시글 삭제 (bcrypt 검증 후 삭제)
     public function deletePost($id, $password) {
-        $sql = "DELETE FROM {$this->tableName} WHERE id = :id AND password = :password";
+        if (!$this->checkPassword($id, $password)) {
+            return false;
+        }
+        $sql = "DELETE FROM {$this->tableName} WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $id);
-        $stmt->bindParam(':password', $password);
-        
         return $stmt->execute();
     }
-    
-    // 비밀번호 확인
+
+    // 비밀번호 확인 (bcrypt password_verify 사용)
     public function checkPassword($id, $password) {
-        $sql = "SELECT COUNT(*) FROM {$this->tableName} WHERE id = :id AND password = :password";
+        $sql = "SELECT password FROM {$this->tableName} WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $id);
-        $stmt->bindParam(':password', $password);
         $stmt->execute();
-        
-        return $stmt->fetchColumn() > 0;
+        $hash = $stmt->fetchColumn();
+        if (!$hash) return false;
+        return password_verify($password, $hash);
     }
     
     // Getter 메소드들

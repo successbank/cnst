@@ -2,6 +2,7 @@
 require_once '../member_check.php';
 require_once '../db.php';
 require_once '../includes/input_validator.php';
+require_once '../includes/csrf.php';
 
 // JSON 응답 설정
 header('Content-Type: application/json; charset=utf-8');
@@ -9,6 +10,19 @@ header('Content-Type: application/json; charset=utf-8');
 // 로그인 체크
 if (!isset($_SESSION['member_id'])) {
     echo json_encode(['success' => false, 'message' => '로그인이 필요합니다.']);
+    exit;
+}
+
+// CSRF 토큰 검증
+if (!verifyCsrfToken(false)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'CSRF 토큰이 유효하지 않습니다.']);
+    exit;
+}
+
+// IP 기반 Rate Limiting (5분 내 10회)
+if (!checkIpRateLimit('consignment_submit', 10, 300)) {
+    echo json_encode(['success' => false, 'message' => '너무 많은 요청이 감지되었습니다. 잠시 후 다시 시도해주세요.']);
     exit;
 }
 

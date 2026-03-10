@@ -26,7 +26,7 @@ if ($uploadType === 'products') {
 
 // 디렉토리가 없으면 생성
 if (!file_exists($uploadDir)) {
-    if (!mkdir($uploadDir, 0777, true)) {
+    if (!mkdir($uploadDir, 0755, true)) {
         echo json_encode(['success' => false, 'message' => '업로드 디렉토리를 생성할 수 없습니다.']);
         exit;
     }

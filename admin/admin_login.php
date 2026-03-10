@@ -21,8 +21,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrfToken(false)) {
         $error_msg = "잘못된 요청입니다. 페이지를 새로고침 해주세요.";
     }
-    // Rate limiting: 5분 내 5회 초과 시 차단
-    elseif (!checkRateLimit('admin_login', 5, 300)) {
+    // Rate limiting: 5분 내 3회 초과 시 차단
+    elseif (!checkRateLimit('admin_login', 3, 300)) {
         $error_msg = "로그인 시도가 너무 많습니다. 5분 후 다시 시도해주세요.";
     } else {
         $admin_id = $_POST['admin_id'] ?? '';

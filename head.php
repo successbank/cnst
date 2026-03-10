@@ -38,12 +38,16 @@ if (file_exists(__DIR__ . '/includes/visitor_tracker.php')) {
     <!-- CSS -->
     <link rel="stylesheet" href="css/samsung-style.css">
     <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+          crossorigin="anonymous" referrerpolicy="no-referrer">
     <?php if(isset($additionalCSS)): ?>
         <?php foreach($additionalCSS as $css): ?>
             <link rel="stylesheet" href="<?php echo $css; ?>">
         <?php endforeach; ?>
     <?php endif; ?>
+    <?php require_once __DIR__ . '/includes/csrf.php'; ?>
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(generateCsrfToken()); ?>">
 </head>
 <body>
     <div class="container">

@@ -4,6 +4,7 @@ require_once 'board/board_template.php';
 require_once 'member_check.php';
 require_once 'includes/input_validator.php';
 require_once 'includes/BoardPermissionHelper.php';
+require_once 'includes/csrf.php';
 
 // 게시판 타입 확인
 $boardType = isset($_GET['type']) ? $_GET['type'] : '';
@@ -25,8 +26,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 출력 버퍼링 시작
     ob_start();
 
+    // CSRF 토큰 검증
+    if (!verifyCsrfToken(false)) {
+        $error = 'CSRF 토큰이 유효하지 않습니다. 페이지를 새로고침 후 다시 시도해주세요.';
+    }
+
+    // 허니팟 필드 검증 (봇 방어)
+    if (!isset($error) && !empty($_POST['website_url'])) {
+        $error = '잘못된 요청입니다.';
+        error_log("[SPAM] Honeypot triggered - IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . " Board: " . $boardType);
+    }
+
+    // 폼 타임스탬프 검증 (3초 미만이면 봇)
+    if (!isset($error) && isset($_POST['_form_loaded'])) {
+        $formLoadedTime = intval($_POST['_form_loaded']);
+        if ($formLoadedTime > 0 && (time() - $formLoadedTime) < 3) {
+            $error = '너무 빠른 제출입니다. 잠시 후 다시 시도해주세요.';
+            error_log("[SPAM] Fast submit - IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . " Board: " . $boardType . " Time: " . (time() - $formLoadedTime) . "s");
+        }
+    }
+
+    // 스팸 패턴 검사 (quote, consignment 공통)
+    if (!isset($error) && in_array($boardType, ['quote', 'consignment'])) {
+        $spamCheck = isSpamSubmission($_POST);
+        if ($spamCheck['spam']) {
+            $error = $spamCheck['reason'];
+            error_log("[SPAM] Pattern detected - IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . " Board: " . $boardType . " Reason: " . $spamCheck['reason']);
+        }
+    }
+
+    // 견적문의 게시판: SQL 인젝션 검증 + Rate Limiting
+    if (!isset($error) && $boardType === 'quote') {
+        $validation = validateFormInput([
+            'title' => $_POST['title'] ?? '',
+            'content' => $_POST['content'] ?? '',
+            'writer' => $_POST['writer'] ?? '',
+            'company' => $_POST['company'] ?? '',
+            'email' => $_POST['email'] ?? '',
+            'phone' => $_POST['phone'] ?? ''
+        ]);
+        if (!$validation['valid']) {
+            $error = $validation['message'];
+        }
+        if (!isset($error) && !checkRateLimit('quote_submit', 3, 60)) {
+            $error = '너무 많은 요청이 감지되었습니다. 잠시 후 다시 시도해주세요.';
+        }
+    }
+
     // 위탁판매 게시판: SQL 인젝션 검증 + Rate Limiting
-    if ($boardType === 'consignment') {
+    if (!isset($error) && $boardType === 'consignment') {
         $validation = validateFormInput([
             'title' => $_POST['title'] ?? '',
             'content' => $_POST['content'] ?? '',
@@ -530,6 +578,12 @@ include 'head.php';
         <?php endif; ?>
         
         <form method="post" enctype="multipart/form-data" class="board-form" id="boardForm" onsubmit="return handleFormSubmit(event)">
+            <?php echo csrfField(); ?>
+            <input type="hidden" name="_form_loaded" value="<?php echo time(); ?>">
+            <div style="display:none;position:absolute;left:-9999px;" aria-hidden="true">
+                <label for="website_url">Website</label>
+                <input type="text" name="website_url" id="website_url" value="" tabindex="-1" autocomplete="off">
+            </div>
             <div class="form-group">
                 <label for="title">제목 <span class="required">*</span></label>
                 <input type="text" id="title" name="title" required placeholder="제목을 입력하세요">

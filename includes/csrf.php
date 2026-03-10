@@ -10,8 +10,11 @@ function generateCsrfToken() {
     if (session_status() == PHP_SESSION_NONE) {
         session_start();
     }
-    if (empty($_SESSION["csrf_token"])) {
+    $now = time();
+    // 토큰이 없거나 1시간 만료된 경우 재생성
+    if (empty($_SESSION["csrf_token"]) || empty($_SESSION["csrf_token_time"]) || ($now - $_SESSION["csrf_token_time"]) > 3600) {
         $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+        $_SESSION["csrf_token_time"] = $now;
     }
     return $_SESSION["csrf_token"];
 }

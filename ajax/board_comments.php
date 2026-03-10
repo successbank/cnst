@@ -5,6 +5,8 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../member_check.php';
 require_once __DIR__ . '/../includes/BoardPermissionHelper.php';
+require_once __DIR__ . '/../includes/input_validator.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 function jsonResp($success, $message = '', $data = []) {
     echo json_encode(array_merge(['success' => $success, 'message' => $message], $data), JSON_UNESCAPED_UNICODE);
@@ -65,11 +67,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 // POST: 댓글 작성/삭제
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF 토큰 검증
+    if (!verifyCsrfToken(false)) {
+        http_response_code(403);
+        jsonResp(false, 'CSRF 토큰이 유효하지 않습니다.');
+    }
+
     $input = json_decode(file_get_contents('php://input'), true);
     $action = $input['action'] ?? '';
 
     switch ($action) {
         case 'create':
+            // IP 기반 Rate Limiting (5분 내 20회)
+            if (!checkIpRateLimit('board_comment', 20, 300)) {
+                jsonResp(false, '너무 많은 요청이 감지되었습니다. 잠시 후 다시 시도해주세요.');
+            }
+
+            // 세션 기반 Rate Limiting (1분 내 5회)
+            if (!checkRateLimit('board_comment', 5, 60)) {
+                jsonResp(false, '잠시 후 다시 시도해주세요.');
+            }
+
             $boardType = $input['board_type'] ?? '';
             $boardId = (int)($input['board_id'] ?? 0);
             $content = trim($input['content'] ?? '');
@@ -92,6 +110,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if (empty($writer)) {
                 jsonResp(false, '작성자명을 입력해주세요.');
+            }
+
+            // 입력값 검증 (SQL 인젝션 패턴 차단)
+            if (containsSuspiciousPattern($content) || containsSuspiciousPattern($writer)) {
+                jsonResp(false, '허용되지 않는 입력값이 포함되어 있습니다.');
             }
 
             $memberId = $_SESSION['member_id'] ?? null;

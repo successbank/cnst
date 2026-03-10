@@ -64,6 +64,40 @@
     </div>
     
     <script>
+    (function() {
+        var token = document.querySelector('meta[name="csrf-token"]');
+        if (!token) return;
+        token = token.content;
+
+        // fetch 인터셉터
+        var _fetch = window.fetch;
+        window.fetch = function(url, opts) {
+            opts = opts || {};
+            if (opts.method && opts.method.toUpperCase() !== 'GET') {
+                if (opts.headers instanceof Headers) {
+                    if (!opts.headers.has('X-CSRF-TOKEN')) opts.headers.set('X-CSRF-TOKEN', token);
+                } else {
+                    opts.headers = Object.assign({}, opts.headers || {});
+                    if (!opts.headers['X-CSRF-TOKEN']) opts.headers['X-CSRF-TOKEN'] = token;
+                }
+            }
+            return _fetch.call(this, url, opts);
+        };
+
+        // XMLHttpRequest 인터셉터
+        var _open = XMLHttpRequest.prototype.open;
+        var _send = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.open = function(m) { this._method = m; return _open.apply(this, arguments); };
+        XMLHttpRequest.prototype.send = function() {
+            if (this._method && this._method.toUpperCase() !== 'GET') {
+                try { this.setRequestHeader('X-CSRF-TOKEN', token); } catch(e) {}
+            }
+            return _send.apply(this, arguments);
+        };
+    })();
+    </script>
+
+    <script>
     // Mobile menu functionality
     function toggleMobileMenu() {
         const nav = document.getElementById('mainNav');

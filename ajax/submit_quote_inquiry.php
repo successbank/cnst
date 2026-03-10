@@ -2,6 +2,7 @@
 require_once '../db.php';
 require_once '../member_check.php';
 require_once '../includes/input_validator.php';
+require_once '../includes/csrf.php';
 
 header('Content-Type: application/json');
 
@@ -13,6 +14,19 @@ if (!isLoggedIn()) {
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => '잘못된 요청입니다.']);
+    exit;
+}
+
+// CSRF 토큰 검증
+if (!verifyCsrfToken(false)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'CSRF 토큰이 유효하지 않습니다.']);
+    exit;
+}
+
+// IP 기반 Rate Limiting (5분 내 10회)
+if (!checkIpRateLimit('quote_inquiry', 10, 300)) {
+    echo json_encode(['success' => false, 'message' => '너무 많은 요청이 감지되었습니다. 잠시 후 다시 시도해주세요.']);
     exit;
 }
 
@@ -137,12 +151,10 @@ try {
     ]);
     
 } catch (PDOException $e) {
-    // 개발 중에는 구체적인 오류 메시지 표시
+    error_log("Quote Inquiry DB Error: " . $e->getMessage());
     echo json_encode([
-        'success' => false, 
-        'message' => '데이터베이스 오류가 발생했습니다.',
-        'error' => $e->getMessage(),
-        'code' => $e->getCode()
+        'success' => false,
+        'message' => '데이터베이스 오류가 발생했습니다. 관리자에게 문의해주세요.'
     ]);
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);

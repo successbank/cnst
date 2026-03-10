@@ -18,8 +18,8 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit;
 }
 
-// M2: 세션 타임아웃 (1시간)
-$session_timeout = 3600;
+// M2: 세션 타임아웃 (30분)
+$session_timeout = 1800;
 if (isset($_SESSION['admin_login_time']) && (time() - $_SESSION['admin_login_time']) > $session_timeout) {
     session_destroy();
     header('Location: admin_login.php?msg=timeout');

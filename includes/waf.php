@@ -184,6 +184,11 @@ class SimpleWAF {
             @mkdir($logDir, 0755, true);
         }
 
+        // 로그 로테이션: 10MB 초과 시
+        if (@filesize(self::$logFile) > 10485760) {
+            @rename(self::$logFile, self::$logFile . '.' . date('Ymd'));
+        }
+
         $entry = sprintf(
             "[%s] IP=%s METHOD=%s URI=%s UA=%s REASON=%s\n",
             date('Y-m-d H:i:s'),

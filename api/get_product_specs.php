@@ -1,6 +1,12 @@
 <?php
 header('Content-Type: application/json');
 require_once '../db.php';
+require_once '../includes/input_validator.php';
+if (!checkIpRateLimit('api_get_product_specs', 30, 60)) {
+    http_response_code(429);
+    echo json_encode(['success' => false, 'error' => 'Too many requests']);
+    exit;
+}
 
 $response = ['success' => false];
 
@@ -32,7 +38,8 @@ try {
     $response['specifications'] = $specifications;
     
 } catch (Exception $e) {
-    $response['error'] = $e->getMessage();
+    error_log("Product Specs Error: " . $e->getMessage());
+    $response['error'] = '서버 오류가 발생했습니다.';
 }
 
 echo json_encode($response);
