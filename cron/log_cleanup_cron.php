@@ -65,6 +65,13 @@ try {
         }
     }
 
+    // site_visits 일별 집계 (어제 데이터)
+    require_once $basePath . '/includes/SiteVisitsAggregationService.php';
+    $aggService = new SiteVisitsAggregationService($pdo);
+    $yesterday = date('Y-m-d', strtotime('-1 day'));
+    $aggResult = $aggService->aggregateDate($yesterday);
+    echo "[" . date('Y-m-d H:i:s') . "] site_visits 집계: {$aggResult['message']}\n";
+
     // 정리 실행
     $result = $cleanupService->autoCleanup();
 

@@ -31,7 +31,8 @@ class LogCleanupService {
         ],
         'site_visits' => [
             'name' => '방문자 기록',
-            'dateColumn' => 'created_at'
+            'dateColumn' => 'created_at',
+            'retention_days' => 7
         ]
     ];
 
@@ -76,15 +77,22 @@ class LogCleanupService {
                 $config = $this->cleanableTables[$table];
                 $dateColumn = $config['dateColumn'];
 
+                // per-table retention 오버라이드
+                $tableThreshold = $thresholdDate;
+                if (isset($config['retention_days'])) {
+                    $tableDays = $config['retention_days'];
+                    $tableThreshold = date('Y-m-d', strtotime("-{$tableDays} days"));
+                }
+
                 // 삭제 대상 개수 조회
                 $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM $table WHERE DATE($dateColumn) < ?");
-                $stmt->execute([$thresholdDate]);
+                $stmt->execute([$tableThreshold]);
                 $count = (int) $stmt->fetchColumn();
 
                 if ($count > 0) {
                     // 삭제 실행
                     $stmt = $this->pdo->prepare("DELETE FROM $table WHERE DATE($dateColumn) < ?");
-                    $stmt->execute([$thresholdDate]);
+                    $stmt->execute([$tableThreshold]);
                     $deleted = $stmt->rowCount();
                     $results[$table] = $deleted;
                     $totalDeleted += $deleted;
@@ -174,8 +182,13 @@ class LogCleanupService {
         foreach ($this->cleanableTables as $table => $config) {
             try {
                 $dateColumn = $config['dateColumn'];
+                $tableThreshold = $thresholdDate;
+                if (isset($config['retention_days'])) {
+                    $tableDays = $config['retention_days'];
+                    $tableThreshold = date('Y-m-d', strtotime("-{$tableDays} days"));
+                }
                 $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM $table WHERE DATE($dateColumn) < ?");
-                $stmt->execute([$thresholdDate]);
+                $stmt->execute([$tableThreshold]);
                 $count = (int) $stmt->fetchColumn();
 
                 $preview[$table] = [

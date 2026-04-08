@@ -639,6 +639,9 @@ $cleanableTables = $cleanupService->getCleanableTables();
                             <input type="checkbox" name="cleanup_targets[]" value="<?php echo $table; ?>"
                                 <?php echo in_array($table, $settings['log_cleanup_targets']) ? 'checked' : ''; ?>>
                             <?php echo escape($config['name']); ?>
+                            <?php if (isset($config['retention_days'])): ?>
+                                <small style="color: #999; font-size: 11px;">(<?php echo $config['retention_days']; ?>일 고정, 집계 후 삭제)</small>
+                            <?php endif; ?>
                         </label>
                         <?php endforeach; ?>
                     </div>
@@ -665,6 +668,9 @@ $cleanableTables = $cleanupService->getCleanableTables();
                         <label>
                             <input type="checkbox" name="manual_cleanup_targets[]" value="<?php echo $table; ?>">
                             <?php echo escape($config['name']); ?>
+                            <?php if (isset($config['retention_days'])): ?>
+                                <small style="color: #999; font-size: 11px;">(<?php echo $config['retention_days']; ?>일 고정)</small>
+                            <?php endif; ?>
                         </label>
                         <?php endforeach; ?>
                     </div>
