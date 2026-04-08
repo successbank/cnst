@@ -28,6 +28,10 @@ class LogCleanupService {
         'product_delete_logs' => [
             'name' => '삭제 로그',
             'dateColumn' => 'deleted_at'
+        ],
+        'site_visits' => [
+            'name' => '방문자 기록',
+            'dateColumn' => 'created_at'
         ]
     ];
 

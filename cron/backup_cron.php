@@ -22,6 +22,7 @@ $baseDir = dirname(__DIR__);
 require_once $baseDir . '/db.php';
 require_once $baseDir . '/includes/settings.php';
 require_once $baseDir . '/includes/BackupNotificationService.php';
+require_once $baseDir . '/includes/DatabaseBackupService.php';
 
 // 로그 함수
 function logMessage($message) {
@@ -58,28 +59,20 @@ try {
     $stmt->execute([$filename]);
     $logId = $pdo->lastInsertId();
 
-    // PDO 기반 백업 실행
+    // 스트리밍 방식 백업 실행
     logMessage('백업 데이터 생성 중...');
-    $output = generateBackup($pdo);
+    $backupService = new DatabaseBackupService($pdo);
+    $result = $backupService->generateBackupToFile($filepath);
 
-    if (empty($output)) {
+    if (!$result['success']) {
         $stmt = $pdo->prepare("UPDATE backup_logs SET status = 'failed', error_message = ? WHERE id = ?");
-        $stmt->execute(['백업 데이터 생성 실패', $logId]);
-        throw new Exception('백업 데이터 생성 실패');
+        $stmt->execute([$result['error'] ?? '백업 데이터 생성 실패', $logId]);
+        throw new Exception($result['error'] ?? '백업 데이터 생성 실패');
     }
-
-    // SQL 파일 저장
-    if (file_put_contents($filepath, $output) === false) {
-        $stmt = $pdo->prepare("UPDATE backup_logs SET status = 'failed', error_message = ? WHERE id = ?");
-        $stmt->execute(['파일 저장 실패', $logId]);
-        throw new Exception('백업 파일 저장 실패');
-    }
-
-    // 테이블 수 계산
-    $tablesCount = preg_match_all('/CREATE TABLE/', $output);
 
     // 성공 기록
     $fileSize = filesize($filepath);
+    $tablesCount = $result['tables_count'];
     $stmt = $pdo->prepare("UPDATE backup_logs SET status = 'success', file_size = ?, tables_count = ? WHERE id = ?");
     $stmt->execute([$fileSize, $tablesCount, $logId]);
 
@@ -100,9 +93,26 @@ try {
         logMessage('이메일 알림 오류: ' . $emailError->getMessage());
     }
 
-    // 오래된 백업 삭제 (보관 일수 기준)
+    // Stale in_progress 레코드 정리 (24시간 이상 in_progress → failed)
+    $staleCutoff = date('Y-m-d H:i:s', strtotime('-24 hours'));
+    $stmt = $pdo->prepare("SELECT id, filename FROM backup_logs WHERE status = 'in_progress' AND created_at < ?");
+    $stmt->execute([$staleCutoff]);
+    $staleRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($staleRecords as $stale) {
+        $stalePath = $backupDir . '/' . $stale['filename'];
+        if (file_exists($stalePath)) {
+            unlink($stalePath);
+            logMessage('Stale 백업 파일 삭제: ' . $stale['filename']);
+        }
+        $stmt = $pdo->prepare("UPDATE backup_logs SET status = 'failed', error_message = '자동 정리: 24시간 이상 in_progress 상태' WHERE id = ?");
+        $stmt->execute([$stale['id']]);
+        logMessage('Stale 레코드 정리: ' . $stale['filename'] . ' (id=' . $stale['id'] . ')');
+    }
+
+    // 오래된 백업 삭제 (보관 일수 기준 - 전체 백업 대상)
     $cutoffDate = date('Y-m-d H:i:s', strtotime("-{$retentionDays} days"));
-    $stmt = $pdo->prepare("SELECT filename FROM backup_logs WHERE created_at < ? AND backup_type = 'auto'");
+    $stmt = $pdo->prepare("SELECT filename FROM backup_logs WHERE created_at < ? AND status = 'success'");
     $stmt->execute([$cutoffDate]);
     $oldBackups = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
@@ -116,8 +126,8 @@ try {
         $stmt->execute([$oldFile]);
     }
 
-    // 최대 파일 수 기준 삭제
-    $stmt = $pdo->query("SELECT filename FROM backup_logs WHERE backup_type = 'auto' ORDER BY created_at DESC");
+    // 최대 파일 수 기준 삭제 (전체 성공 백업 대상)
+    $stmt = $pdo->query("SELECT filename FROM backup_logs WHERE status = 'success' ORDER BY created_at DESC");
     $allBackups = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     if (count($allBackups) > $maxFiles) {
@@ -154,63 +164,6 @@ try {
     }
 
     exit(1);
-}
-
-/**
- * PDO를 사용하여 데이터베이스 백업 SQL 생성
- */
-function generateBackup($pdo) {
-    $output = '';
-
-    // 헤더 추가
-    $output .= "-- 충남스틸 데이터베이스 백업\n";
-    $output .= "-- 생성일시: " . date('Y-m-d H:i:s') . "\n";
-    $output .= "-- 데이터베이스: " . DB_NAME . "\n";
-    $output .= "-- -------------------------------------------------\n\n";
-
-    $output .= "SET FOREIGN_KEY_CHECKS=0;\n";
-    $output .= "SET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';\n";
-    $output .= "SET time_zone = '+09:00';\n\n";
-
-    // 모든 테이블 가져오기
-    $tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
-
-    foreach ($tables as $table) {
-        // 테이블 생성 구문
-        $output .= "-- -------------------------------------------------\n";
-        $output .= "-- 테이블 구조: `$table`\n";
-        $output .= "-- -------------------------------------------------\n\n";
-
-        $output .= "DROP TABLE IF EXISTS `$table`;\n";
-
-        $createTable = $pdo->query("SHOW CREATE TABLE `$table`")->fetch();
-        $output .= $createTable['Create Table'] . ";\n\n";
-
-        // 데이터 덤프
-        $rows = $pdo->query("SELECT * FROM `$table`")->fetchAll(PDO::FETCH_ASSOC);
-
-        if (!empty($rows)) {
-            $output .= "-- 데이터 덤프: `$table`\n";
-
-            foreach ($rows as $row) {
-                $columns = array_keys($row);
-                $values = array_map(function($val) use ($pdo) {
-                    if ($val === null) {
-                        return 'NULL';
-                    }
-                    return $pdo->quote($val);
-                }, array_values($row));
-
-                $output .= "INSERT INTO `$table` (`" . implode('`, `', $columns) . "`) VALUES (" . implode(', ', $values) . ");\n";
-            }
-            $output .= "\n";
-        }
-    }
-
-    $output .= "SET FOREIGN_KEY_CHECKS=1;\n";
-    $output .= "\n-- 백업 완료\n";
-
-    return $output;
 }
 
 /**

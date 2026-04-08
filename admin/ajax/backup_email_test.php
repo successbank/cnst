@@ -1,4 +1,9 @@
 <?php
+// AJAX 응답을 위해 에러 출력 억제 (화면에는 표시 안 함, 로그에는 기록)
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+error_reporting(E_ALL);
+
 /**
  * 백업 알림 테스트 이메일 발송 AJAX
  */

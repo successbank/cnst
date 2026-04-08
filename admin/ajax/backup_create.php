@@ -1,4 +1,9 @@
 <?php
+// AJAX 응답을 위해 에러 출력 억제 (화면에는 표시 안 함, 로그에는 기록)
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+error_reporting(E_ALL);
+
 /**
  * 수동 백업 실행 AJAX (PDO 기반)
  */
@@ -7,6 +12,7 @@ header('Content-Type: application/json');
 require_once '../admin_check.php';
 require_once '../../db.php';
 require_once '../../includes/BackupNotificationService.php';
+require_once '../../includes/DatabaseBackupService.php';
 
 try {
     // 백업 디렉토리 설정
@@ -30,30 +36,22 @@ try {
     $stmt->execute([$filename, $adminId]);
     $logId = $pdo->lastInsertId();
 
-    // PDO 기반 백업 실행
-    $output = generateBackup($pdo);
+    // 스트리밍 방식 백업 실행
+    $backupService = new DatabaseBackupService($pdo);
+    $result = $backupService->generateBackupToFile($filepath);
 
-    if (empty($output)) {
+    if (!$result['success']) {
         $stmt = $pdo->prepare("UPDATE backup_logs SET status = 'failed', error_message = ? WHERE id = ?");
-        $stmt->execute(['백업 데이터 생성 실패', $logId]);
-        throw new Exception('백업 데이터 생성 실패');
-    }
-
-    // SQL 파일 저장
-    if (file_put_contents($filepath, $output) === false) {
-        $stmt = $pdo->prepare("UPDATE backup_logs SET status = 'failed', error_message = ? WHERE id = ?");
-        $stmt->execute(['파일 저장 실패', $logId]);
-        throw new Exception('백업 파일 저장 실패');
+        $stmt->execute([$result['error'] ?? '백업 데이터 생성 실패', $logId]);
+        throw new Exception($result['error'] ?? '백업 데이터 생성 실패');
     }
 
     // 파일 권한 설정 (www-data가 삭제 가능하도록)
     chmod($filepath, 0644);
 
-    // 테이블 수 계산
-    $tablesCount = preg_match_all('/CREATE TABLE/', $output);
-
     // 성공 기록
     $fileSize = filesize($filepath);
+    $tablesCount = $result['tables_count'];
     $stmt = $pdo->prepare("UPDATE backup_logs SET status = 'success', file_size = ?, tables_count = ? WHERE id = ?");
     $stmt->execute([$fileSize, $tablesCount, $logId]);
 
@@ -85,71 +83,4 @@ try {
         'success' => false,
         'message' => $e->getMessage()
     ]);
-}
-
-/**
- * PDO를 사용하여 데이터베이스 백업 SQL 생성
- */
-function generateBackup($pdo) {
-    $output = '';
-
-    // 헤더 추가
-    $output .= "-- 충남스틸 데이터베이스 백업\n";
-    $output .= "-- 생성일시: " . date('Y-m-d H:i:s') . "\n";
-    $output .= "-- 데이터베이스: " . DB_NAME . "\n";
-    $output .= "-- -------------------------------------------------\n\n";
-
-    $output .= "SET FOREIGN_KEY_CHECKS=0;\n";
-    $output .= "SET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';\n";
-    $output .= "SET time_zone = '+09:00';\n\n";
-
-    // 모든 테이블 가져오기
-    $tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
-
-    foreach ($tables as $table) {
-        // 시스템/손상된 테이블 건너뛰기
-        if (strpos($table, 'RECOVER_YOUR_DATA') !== false) {
-            continue;
-        }
-
-        try {
-            // 테이블 생성 구문
-            $output .= "-- -------------------------------------------------\n";
-            $output .= "-- 테이블 구조: `$table`\n";
-            $output .= "-- -------------------------------------------------\n\n";
-
-            $output .= "DROP TABLE IF EXISTS `$table`;\n";
-
-            $createTable = $pdo->query("SHOW CREATE TABLE `$table`")->fetch();
-            $output .= $createTable['Create Table'] . ";\n\n";
-
-            // 데이터 덤프
-            $rows = $pdo->query("SELECT * FROM `$table`")->fetchAll(PDO::FETCH_ASSOC);
-
-            if (!empty($rows)) {
-                $output .= "-- 데이터 덤프: `$table`\n";
-
-                foreach ($rows as $row) {
-                    $columns = array_keys($row);
-                    $values = array_map(function($val) use ($pdo) {
-                        if ($val === null) {
-                            return 'NULL';
-                        }
-                        return $pdo->quote($val);
-                    }, array_values($row));
-
-                    $output .= "INSERT INTO `$table` (`" . implode('`, `', $columns) . "`) VALUES (" . implode(', ', $values) . ");\n";
-                }
-                $output .= "\n";
-            }
-        } catch (PDOException $e) {
-            // 테이블 처리 실패 시 건너뛰기
-            $output .= "-- 오류: 테이블 `$table` 백업 실패 - " . $e->getMessage() . "\n\n";
-        }
-    }
-
-    $output .= "SET FOREIGN_KEY_CHECKS=1;\n";
-    $output .= "\n-- 백업 완료\n";
-
-    return $output;
 }
