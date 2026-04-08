@@ -11,43 +11,58 @@ class KakaoNotificationService {
     /**
      * 카카오톡 알림 발송
      */
-    public function sendNotification($boardType, $boardId, $recipientPhone, $recipientName, $messageType, $templateData) {
+    public function sendNotification($boardType, $boardId, $recipientPhone, $recipientName, $messageType, $templateData, $options = []) {
         try {
             // 전화번호 정규화
             $phone = $this->normalizePhoneNumber($recipientPhone);
             if (!$phone) {
                 throw new Exception("유효하지 않은 전화번호입니다.");
             }
-            
+
+            // 일일 발송 제한 체크
+            if (defined('KAKAO_DAILY_LIMIT') && KAKAO_DAILY_LIMIT > 0) {
+                $stmtLimit = $this->pdo->prepare("
+                    SELECT COUNT(*) FROM kakao_notifications
+                    WHERE DATE(created_at) = CURDATE() AND status != 'failed'
+                ");
+                $stmtLimit->execute();
+                $todayCount = (int)$stmtLimit->fetchColumn();
+                if ($todayCount >= KAKAO_DAILY_LIMIT) {
+                    throw new Exception("일일 발송 한도(" . KAKAO_DAILY_LIMIT . "건)를 초과했습니다.");
+                }
+            }
+
             // 템플릿 가져오기
             $template = $this->getTemplate($messageType);
             if (!$template) {
                 throw new Exception("템플릿을 찾을 수 없습니다: " . $messageType);
             }
-            
+
             // 메시지 생성
             $message = $this->buildMessage($template['message_format'], $templateData);
-            
+
             // 로그 기록
-            $logId = $this->logNotification($boardType, $boardId, $phone, $recipientName, $messageType, $message, $template['template_code']);
-            
+            $sentBy = $options['sent_by'] ?? null;
+            $parentId = $options['parent_notification_id'] ?? null;
+            $logId = $this->logNotification($boardType, $boardId, $phone, $recipientName, $messageType, $message, $template['template_code'], $sentBy, $parentId);
+
             // 테스트 모드 확인
             if (KAKAO_TEST_MODE) {
                 $this->updateNotificationStatus($logId, 'sent', '테스트 모드 - 실제 발송하지 않음');
-                return ['success' => true, 'test_mode' => true, 'message' => $message];
+                return ['success' => true, 'test_mode' => true, 'message' => $message, 'notification_id' => $logId];
             }
-            
+
             // 실제 카카오톡 발송
             $result = $this->sendKakaoMessage($phone, $message, $template['template_code']);
-            
+
             if ($result['success']) {
                 $this->updateNotificationStatus($logId, 'sent');
-                return ['success' => true, 'message_id' => $result['message_id']];
+                return ['success' => true, 'message_id' => $result['message_id'], 'notification_id' => $logId];
             } else {
                 $this->updateNotificationStatus($logId, 'failed', $result['error']);
-                return ['success' => false, 'error' => $result['error']];
+                return ['success' => false, 'error' => $result['error'], 'notification_id' => $logId];
             }
-            
+
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
@@ -85,20 +100,22 @@ class KakaoNotificationService {
         foreach ($data as $key => $value) {
             $message = str_replace('{' . $key . '}', $value, $message);
         }
-        return $message;
+        // custom_message가 비어있을 때 연속 빈 줄 정리
+        $message = preg_replace('/\n\s*\n\s*\n/', "\n\n", $message);
+        return trim($message);
     }
     
     /**
      * 알림 로그 기록
      */
-    private function logNotification($boardType, $boardId, $phone, $name, $messageType, $message, $templateCode) {
+    private function logNotification($boardType, $boardId, $phone, $name, $messageType, $message, $templateCode, $sentBy = null, $parentNotificationId = null) {
         $stmt = $this->pdo->prepare("
-            INSERT INTO kakao_notifications 
-            (board_type, board_id, recipient_phone, recipient_name, message_type, message_content, template_code, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+            INSERT INTO kakao_notifications
+            (board_type, board_id, recipient_phone, recipient_name, message_type, message_content, template_code, status, sent_by, parent_notification_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
         ");
-        
-        $stmt->execute([$boardType, $boardId, $phone, $name, $messageType, $message, $templateCode]);
+
+        $stmt->execute([$boardType, $boardId, $phone, $name, $messageType, $message, $templateCode, $sentBy, $parentNotificationId]);
         return $this->pdo->lastInsertId();
     }
     
@@ -117,19 +134,18 @@ class KakaoNotificationService {
     }
     
     /**
-     * 실제 카카오톡 메시지 발송 (API 호출)
+     * 실제 카카오톡 메시지 발송 (NHN Cloud Alimtalk API v2.2)
      */
     private function sendKakaoMessage($phone, $message, $templateCode) {
-        // TODO: 실제 카카오 API 연동 구현
-        // 여기서는 샘플 구현만 제공
-        
+        $apiUrl = KAKAO_API_URL . '/appkeys/' . KAKAO_API_KEY . '/messages';
+
         $headers = [
-            'Content-Type: application/json',
+            'Content-Type: application/json;charset=UTF-8',
             'X-Secret-Key: ' . KAKAO_API_SECRET,
         ];
-        
+
         $data = [
-            'plusFriendId' => KAKAO_CHANNEL_ID,
+            'senderKey' => KAKAO_SENDER_KEY,
             'templateCode' => $templateCode,
             'recipientList' => [
                 [
@@ -140,23 +156,114 @@ class KakaoNotificationService {
                 ]
             ]
         ];
-        
-        // 실제 구현시 CURL을 사용하여 API 호출
-        // $ch = curl_init(KAKAO_API_URL . '/messages');
-        // curl_setopt($ch, CURLOPT_POST, true);
-        // curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        // curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        // curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        // $response = curl_exec($ch);
-        // curl_close($ch);
-        
-        // 임시 성공 응답
-        return [
-            'success' => true,
-            'message_id' => 'DEMO_' . time()
-        ];
+
+        $ch = curl_init($apiUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data, JSON_UNESCAPED_UNICODE));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            error_log("Kakao API CURL error: " . $curlError);
+            return ['success' => false, 'error' => 'API 연결 실패: ' . $curlError];
+        }
+
+        $result = json_decode($response, true);
+
+        if ($httpCode === 200 && isset($result['header']['isSuccessful']) && $result['header']['isSuccessful']) {
+            $messageId = $result['message']['requestId'] ?? ('API_' . time());
+            return ['success' => true, 'message_id' => $messageId];
+        }
+
+        $errorMsg = $result['header']['resultMessage'] ?? ('HTTP ' . $httpCode);
+        error_log("Kakao API error: " . $errorMsg . " | Response: " . $response);
+        return ['success' => false, 'error' => $errorMsg];
     }
     
+    /**
+     * 메시지 미리보기 (발송 없이 완성된 메시지 텍스트 반환)
+     */
+    public function previewMessage($messageType, $templateData) {
+        $template = $this->getTemplate($messageType);
+        if (!$template) {
+            return ['success' => false, 'error' => '템플릿을 찾을 수 없습니다: ' . $messageType];
+        }
+
+        $message = $this->buildMessage($template['message_format'], $templateData);
+        return ['success' => true, 'preview' => $message, 'template_name' => $template['template_name']];
+    }
+
+    /**
+     * 알림 재발송
+     */
+    public function resendNotification($notificationId, $sentBy = null) {
+        // 원본 알림 조회
+        $stmt = $this->pdo->prepare("SELECT * FROM kakao_notifications WHERE id = ?");
+        $stmt->execute([$notificationId]);
+        $original = $stmt->fetch();
+
+        if (!$original) {
+            return ['success' => false, 'error' => '원본 알림을 찾을 수 없습니다.'];
+        }
+
+        // 원본의 retry_count 증가
+        $stmt = $this->pdo->prepare("UPDATE kakao_notifications SET retry_count = retry_count + 1 WHERE id = ?");
+        $stmt->execute([$notificationId]);
+
+        // 새 알림 레코드 생성 (parent_notification_id 설정)
+        $newLogId = $this->logNotification(
+            $original['board_type'],
+            $original['board_id'],
+            $original['recipient_phone'],
+            $original['recipient_name'],
+            $original['message_type'],
+            $original['message_content'],
+            $original['template_code'],
+            $sentBy,
+            $notificationId
+        );
+
+        // 테스트 모드 확인
+        if (KAKAO_TEST_MODE) {
+            $this->updateNotificationStatus($newLogId, 'sent', '테스트 모드 - 재발송 (실제 발송하지 않음)');
+            return ['success' => true, 'test_mode' => true, 'notification_id' => $newLogId];
+        }
+
+        // 실제 발송
+        $result = $this->sendKakaoMessage($original['recipient_phone'], $original['message_content'], $original['template_code']);
+
+        if ($result['success']) {
+            $this->updateNotificationStatus($newLogId, 'sent');
+            return ['success' => true, 'message_id' => $result['message_id'], 'notification_id' => $newLogId];
+        } else {
+            $this->updateNotificationStatus($newLogId, 'failed', $result['error']);
+            return ['success' => false, 'error' => $result['error'], 'notification_id' => $newLogId];
+        }
+    }
+
+    /**
+     * 특정 게시글의 카카오 발송 이력 조회
+     */
+    public function getNotificationsByBoardId($boardType, $boardId) {
+        $stmt = $this->pdo->prepare("
+            SELECT id, message_type, message_content, status, error_message,
+                   recipient_name, recipient_phone, retry_count, parent_notification_id,
+                   sent_by, sent_at, created_at
+            FROM kakao_notifications
+            WHERE board_type = ? AND board_id = ?
+            ORDER BY created_at DESC
+        ");
+        $stmt->execute([$boardType, $boardId]);
+        return $stmt->fetchAll();
+    }
+
     /**
      * 발송 통계 조회
      */
@@ -208,14 +315,14 @@ class KakaoNotificationService {
         }
         
         $sql = "
-            SELECT 
+            SELECT
                 id,
                 board_type,
                 board_id,
-                notification_type,
+                message_type,
                 recipient_name,
                 recipient_phone,
-                COALESCE(phone_number, recipient_phone) as phone_number,
+                recipient_phone as phone_number,
                 message_content,
                 status,
                 error_message,

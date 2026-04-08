@@ -8,21 +8,25 @@ require_once 'includes/BoardPermissionHelper.php';
 $boardType = isset($_GET['type']) ? $_GET['type'] : '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-if (!in_array($boardType, ['quote', 'notice', 'news', 'consignment']) || !$id) {
+if (!in_array($boardType, ['quote', 'notice', 'news', 'consignment', 'sales_request', 'brokerage']) || !$id) {
     header('Location: index.php');
     exit;
 }
 
-// 게시판 권한 체크 (중계판매, 견적문의)
-if (in_array($boardType, ['consignment', 'quote'])) {
-    BoardPermissionHelper::requireAccess($boardType, 'read');
+// 게시판 권한 체크
+if (in_array($boardType, ['consignment', 'quote', 'sales_request', 'brokerage'])) {
+    $permType = in_array($boardType, ['sales_request']) ? 'sales_request' : ($boardType === 'brokerage' ? 'brokerage' : $boardType);
+    BoardPermissionHelper::requireAccess($permType, 'read');
 }
 
 // 게시판 객체 생성
 $board = new BoardTemplate($pdo, $boardType);
 
+// 테이블 이름 결정 (sales_request, brokerage는 board_consignment 사용)
+$tableName = in_array($boardType, ['sales_request', 'brokerage']) ? 'board_consignment' : 'board_' . $boardType;
+
 // 게시글 조회 (조회수 증가 전에 먼저 데이터 확인)
-$checkSql = "SELECT * FROM board_{$boardType} WHERE id = :id";
+$checkSql = "SELECT * FROM {$tableName} WHERE id = :id";
 $checkStmt = $pdo->prepare($checkSql);
 $checkStmt->bindParam(':id', $id);
 $checkStmt->execute();
@@ -37,8 +41,30 @@ $needPassword = false;
 $passwordError = false;
 $canView = false;
 
+// 판매의뢰 - 본인과 관리자만 볼 수 있음
+if ($boardType === 'sales_request') {
+    if (isAdmin()) {
+        $canView = true;
+    } elseif (isLoggedIn() && isset($post['member_id']) && $post['member_id'] == $_SESSION['member_id']) {
+        $canView = true;
+    } else {
+        header('Location: sales_request.php');
+        exit;
+    }
+}
+// 중개판매 - 승인된 건만 공개
+elseif ($boardType === 'brokerage') {
+    if (isAdmin()) {
+        $canView = true;
+    } elseif ($post['status'] === 'approved') {
+        $canView = true;
+    } else {
+        header('Location: brokerage.php');
+        exit;
+    }
+}
 // 중계판매 게시판의 경우 - 본인과 관리자만 볼 수 있음
-if ($boardType === 'consignment') {
+elseif ($boardType === 'consignment') {
     // 관리자인 경우
     if (isAdmin()) {
         $canView = true;
@@ -189,9 +215,16 @@ include 'head.php';
                 </div>
                 <?php endif; ?>
                 
-                <?php if ($boardType === 'consignment'): ?>
+                <?php if (in_array($boardType, ['consignment', 'sales_request', 'brokerage'])): ?>
                 <div class="consignment-info">
-                    <h4>중계판매 정보</h4>
+                    <h4><?php echo $boardType === 'sales_request' ? '판매의뢰 정보' : '중개판매 정보'; ?></h4>
+
+                    <?php if ($boardType === 'sales_request' && $post['status'] === 'rejected' && !empty($post['reject_reason'])): ?>
+                    <div style="background: #FFEBEE; padding: 16px 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #C62828;">
+                        <strong style="color: #C62828;">반려 사유:</strong>
+                        <span style="color: #333;"><?php echo escape($post['reject_reason']); ?></span>
+                    </div>
+                    <?php endif; ?>
                     <div class="info-grid">
                         <div class="info-row">
                             <span class="info-label">업체명</span>
@@ -314,14 +347,15 @@ include 'head.php';
                 
                 <?php
                 // 댓글 섹션 (중계판매, 견적문의만)
-                if (in_array($boardType, ['consignment', 'quote'])) {
-                    $canComment = BoardPermissionHelper::canAccess($boardType, 'comment');
+                if (in_array($boardType, ['consignment', 'quote', 'brokerage'])) {
+                    $permType = ($boardType === 'brokerage') ? 'brokerage' : $boardType;
+                    $canComment = BoardPermissionHelper::canAccess($permType, 'comment');
                     include 'includes/comment_section.php';
                 }
                 ?>
 
                 <div class="post-buttons">
-                    <a href="<?php echo $boardType; ?>.php" class="btn-list">목록</a>
+                    <a href="<?php echo in_array($boardType, ['sales_request', 'brokerage']) ? $boardType : $boardType; ?>.php" class="btn-list">목록</a>
                     <div class="right-buttons">
                         <a href="board_edit.php?type=<?php echo $boardType; ?>&id=<?php echo $id; ?>" class="btn-edit">수정</a>
                         <a href="board_delete.php?type=<?php echo $boardType; ?>&id=<?php echo $id; ?>" class="btn-delete" onclick="return confirm('정말 삭제하시겠습니까?');">삭제</a>

@@ -56,3 +56,16 @@ backups/
 
 # Webmail config (contains credentials)
 webmail/config/config.inc.php
+
+# Playwright MCP (test screenshots/snapshots)
+.playwright-mcp/
+
+# Playwright config
+playwright.config.js
+
+# PRD documents (local only)
+prd*.md
+
+# Test screenshots
+tests/screenshots/
+tests/*.png

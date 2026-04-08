@@ -324,7 +324,7 @@ for ($i = 6; $i >= 0; $i--) {
                         <td><?php echo date('Y-m-d H:i', strtotime($notification['created_at'])); ?></td>
                         <td>
                             <?php 
-                            switch($notification['notification_type']) {
+                            switch($notification['message_type']) {
                                 case 'quote':
                                     echo '견적문의';
                                     break;

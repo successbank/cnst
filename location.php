@@ -2,7 +2,7 @@
 $currentPage = 'location';
 $pageTitle = '오시는길';
 require_once 'includes/sub_layout.php';
-require_once 'includes/kakao_config.php'; // 카카오맵 API 키 설정
+require_once 'db.php'; // getDB() 먼저 로드
 include 'head.php';
 
 // 서브페이지 레이아웃 시작
@@ -101,86 +101,6 @@ companySidebar('location');
     position: relative;
 }
 
-/* 지도 로딩 전 플레이스홀더 */
-#map.loading {
-    background: linear-gradient(135deg, #E5E5E7 0%, #F0F0F0 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-#map.loading::before {
-    content: "🗺️ 지도를 불러오는 중...";
-    font-size: 18px;
-    color: #666;
-}
-
-/* 카카오맵 커스텀 인포윈도우 스타일 */
-.kakao-infowindow {
-    padding: 20px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    min-width: 280px;
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-.kakao-infowindow .company-name {
-    font-size: 18px;
-    font-weight: 700;
-    color: #1565C0;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.kakao-infowindow .company-name::before {
-    content: "🏭";
-    font-size: 20px;
-}
-
-.kakao-infowindow .info-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 8px;
-    font-size: 14px;
-    color: #333;
-}
-
-.kakao-infowindow .info-row:last-child {
-    margin-bottom: 0;
-}
-
-.kakao-infowindow .info-icon {
-    flex-shrink: 0;
-    width: 20px;
-    text-align: center;
-}
-
-.kakao-infowindow .info-text {
-    line-height: 1.5;
-}
-
-.kakao-infowindow .btn-directions {
-    display: block;
-    margin-top: 15px;
-    padding: 10px 16px;
-    background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 14px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.kakao-infowindow .btn-directions:hover {
-    background: linear-gradient(135deg, #0D47A1 0%, #0A3D91 100%);
-    transform: translateY(-1px);
-}
 
 /* Section headers */
 .company-values h3,
@@ -391,7 +311,15 @@ companySidebar('location');
 <section class="location-section-item" style="background-color: #F8F9FA;">
     <div class="section-container">
         <h3>찾아오시는 길</h3>
-        <div id="map" class="loading"></div>
+        <iframe
+            id="map"
+            src="https://map.kakao.com/?urlX=425456.0&urlY=1123436.0&name=%EC%B6%A9%EB%82%A8%EC%8A%A4%ED%8B%B8"
+            width="100%"
+            height="450"
+            style="border:0;"
+            allowfullscreen
+            loading="lazy"
+            title="충남스틸 위치 지도"></iframe>
 
         <!-- 지도 하단 버튼 영역 -->
         <div class="map-actions" style="margin-top: 20px; text-align: center; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
@@ -401,9 +329,9 @@ companySidebar('location');
             <a href="https://map.kakao.com/link/map/충남스틸,37.5434,126.6626" target="_blank" class="chat-button" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: linear-gradient(135deg, #FEE500 0%, #F5D800 100%); color: #3C1E1E;">
                 🗺️ 카카오맵에서 보기
             </a>
-            <button class="chat-button" onclick="openChat()" style="display: inline-flex; align-items: center; gap: 8px;">
+            <!-- <button class="chat-button" onclick="openChat()" style="display: inline-flex; align-items: center; gap: 8px;">
                 💬 문의하기
-            </button>
+            </button> -->
         </div>
     </div>
 </section>
@@ -411,163 +339,9 @@ companySidebar('location');
     </div>
 </main>
 
-<!-- 카카오맵 JavaScript SDK (autoload=false로 로드 타이밍 제어) -->
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=<?php echo defined('KAKAO_MAP_API_KEY') ? KAKAO_MAP_API_KEY : 'YOUR_KAKAO_MAP_API_KEY'; ?>&libraries=services&autoload=false"></script>
-
 <script>
-// ============================================================
-// 충남스틸 오시는길 - 카카오맵 구현
-// ============================================================
-
-// 회사 정보 설정
-const COMPANY_INFO = {
-    name: '충남스틸 주식회사',
-    address: '인천 서구 봉수대로 1626 (금곡동)',
-    phone: '032-564-0090',
-    email: 'cn1616@naver.com',
-    // 기본 좌표 (주소 검색 실패 시 사용)
-    defaultLat: 37.5434,
-    defaultLng: 126.6626
-};
-
-// 지도 초기화
-function initKakaoMap() {
-    const mapContainer = document.getElementById('map');
-
-    // 카카오맵 SDK 로드 확인
-    if (typeof kakao === 'undefined' || typeof kakao.maps === 'undefined') {
-        console.error('카카오맵 SDK가 로드되지 않았습니다. 도메인 등록을 확인하세요.');
-        console.log('현재 도메인:', window.location.hostname);
-        console.log('카카오 개발자 콘솔에서 http://' + window.location.hostname + ' 도메인을 등록해주세요.');
-        mapContainer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:10px;background:#f5f5f5;"><span style="font-size:48px;">🗺️</span><p style="color:#666;text-align:center;">지도를 불러올 수 없습니다.<br><small>카카오 개발자 콘솔에서 도메인 등록이 필요합니다.</small></p><a href="https://map.kakao.com/link/map/충남스틸,37.5434,126.6626" target="_blank" style="margin-top:10px;padding:10px 20px;background:#1565C0;color:white;text-decoration:none;border-radius:8px;font-size:14px;">카카오맵에서 보기</a></div>';
-        mapContainer.classList.remove('loading');
-        return;
-    }
-
-    // 초기 지도 옵션 (기본 좌표 사용)
-    const mapOption = {
-        center: new kakao.maps.LatLng(COMPANY_INFO.defaultLat, COMPANY_INFO.defaultLng),
-        level: 3 // 확대 레벨 (숫자가 작을수록 확대)
-    };
-
-    // 지도 생성
-    const map = new kakao.maps.Map(mapContainer, mapOption);
-    mapContainer.classList.remove('loading');
-
-    // 지도 컨트롤 추가
-    const zoomControl = new kakao.maps.ZoomControl();
-    map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
-
-    const mapTypeControl = new kakao.maps.MapTypeControl();
-    map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
-
-    // Geocoder를 사용하여 주소로 좌표 검색
-    const geocoder = new kakao.maps.services.Geocoder();
-
-    geocoder.addressSearch(COMPANY_INFO.address, function(result, status) {
-        let coords;
-
-        if (status === kakao.maps.services.Status.OK) {
-            // 주소 검색 성공
-            coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-            console.log('주소 검색 성공:', result[0].y, result[0].x);
-        } else {
-            // 주소 검색 실패 시 기본 좌표 사용
-            coords = new kakao.maps.LatLng(COMPANY_INFO.defaultLat, COMPANY_INFO.defaultLng);
-            console.log('주소 검색 실패, 기본 좌표 사용');
-        }
-
-        // 마커 이미지 설정 (커스텀 마커)
-        const markerImage = new kakao.maps.MarkerImage(
-            'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
-            new kakao.maps.Size(64, 69),
-            { offset: new kakao.maps.Point(27, 69) }
-        );
-
-        // 마커 생성
-        const marker = new kakao.maps.Marker({
-            map: map,
-            position: coords,
-            image: markerImage,
-            title: COMPANY_INFO.name
-        });
-
-        // 인포윈도우 내용
-        const infoContent = `
-            <div class="kakao-infowindow">
-                <div class="company-name">${COMPANY_INFO.name}</div>
-                <div class="info-row">
-                    <span class="info-icon">📍</span>
-                    <span class="info-text">${COMPANY_INFO.address}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-icon">📞</span>
-                    <span class="info-text"><a href="tel:${COMPANY_INFO.phone}" style="color:#1565C0;text-decoration:none;">${COMPANY_INFO.phone}</a></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-icon">✉️</span>
-                    <span class="info-text"><a href="mailto:${COMPANY_INFO.email}" style="color:#1565C0;text-decoration:none;">${COMPANY_INFO.email}</a></span>
-                </div>
-                <a href="https://map.kakao.com/link/to/${encodeURIComponent(COMPANY_INFO.name)},${coords.getLat()},${coords.getLng()}" target="_blank" class="btn-directions">
-                    🚗 길찾기
-                </a>
-            </div>
-        `;
-
-        // 인포윈도우 생성
-        const infowindow = new kakao.maps.InfoWindow({
-            content: infoContent,
-            removable: true
-        });
-
-        // 마커 클릭 시 인포윈도우 표시
-        kakao.maps.event.addListener(marker, 'click', function() {
-            infowindow.open(map, marker);
-        });
-
-        // 지도 중심을 마커 위치로 이동
-        map.setCenter(coords);
-
-        // 초기 로드 시 인포윈도우 자동 표시
-        setTimeout(function() {
-            infowindow.open(map, marker);
-        }, 500);
-    });
-
-    // 반응형 지도 크기 조정
-    window.addEventListener('resize', function() {
-        map.relayout();
-    });
-}
-
-// 채팅 기능
 function openChat() {
     alert('문의 기능은 준비 중입니다.\n\n아래 연락처로 문의해 주세요:\n📞 032-564-0090\n✉️ cn1616@naver.com');
-}
-
-// 페이지 로드 완료 후 지도 초기화
-function loadKakaoMap() {
-    // kakao 객체 존재 확인
-    if (typeof kakao !== 'undefined' && typeof kakao.maps !== 'undefined') {
-        // autoload=false 사용 시 kakao.maps.load() 호출 필요
-        kakao.maps.load(function() {
-            console.log('카카오맵 SDK 로드 완료');
-            initKakaoMap();
-        });
-    } else {
-        console.error('카카오맵 SDK를 찾을 수 없습니다.');
-        console.log('API 키 또는 도메인 등록을 확인하세요.');
-        // SDK 로드 실패 시 폴백 UI 표시
-        initKakaoMap();
-    }
-}
-
-// DOM 로드 완료 후 실행
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadKakaoMap);
-} else {
-    // 약간의 지연 후 실행 (SDK 스크립트 로드 대기)
-    setTimeout(loadKakaoMap, 100);
 }
 </script>
 

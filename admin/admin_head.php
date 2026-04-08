@@ -13,6 +13,7 @@ $currentFile = basename($_SERVER['PHP_SELF']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?php echo htmlspecialchars(generateCsrfToken()); ?>">
     <title><?php echo $pageTitle ?? '관리자'; ?> | 충남스틸</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -591,12 +592,12 @@ $currentFile = basename($_SERVER['PHP_SELF']);
                 
                 <!-- 영업 관리 드롭다운 -->
                 <div class="nav-dropdown" id="salesDropdown">
-                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_quotes.php', 'admin_quote_view.php', 'admin_consignment.php', 'admin_products_integrated.php', 'admin_products_edit.php', 'admin_unit_weights_edit.php', 'admin_product_quotes.php', 'admin_product_quote_view.php', 'admin_product_categories.php', 'admin_product_categories_tree_v2.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('salesDropdown'); return false;">
+                    <a href="#" class="nav-dropdown-toggle <?php echo in_array($currentFile, ['admin_quotes.php', 'admin_quote_view.php', 'admin_consignment.php', 'admin_consignment_view.php', 'admin_products_integrated.php', 'admin_products_edit.php', 'admin_unit_weights_edit.php', 'admin_product_quotes.php', 'admin_product_quote_view.php', 'admin_product_categories.php', 'admin_product_categories_tree_v2.php']) ? 'active' : ''; ?>" onclick="toggleDropdown('salesDropdown'); return false;">
                         영업 관리
                     </a>
                     <div class="nav-dropdown-menu">
                         <a href="admin_quotes.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_quotes.php' || $currentFile === 'admin_quote_view.php' ? 'active' : ''; ?>">견적문의 관리</a>
-                        <a href="admin_consignment.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_consignment.php' ? 'active' : ''; ?>">위탁판매 관리</a>
+                        <a href="admin_consignment.php" class="nav-dropdown-item <?php echo in_array($currentFile, ['admin_consignment.php', 'admin_consignment_view.php']) ? 'active' : ''; ?>">판매의뢰/중개판매 관리</a>
                         <a href="admin_products_integrated.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_products_integrated.php' || $currentFile === 'admin_products_edit.php' || $currentFile === 'admin_unit_weights_edit.php' ? 'active' : ''; ?>">제품 관리</a>
                         <a href="admin_bulk_image_apply.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_bulk_image_apply.php' ? 'active' : ''; ?>">제품 이미지 일괄 등록</a>
                         <a href="admin_product_quotes.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_product_quotes.php' || $currentFile === 'admin_product_quote_view.php' ? 'active' : ''; ?>">제품견적서</a>
@@ -611,6 +612,10 @@ $currentFile = basename($_SERVER['PHP_SELF']);
                     </a>
                     <div class="nav-dropdown-menu">
                         <a href="admin_members.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_members.php' || $currentFile === 'admin_members_detail.php' ? 'active' : ''; ?>">회원 관리</a>
+                        <a href="admin_kakao.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_kakao.php' ? 'active' : ''; ?>">카카오톡 관리</a>
+                        <a href="admin_kakao_settings.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_kakao_settings.php' ? 'active' : ''; ?>">카카오톡 설정</a>
+                        <a href="admin_kakao_consignment.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_kakao_consignment.php' ? 'active' : ''; ?>">위탁판매 알림</a>
+                        <a href="admin_kakao_quote.php" class="nav-dropdown-item <?php echo $currentFile === 'admin_kakao_quote.php' ? 'active' : ''; ?>">견적문의 알림</a>
                     </div>
                 </div>
                 

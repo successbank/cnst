@@ -43,14 +43,14 @@ try {
     $totalInquiries = 0;
     
     // 견적문의 개수
-    // member_id가 있으면 member_id로, 없으면 writer로 조회
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM board_quote WHERE member_id = ? OR writer = ?");
-    $stmt->execute([$member_id, $_SESSION['name'] ?? $user_id]);
+    // board_quote에는 member_id 컬럼이 없으므로 writer로 조회
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM board_quote WHERE writer = ?");
+    $stmt->execute([$_SESSION['member_name'] ?? $user_id]);
     $totalQuotes = $stmt->fetchColumn();
     
-    // 중계판매 문의 개수  
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM board_consignment WHERE writer = ?");
-    $stmt->execute([$_SESSION['name'] ?? $user_id]);
+    // 판매의뢰/중계판매 개수
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM board_consignment WHERE member_id = ? OR writer = ?");
+    $stmt->execute([$member_id, $_SESSION['member_name'] ?? $user_id]);
     $totalConsignments = $stmt->fetchColumn();
     
     $total = $totalQuotes + $totalConsignments;
@@ -62,11 +62,11 @@ try {
         // 견적문의 조회
         $stmt = $pdo->prepare("
             SELECT 'quote' as type, id, title, company, created_at, is_answered as status
-            FROM board_quote 
-            WHERE member_id = ? OR writer = ?
+            FROM board_quote
+            WHERE writer = ?
             ORDER BY created_at DESC
         ");
-        $stmt->execute([$member_id, $_SESSION['name'] ?? $user_id]);
+        $stmt->execute([$_SESSION['member_name'] ?? $user_id]);
         $quotes = $stmt->fetchAll();
         
         foreach($quotes as $quote) {
@@ -77,24 +77,27 @@ try {
     }
     
     if ($type === 'all' || $type === 'consignment') {
-        // 중계판매 문의 조회 
+        // 판매의뢰/중계판매 조회
         $stmt = $pdo->prepare("
-            SELECT 'consignment' as type, id, title, company_name as company, created_at, status
-            FROM board_consignment 
-            WHERE writer = ?
+            SELECT 'consignment' as type, id, title, company_name as company, created_at, status, reject_reason
+            FROM board_consignment
+            WHERE member_id = ? OR writer = ?
             ORDER BY created_at DESC
         ");
-        $stmt->execute([$_SESSION['name'] ?? $user_id]);
+        $stmt->execute([$member_id, $_SESSION['member_name'] ?? $user_id]);
         $consignments = $stmt->fetchAll();
         
         foreach($consignments as $consignment) {
-            $consignment['type_label'] = '중계판매';
+            $consignment['type_label'] = '판매의뢰';
             $statusLabels = [
-                'active' => '진행중',
+                'pending' => '심사중',
+                'approved' => '게시중',
+                'rejected' => '반려',
                 'sold' => '판매완료',
-                'inactive' => '종료'
+                'inactive' => '종료',
+                'active' => '진행중'
             ];
-            $consignment['status_label'] = $statusLabels[$consignment['status']] ?? '진행중';
+            $consignment['status_label'] = $statusLabels[$consignment['status']] ?? $consignment['status'];
             $inquiries[] = $consignment;
         }
     }
@@ -178,12 +181,15 @@ myPageSidebar('inquiries');
                             <td><?php echo htmlspecialchars($inquiry['company'] ?? '-'); ?></td>
                             <td class="text-center"><?php echo date('Y-m-d', strtotime($inquiry['created_at'])); ?></td>
                             <td class="text-center">
-                                <span class="status-badge <?php echo $inquiry['type'] === 'quote' ? ($inquiry['status'] ? 'status-answered' : 'status-waiting') : 'status-' . $inquiry['status']; ?>">
+                                <span class="status-badge <?php echo $inquiry['type'] === 'quote' ? ($inquiry['status'] ? 'status-answered' : 'status-waiting') : 'status-' . $inquiry['status']; ?>"
+                                      <?php if ($inquiry['type'] === 'consignment' && $inquiry['status'] === 'rejected' && !empty($inquiry['reject_reason'])): ?>
+                                      title="사유: <?php echo htmlspecialchars($inquiry['reject_reason']); ?>"
+                                      <?php endif; ?>>
                                     <?php echo $inquiry['status_label']; ?>
                                 </span>
                             </td>
                             <td class="text-center">
-                                <button type="button" class="btn-small" onclick="viewInquiryDetail('<?php echo $inquiry['type']; ?>', <?php echo $inquiry['id']; ?>)">보기</button>
+                                <button type="button" class="btn-small" onclick="viewInquiryDetail('<?php echo $inquiry['type'] === 'consignment' ? 'sales_request' : $inquiry['type']; ?>', <?php echo $inquiry['id']; ?>)">보기</button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -545,6 +551,21 @@ myPageSidebar('inquiries');
 .status-inactive {
     background: #F5F5F5;
     color: #666;
+}
+
+.status-pending {
+    background: #FFF3E0;
+    color: #F57C00;
+}
+
+.status-approved {
+    background: #E8F5E9;
+    color: #2E7D32;
+}
+
+.status-rejected {
+    background: #FFEBEE;
+    color: #C62828;
 }
 
 .btn-small {

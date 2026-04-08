@@ -67,7 +67,10 @@ if (file_exists(__DIR__ . '/includes/visitor_tracker.php')) {
                         <li><a href="products_new.php" class="<?php echo $currentPage == 'products' ? 'active' : ''; ?>">판매제품</a></li>
                         <li><a href="about.php" class="<?php echo $currentPage == 'about' ? 'active' : ''; ?>">회사소개</a></li>
                         <li><a href="https://cnst.co.kr/ebook/mobile/index.html#p=1" target="_blank" ; ?>단중표</a></li>
-                        <li><a href="consignment.php" class="<?php echo $currentPage == 'consignment' ? 'active' : ''; ?>">중계판매</a></li>
+                        <li><a href="brokerage.php" class="<?php echo $currentPage == 'brokerage' ? 'active' : ''; ?>">중개판매</a></li>
+                        <?php if(isLoggedIn()): ?>
+                        <li><a href="sales_request.php" class="<?php echo $currentPage == 'sales_request' ? 'active' : ''; ?>">판매의뢰</a></li>
+                        <?php endif; ?>
                         <li><a href="quote.php" class="<?php echo $currentPage == 'quote' ? 'active' : ''; ?>">견적문의</a></li>
                         <li><a href="notice.php" class="<?php echo $currentPage == 'notice' ? 'active' : ''; ?>">공지사항</a></li>
                         <li><a href="news.php" class="<?php echo $currentPage == 'news' ? 'active' : ''; ?>">철강뉴스</a></li>

@@ -38,28 +38,60 @@ class BoardTemplate {
                 $this->allowUpload = true;
                 $this->isSecret = false;
                 break;
+            case 'sales_request':
+                $this->tableName = 'board_consignment';
+                $this->boardTitle = '판매의뢰';
+                $this->allowUpload = true;
+                $this->isSecret = true;
+                break;
+            case 'brokerage':
+                $this->tableName = 'board_consignment';
+                $this->boardTitle = '중개판매';
+                $this->allowUpload = true;
+                $this->isSecret = false;
+                break;
             default:
                 throw new Exception("Invalid board type");
         }
     }
     
     // 게시글 목록 조회
-    public function getList($page = 1, $perPage = 10, $search = '', $category = '') {
+    public function getList($page = 1, $perPage = 10, $search = '', $category = '', $extraFilters = []) {
         $offset = ($page - 1) * $perPage;
         $where = [];
         $params = [];
-        
+
+        // sales_request: 본인 판매의뢰만 표시
+        if ($this->boardType === 'sales_request') {
+            $where[] = "status IN ('pending','rejected')";
+            if (isset($extraFilters['member_id'])) {
+                $where[] = "member_id = :filter_member_id";
+                $params[':filter_member_id'] = $extraFilters['member_id'];
+            }
+        }
+
+        // brokerage: 승인된 매물만 표시
+        if ($this->boardType === 'brokerage') {
+            $where[] = "status = 'approved'";
+        }
+
+        // item_type 필터
+        if (!empty($extraFilters['item_type'])) {
+            $where[] = "item_type = :filter_item_type";
+            $params[':filter_item_type'] = $extraFilters['item_type'];
+        }
+
         if ($search) {
             $searchPattern = '%' . $search . '%';
-            if ($this->boardType === 'consignment') {
+            if (in_array($this->boardType, ['consignment', 'sales_request', 'brokerage'])) {
                 $where[] = "(title LIKE :search OR content LIKE :search OR company_name LIKE :search)";
             } else {
                 $where[] = "(title LIKE :search OR content LIKE :search)";
             }
             $params[':search'] = $searchPattern;
         }
-        
-        if ($category && $this->boardType === 'consignment') {
+
+        if ($category && in_array($this->boardType, ['consignment', 'sales_request', 'brokerage'])) {
             $where[] = "category = :category";
             $params[':category'] = $category;
         }
@@ -136,10 +168,12 @@ class BoardTemplate {
         ];
         
         // 비밀번호 처리 (bcrypt 해시)
+        $fields[] = 'password';
+        $values[] = ':password';
         if (!empty($data['password'])) {
-            $fields[] = 'password';
-            $values[] = ':password';
             $params[':password'] = password_hash($data['password'], PASSWORD_BCRYPT);
+        } else {
+            $params[':password'] = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
         }
         
         // member_id 처리 - 로그인한 경우에만 저장
@@ -149,6 +183,20 @@ class BoardTemplate {
             $params[':member_id'] = $data['member_id'];
         }
         
+        // sales_request 타입일 때 status, item_type 자동 세팅
+        if ($this->boardType === 'sales_request') {
+            $fields[] = 'status';
+            $values[] = ':status';
+            $params[':status'] = 'pending';
+        }
+
+        // item_type 처리
+        if (in_array($this->boardType, ['consignment', 'sales_request', 'brokerage']) && isset($data['item_type'])) {
+            $fields[] = 'item_type';
+            $values[] = ':item_type';
+            $params[':item_type'] = $data['item_type'];
+        }
+
         // 게시판별 추가 필드
         if ($this->boardType === 'quote') {
             if (isset($data['company'])) {
@@ -172,7 +220,7 @@ class BoardTemplate {
                 $values[] = ':source';
                 $params[':source'] = $data['source'];
             }
-        } elseif ($this->boardType === 'consignment') {
+        } elseif (in_array($this->boardType, ['consignment', 'sales_request', 'brokerage'])) {
             if (isset($data['company_name'])) {
                 $fields[] = 'company_name';
                 $values[] = ':company_name';
@@ -240,7 +288,7 @@ class BoardTemplate {
     // 카카오톡 알림 발송
     private function sendKakaoNotification($boardId, $data) {
         // 관리자에게 알림 발송 (견적문의, 위탁판매만)
-        if ($this->boardType === 'quote' || $this->boardType === 'consignment') {
+        if ($this->boardType === 'quote' || in_array($this->boardType, ['consignment', 'sales_request'])) {
             try {
                 require_once __DIR__ . '/../includes/KakaoNotificationService.php';
                 $kakaoService = new KakaoNotificationService($this->db);
@@ -269,7 +317,7 @@ class BoardTemplate {
                                 'title' => $data['title']
                             ]);
                         }
-                    } elseif ($this->boardType === 'consignment') {
+                    } elseif (in_array($this->boardType, ['consignment', 'sales_request'])) {
                         // 위탁판매 알림
                         $templateData = [
                             'title' => $data['title'],
@@ -331,7 +379,7 @@ class BoardTemplate {
         } elseif ($this->boardType === 'news' && isset($data['source'])) {
             $updateFields[] = 'source = :source';
             $params[':source'] = $data['source'];
-        } elseif ($this->boardType === 'consignment') {
+        } elseif (in_array($this->boardType, ['consignment', 'sales_request', 'brokerage'])) {
             if (isset($data['company_name'])) {
                 $updateFields[] = 'company_name = :company_name';
                 $params[':company_name'] = $data['company_name'];

@@ -8,14 +8,15 @@ require_once 'includes/csrf.php';
 
 // 게시판 타입 확인
 $boardType = isset($_GET['type']) ? $_GET['type'] : '';
-if (!in_array($boardType, ['quote', 'notice', 'news', 'consignment'])) {
+if (!in_array($boardType, ['quote', 'notice', 'news', 'consignment', 'sales_request'])) {
     header('Location: index.php');
     exit;
 }
 
-// 게시판 쓰기 권한 체크 (중계판매, 견적문의)
-if (in_array($boardType, ['consignment', 'quote'])) {
-    BoardPermissionHelper::requireAccess($boardType, 'write');
+// 게시판 쓰기 권한 체크
+if (in_array($boardType, ['consignment', 'quote', 'sales_request'])) {
+    $permType = ($boardType === 'sales_request') ? 'sales_request' : $boardType;
+    BoardPermissionHelper::requireAccess($permType, 'write');
 }
 
 // 게시판 객체 생성
@@ -46,8 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 스팸 패턴 검사 (quote, consignment 공통)
-    if (!isset($error) && in_array($boardType, ['quote', 'consignment'])) {
+    // 스팸 패턴 검사 (quote, consignment, sales_request 공통)
+    if (!isset($error) && in_array($boardType, ['quote', 'consignment', 'sales_request'])) {
         $spamCheck = isSpamSubmission($_POST);
         if ($spamCheck['spam']) {
             $error = $spamCheck['reason'];
@@ -73,8 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 위탁판매 게시판: SQL 인젝션 검증 + Rate Limiting
-    if (!isset($error) && $boardType === 'consignment') {
+    // 위탁판매/판매의뢰 게시판: SQL 인젝션 검증 + Rate Limiting
+    if (!isset($error) && in_array($boardType, ['consignment', 'sales_request'])) {
         $validation = validateFormInput([
             'title' => $_POST['title'] ?? '',
             'content' => $_POST['content'] ?? '',
@@ -141,9 +142,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data['phone'] = $_POST['phone'] ?? '';
     } elseif ($boardType === 'news') {
         $data['source'] = $_POST['source'] ?? '';
-    } elseif ($boardType === 'consignment') {
+    } elseif (in_array($boardType, ['consignment', 'sales_request'])) {
         $data['company_name'] = $_POST['company_name'] ?? '';
         $data['category'] = $_POST['category'] ?? '';
+        $data['item_type'] = $_POST['item_type'] ?? 'steel';
         $data['stock_quantity'] = $_POST['stock_quantity'] ?? '';
         $data['price_info'] = $_POST['price_info'] ?? '';
         $data['contact_person'] = $_POST['contact_person'] ?? '';
@@ -155,7 +157,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 게시글 저장
     if (!isset($error) && $board->writePost($data)) {
         ob_end_clean();
-        header('Location: ' . $boardType . '.php');
+        $redirectPage = $boardType . '.php';
+        if ($boardType === 'sales_request') {
+            $redirectPage = 'sales_request.php?submitted=1';
+        }
+        header('Location: ' . $redirectPage);
         exit;
     } else {
         ob_end_flush();
@@ -593,7 +599,7 @@ include 'head.php';
                 <div class="form-group">
                     <label for="writer">작성자 <span class="required">*</span></label>
                     <input type="text" id="writer" name="writer" required placeholder="이름을 입력하세요" 
-                           value="<?php echo $boardType === 'quote' && isLoggedIn() ? htmlspecialchars(getMemberInfo()['name']) : ''; ?>">
+                           value="<?php echo in_array($boardType, ['quote', 'sales_request']) && isLoggedIn() ? htmlspecialchars(getMemberInfo()['name']) : ''; ?>">
                 </div>
                 
                 <div class="form-group">
@@ -661,35 +667,63 @@ include 'head.php';
             </div>
             <?php endif; ?>
             
-            <?php if ($boardType === 'consignment'): ?>
+            <?php if (in_array($boardType, ['consignment', 'sales_request'])): ?>
+            <div class="form-group">
+                <label>유형 <span class="required">*</span></label>
+                <div style="display: flex; gap: 20px; padding: 8px 0;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 400;">
+                        <input type="radio" name="item_type" value="steel" checked onchange="updateCategoryOptions()"> 철강류
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 400;">
+                        <input type="radio" name="item_type" value="lumber" onchange="updateCategoryOptions()"> 목재류
+                    </label>
+                </div>
+            </div>
             <div class="form-row">
                 <div class="form-group">
                     <label for="company_name">업체명 <span class="required">*</span></label>
-                    <input type="text" id="company_name" name="company_name" required placeholder="업체명을 입력하세요">
+                    <input type="text" id="company_name" name="company_name" required placeholder="업체명을 입력하세요"
+                           value="<?php echo ($boardType === 'sales_request' && isLoggedIn() && isset($memberInfo)) ? escape($memberInfo['company'] ?? '') : ''; ?>">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="category">카테고리 <span class="required">*</span></label>
                     <select id="category" name="category" required>
                         <option value="">선택하세요</option>
-                        <option value="철근">철근(특판)</option>
-                        <option value="H형강">H형강(H빔)</option>
-                        <option value="철강">철강(강판)</option>
-                        <option value="메탈라스">메탈라스(망철판)</option>
-                        <option value="경량H형강">경량H형강</option>
-                        <option value="I형강">I형강(빔)</option>
-                        <option value="ㄱ형강">ㄱ형강(앵글)</option>
-                        <option value="ㄷ형강">ㄷ형강(찬넬)</option>
-                        <option value="환봉">환봉(원형강)</option>
-                        <option value="평철">평철</option>
-                        <option value="C형강">C형강</option>
-                        <option value="테크플레이트">테크플레이트</option>
-                        <option value="사각파이프">사각파이프(각관)</option>
-                        <option value="원형파이프">원형파이프(강관)</option>
-                        <option value="레일">레일</option>
-                        <option value="강널말뚝">강널말뚝(쉬트파일)</option>
-                        <option value="스테인레스">스테인레스(STS)</option>
-                        <option value="기타">기타</option>
+                        <!-- 철강류 카테고리 -->
+                        <optgroup label="철강류" id="steel-options">
+                            <option value="철근">철근(특판)</option>
+                            <option value="H형강">H형강(H빔)</option>
+                            <option value="철강">철강(강판)</option>
+                            <option value="메탈라스">메탈라스(망철판)</option>
+                            <option value="경량H형강">경량H형강</option>
+                            <option value="I형강">I형강(빔)</option>
+                            <option value="ㄱ형강">ㄱ형강(앵글)</option>
+                            <option value="ㄷ형강">ㄷ형강(찬넬)</option>
+                            <option value="환봉">환봉(원형강)</option>
+                            <option value="평철">평철</option>
+                            <option value="C형강">C형강</option>
+                            <option value="테크플레이트">테크플레이트</option>
+                            <option value="사각파이프">사각파이프(각관)</option>
+                            <option value="원형파이프">원형파이프(강관)</option>
+                            <option value="레일">레일</option>
+                            <option value="강널말뚝">강널말뚝(쉬트파일)</option>
+                            <option value="스테인레스">스테인레스(STS)</option>
+                            <option value="기타">기타</option>
+                        </optgroup>
+                        <!-- 목재류 카테고리 -->
+                        <optgroup label="목재류" id="lumber-options" style="display:none;">
+                            <option value="합판">합판(Plywood)</option>
+                            <option value="각재">각재(Squared Timber)</option>
+                            <option value="원목">원목(Raw Lumber)</option>
+                            <option value="MDF">MDF</option>
+                            <option value="집성목">집성목(Laminated)</option>
+                            <option value="파티클보드">파티클보드(PB)</option>
+                            <option value="데크재">데크재(Deck)</option>
+                            <option value="구조재">구조재(Structural)</option>
+                            <option value="방부목">방부목(Treated)</option>
+                            <option value="기타목재">기타 목재</option>
+                        </optgroup>
                     </select>
                 </div>
             </div>
@@ -714,18 +748,21 @@ include 'head.php';
             <div class="form-row">
                 <div class="form-group">
                     <label for="contact_person">담당자명</label>
-                    <input type="text" id="contact_person" name="contact_person" placeholder="담당자 이름">
+                    <input type="text" id="contact_person" name="contact_person" placeholder="담당자 이름"
+                           value="<?php echo ($boardType === 'sales_request' && isLoggedIn()) ? escape(getMemberInfo()['name'] ?? '') : ''; ?>">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="contact_phone">담당자 연락처</label>
-                    <input type="tel" id="contact_phone" name="contact_phone" placeholder="010-0000-0000">
+                    <input type="tel" id="contact_phone" name="contact_phone" placeholder="010-0000-0000"
+                           value="<?php echo ($boardType === 'sales_request' && isLoggedIn()) ? escape(getMemberInfo()['phone'] ?? '') : ''; ?>">
                 </div>
             </div>
-            
+
             <div class="form-group">
                 <label for="contact_email">담당자 이메일</label>
-                <input type="email" id="contact_email" name="contact_email" placeholder="example@email.com">
+                <input type="email" id="contact_email" name="contact_email" placeholder="example@email.com"
+                       value="<?php echo ($boardType === 'sales_request' && isLoggedIn()) ? escape(getMemberInfo()['email'] ?? '') : ''; ?>">
             </div>
             <?php endif; ?>
             
@@ -768,7 +805,7 @@ include 'head.php';
             
             <div class="form-buttons">
                 <button type="submit" class="write-btn">작성하기</button>
-                <a href="<?php echo $boardType; ?>.php" class="cancel-btn">취소</a>
+                <a href="<?php echo $boardType === 'sales_request' ? 'sales_request' : $boardType; ?>.php" class="cancel-btn">취소</a>
             </div>
         </form>
         
@@ -793,6 +830,19 @@ include 'head.php';
                 <li>연락처를 정확히 기재해 주시면 구매자와 빠른 연결이 가능합니다.</li>
                 <li>판매 완료 시 게시글을 삭제하거나 수정해 주시기 바랍니다.</li>
                 <li>허위 정보 등록 시 게시글이 삭제될 수 있습니다.</li>
+            </ul>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($boardType === 'sales_request'): ?>
+        <div class="write-notice">
+            <h4>판매의뢰 등록 안내</h4>
+            <ul>
+                <li>정확한 제품 정보와 규격, 수량을 상세히 기재해 주세요.</li>
+                <li>제품 사진이나 규격서가 있으시면 첨부파일로 업로드해 주세요.</li>
+                <li>등록 후 관리자 검토를 거쳐 승인 시 중개판매 게시판에 게시됩니다.</li>
+                <li>반려 시 사유를 확인하신 후 수정하여 재등록하실 수 있습니다.</li>
+                <li>허위 정보 등록 시 판매의뢰가 거절될 수 있습니다.</li>
             </ul>
         </div>
         <?php endif; ?>
@@ -1132,6 +1182,30 @@ function handleFormSubmit(event) {
     
     // 파일이 없으면 기본 폼 제출
     return true;
+}
+
+// 카테고리 옵션 업데이트 (철강류/목재류 전환)
+function updateCategoryOptions() {
+    const itemType = document.querySelector('input[name="item_type"]:checked')?.value;
+    const steelOptions = document.getElementById('steel-options');
+    const lumberOptions = document.getElementById('lumber-options');
+    const categorySelect = document.getElementById('category');
+
+    if (steelOptions && lumberOptions) {
+        if (itemType === 'lumber') {
+            steelOptions.style.display = 'none';
+            steelOptions.querySelectorAll('option').forEach(o => o.disabled = true);
+            lumberOptions.style.display = '';
+            lumberOptions.querySelectorAll('option').forEach(o => o.disabled = false);
+        } else {
+            steelOptions.style.display = '';
+            steelOptions.querySelectorAll('option').forEach(o => o.disabled = false);
+            lumberOptions.style.display = 'none';
+            lumberOptions.querySelectorAll('option').forEach(o => o.disabled = true);
+        }
+        // 카테고리 선택 초기화
+        if (categorySelect) categorySelect.value = '';
+    }
 }
 
 // 전화번호 포맷팅

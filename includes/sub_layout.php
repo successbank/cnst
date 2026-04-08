@@ -254,6 +254,7 @@ function myPageSidebar($current = '') {
             <a href="edit_profile.php" class="<?php echo $current == 'edit' ? 'active' : ''; ?>">정보수정</a>
             <a href="my_quote_cart.php" class="<?php echo $current == 'quote_cart' ? 'active' : ''; ?>">제품견적서</a>
             <a href="my_inquiries.php" class="<?php echo $current == 'inquiries' ? 'active' : ''; ?>">문의내역</a>
+            <a href="sales_request.php" class="<?php echo $current == 'sales_request' ? 'active' : ''; ?>">판매의뢰 내역</a>
             <a href="logout.php">로그아웃</a>
         </nav>
     </aside>
@@ -269,7 +270,8 @@ function customerSidebar($current = '') {
             <a href="notice.php" class="<?php echo $current == 'notice' ? 'active' : ''; ?>">공지사항</a>
             <a href="news.php" class="<?php echo $current == 'news' ? 'active' : ''; ?>">철강뉴스</a>
             <a href="quote.php" class="<?php echo $current == 'quote' ? 'active' : ''; ?>">견적문의</a>
-            <a href="consignment.php" class="<?php echo $current == 'consignment' ? 'active' : ''; ?>">중계판매</a>
+            <a href="brokerage.php" class="<?php echo $current == 'brokerage' ? 'active' : ''; ?>">중개판매</a>
+            <a href="sales_request.php" class="<?php echo $current == 'sales_request' ? 'active' : ''; ?>">판매의뢰</a>
             <a href="location.php" class="<?php echo $current == 'location' ? 'active' : ''; ?>">오시는길</a>
         </nav>
     </aside>
@@ -284,7 +286,7 @@ function productSidebar($current = '') {
         <nav class="sidebar-menu">
             <a href="sales.php" class="<?php echo $current == 'sales' ? 'active' : ''; ?>">판매제품</a>
             <a href="products.php" class="<?php echo $current == 'products' ? 'active' : ''; ?>">제품소개</a>
-            <a href="consignment.php" class="<?php echo $current == 'consignment' ? 'active' : ''; ?>">중계판매</a>
+            <a href="brokerage.php" class="<?php echo $current == 'brokerage' ? 'active' : ''; ?>">중개판매</a>
             <a href="quote.php" class="<?php echo $current == 'quote' ? 'active' : ''; ?>">견적문의</a>
         </nav>
     </aside>
@@ -302,7 +304,7 @@ function inquirySubmenu($current = 'all') {
         <span class="menu-divider">|</span>
         <a href="javascript:void(0)" onclick="toggleQuoteForm()" class="menu-action">견적문의 하기</a>
         <span class="menu-divider">|</span>
-        <a href="javascript:void(0)" onclick="toggleConsignmentForm()" class="menu-action">중계판매 신청</a>
+        <a href="javascript:void(0)" onclick="toggleConsignmentForm()" class="menu-action">판매의뢰 등록</a>
     </div>
     <?php
 }

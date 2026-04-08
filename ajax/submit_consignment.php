@@ -32,6 +32,7 @@ $member_id = $_SESSION['member_id'];
 // POST 데이터 받기
 $title = trim($_POST['title'] ?? '');
 $category = $_POST['category'] ?? '';
+$item_type = $_POST['item_type'] ?? 'steel';
 $company_name = trim($_POST['company_name'] ?? '');
 $stock_quantity = trim($_POST['stock_quantity'] ?? '');
 $price_info = trim($_POST['price_info'] ?? '');
@@ -76,21 +77,26 @@ if (!checkRateLimit('consignment_submit', 3, 60)) {
 }
 
 try {
-    // board_consignment 테이블에 저장
+    // item_type 검증
+    if (!in_array($item_type, ['steel', 'lumber'])) {
+        $item_type = 'steel';
+    }
+
+    // board_consignment 테이블에 저장 (status: pending = 판매의뢰 대기)
     $stmt = $pdo->prepare("
         INSERT INTO board_consignment (
-            title, content, writer, password, company_name, category, 
-            stock_quantity, price_info, contact_person, contact_phone, 
+            title, content, writer, member_id, password, company_name, category,
+            item_type, stock_quantity, price_info, contact_person, contact_phone,
             contact_email, location, status, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW())
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
     ");
-    
+
     // 임시 비밀번호 생성
     $temp_password = password_hash($user_id . time(), PASSWORD_DEFAULT);
-    
+
     $stmt->execute([
-        $title, $content, $user_id, $temp_password, $company_name, $category,
-        $stock_quantity, $price_info, $contact_person, $contact_phone,
+        $title, $content, $user_id, $member_id, $temp_password, $company_name, $category,
+        $item_type, $stock_quantity, $price_info, $contact_person, $contact_phone,
         $contact_email, $location
     ]);
     
@@ -126,8 +132,8 @@ try {
     }
     
     echo json_encode([
-        'success' => true, 
-        'message' => '중계판매 신청이 성공적으로 등록되었습니다.',
+        'success' => true,
+        'message' => '판매의뢰가 접수되었습니다. 관리자 승인 후 중개판매 게시판에 게시됩니다.',
         'id' => $insertId
     ]);
     

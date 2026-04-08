@@ -529,6 +529,7 @@ require_once 'admin_head.php';
     </div>
 
     <form action="admin_layer_popup_action.php" method="POST" enctype="multipart/form-data" class="form-container">
+        <?php echo csrfField(); ?>
         <?php if ($isEdit): ?>
         <input type="hidden" name="action" value="update">
         <input type="hidden" name="id" value="<?php echo $popup['id']; ?>">
