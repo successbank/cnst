@@ -27,13 +27,43 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $admin_id = $_POST['admin_id'] ?? '';
         $admin_pw = $_POST['admin_pw'] ?? '';
+        $client_ip = $_SERVER['REMOTE_ADDR'] ?? '';
 
         // DB 기반 관리자 인증
         try {
             $pdo = getDB();
-            $stmt = $pdo->prepare("SELECT id, username, password_hash, totp_enabled, totp_secret, totp_backup_codes FROM admin_users WHERE username = ?");
-            $stmt->execute([$admin_id]);
-            $admin = $stmt->fetch();
+
+            // [보안 2026-04-17 M-10] 계정+IP 조합 브루트포스 락아웃
+            // 정책: 동일 IP에서 동일 계정으로 15분 내 5회 이상 실패 시 일시 락아웃
+            // (계정 단위만 잠그면 공격자가 임의 계정을 DoS로 잠글 수 있어 IP 조합 사용)
+            $locked_out = false;
+            if ($admin_id !== '') {
+                $lockout_stmt = $pdo->prepare(
+                    "SELECT COUNT(*) FROM admin_login_logs
+                     WHERE admin_username = ?
+                       AND login_ip = ?
+                       AND login_status = 'failed'
+                       AND login_date > DATE_SUB(NOW(), INTERVAL 15 MINUTE)"
+                );
+                $lockout_stmt->execute([$admin_id, $client_ip]);
+                if ((int)$lockout_stmt->fetchColumn() >= 5) {
+                    $locked_out = true;
+                }
+            }
+
+            if ($locked_out) {
+                // 락아웃 상태의 시도 자체를 실패로 기록 (사후 분석용)
+                try {
+                    $log_stmt = $pdo->prepare("INSERT INTO admin_login_logs (admin_username, login_ip, user_agent, login_status) VALUES (?, ?, ?, 'failed')");
+                    $log_stmt->execute([$admin_id, $client_ip, $_SERVER['HTTP_USER_AGENT'] ?? '']);
+                } catch (Exception $e) { error_log("Admin login log error: " . $e->getMessage()); }
+                $error_msg = "반복된 로그인 실패로 해당 계정은 일시적으로 잠겼습니다. 15분 후 다시 시도해주세요.";
+                $admin = false; // 이후 인증 블록 건너뛰기
+            } else {
+                $stmt = $pdo->prepare("SELECT id, username, password_hash, totp_enabled, totp_secret, totp_backup_codes FROM admin_users WHERE username = ?");
+                $stmt->execute([$admin_id]);
+                $admin = $stmt->fetch();
+            }
 
             if ($admin && password_verify($admin_pw, $admin['password_hash'])) {
                 // 세션 고정 공격 방지
@@ -64,7 +94,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 header('Location: admin_index.php');
                 exit;
-            } else {
+            } elseif (!$locked_out) {
+                // 락아웃 분기에서는 이미 실패 로그와 error_msg를 기록했으므로 중복 기록 방지
                 $error_msg = "아이디 또는 비밀번호가 올바르지 않습니다.";
                 // [보안] 관리자 로그인 실패 로그 기록
                 try {
