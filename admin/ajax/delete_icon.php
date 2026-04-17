@@ -1,11 +1,19 @@
 <?php
 session_start();
 require_once '../../db.php';
+require_once '../../includes/csrf.php';
 
 // 관리자 권한 확인
 if (!isset($_SESSION['admin_id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => '인증되지 않은 요청입니다.']);
+    exit;
+}
+
+// [보안] CSRF 토큰 검증 (2026-04-17)
+if (!verifyCsrfToken(false)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'CSRF 토큰이 유효하지 않습니다.']);
     exit;
 }
 
