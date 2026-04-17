@@ -17,6 +17,13 @@ class SimpleWAF {
             return;
         }
 
+        // [보안 2026-04-17 감사] CLI/phpdbg(cron·관리 스크립트)는 HTTP 요청이 아니므로 검사 대상 아님
+        // - REQUEST_METHOD 미지정으로 인한 false-positive 차단 방지
+        // - backup_cron.php, log_cleanup_cron.php, security_monitor.php 등 정상 동작 보장
+        if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+            return;
+        }
+
         $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
         // 로컬/내부 IP는 자동 차단 대상에서 제외 (규칙 검사는 수행)
