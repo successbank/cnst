@@ -70,6 +70,11 @@ try {
         throw new Exception($result['error'] ?? '백업 데이터 생성 실패');
     }
 
+    // [보안 2026-04-17 감사 M-11] 백업 파일에 0600 권한 강제 (소유자 외 읽기 차단)
+    // - nginx /backups/ 블록과 더불어 파일시스템 레벨 방어 계층 추가
+    // - 컨테이너 공격으로 권한 상승 시 백업 평문 유출 위험 감소
+    @chmod($filepath, 0600);
+
     // 성공 기록
     $fileSize = filesize($filepath);
     $tablesCount = $result['tables_count'];

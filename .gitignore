@@ -45,6 +45,10 @@ Thumbs.db
 *.temp
 *.cache
 
+# Security audit rollback backups (2026-04-17)
+*.bak
+*.bak.*
+
 # YoYo AI version control directory
 .yoyo/
 

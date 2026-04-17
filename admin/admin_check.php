@@ -41,12 +41,21 @@ if ((time() - $sessionStartedAt) > $session_absolute_timeout) {
 // 활동 시 시간 갱신 (idle 용 - absolute는 갱신하지 않음)
 $_SESSION['admin_login_time'] = time();
 
-// [보안] 관리자 IP 제한 (빈 배열이면 비활성화)
-// 고정 IP 확보 후 아래 배열에 추가하여 활성화
-$allowed_ips = [];
+// [보안 2026-04-17 감사 M-6] 관리자 IP 화이트리스트 (환경변수 기반 옵션)
+// 설정 방법: docker-compose.yml의 php 서비스 environment에 ADMIN_ALLOWED_IPS 추가
+//   예) ADMIN_ALLOWED_IPS: "203.0.113.10,198.51.100.20"
+// 빈 값이면 비활성화되어 사용자 잠금 리스크 없음
+// 내부 네트워크(127.0.0.1, 172.x, 10.x)는 화이트리스트 여부와 무관하게 항상 허용
+// (컨테이너 내부 헬스체크/디버깅 차단 방지)
+$allowed_ips_raw = getenv('ADMIN_ALLOWED_IPS') ?: '';
+$allowed_ips = array_values(array_filter(array_map('trim', explode(',', $allowed_ips_raw))));
 if (!empty($allowed_ips)) {
     $client_ip = $_SERVER['REMOTE_ADDR'] ?? '';
-    if (!in_array($client_ip, $allowed_ips)) {
+    $isInternal = ($client_ip === '127.0.0.1' || $client_ip === '::1'
+                   || strpos($client_ip, '172.') === 0
+                   || strpos($client_ip, '10.') === 0);
+    if (!$isInternal && !in_array($client_ip, $allowed_ips, true)) {
+        error_log('admin_check.php: IP whitelist block for ' . $client_ip);
         session_destroy();
         http_response_code(403);
         die('접근이 허용되지 않은 IP입니다.');
