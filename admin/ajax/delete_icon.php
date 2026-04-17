@@ -43,18 +43,29 @@ try {
     $stmt = $pdo->prepare("DELETE FROM product_icons WHERE id = ?");
     $stmt->execute([$id]);
     
-    // 이미지 파일 삭제
-    if ($icon['icon_image'] && file_exists('../../' . $icon['icon_image'])) {
-        unlink('../../' . $icon['icon_image']);
+    // 이미지 파일 삭제 [보안 2026-04-17] 경로 탐색 방지 - uploads/ 하위로 제한
+    if ($icon['icon_image']) {
+        $uploadsBase = realpath(__DIR__ . '/../../uploads');
+        $targetPath = realpath(__DIR__ . '/../../' . $icon['icon_image']);
+        if ($uploadsBase !== false
+            && $targetPath !== false
+            && strpos($targetPath, $uploadsBase . DIRECTORY_SEPARATOR) === 0
+            && is_file($targetPath)) {
+            unlink($targetPath);
+        } else {
+            error_log("delete_icon.php: blocked unsafe unlink attempt for icon id={$id}, path=" . $icon['icon_image']);
+        }
     }
-    
+
     // 트랜잭션 커밋
     $pdo->commit();
-    
+
     echo json_encode(['success' => true, 'message' => '아이콘이 삭제되었습니다.']);
-    
+
 } catch (Exception $e) {
     // 트랜잭션 롤백
     $pdo->rollBack();
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    // [보안 2026-04-17] 내부 예외 메시지 노출 방지
+    error_log('delete_icon.php error: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => '아이콘 삭제 중 오류가 발생했습니다.']);
 }

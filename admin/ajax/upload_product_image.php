@@ -31,7 +31,8 @@ $file = $_FILES['image'];
 
 // 파일 유효성 검사
 $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-if (!in_array($file['type'], $allowed_types)) {
+// [보안 2026-04-17] 클라이언트 MIME ($file['type'])은 위조 가능 — 화이트리스트만 1차 체크
+if (!in_array($file['type'], $allowed_types, true)) {
     echo json_encode(['success' => false, 'message' => '허용되지 않은 파일 형식입니다.']);
     exit;
 }
@@ -39,7 +40,7 @@ if (!in_array($file['type'], $allowed_types)) {
 // H2: 확장자 화이트리스트 검증
 $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 $extCheck = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-if (!in_array($extCheck, $allowedExtensions)) {
+if (!in_array($extCheck, $allowedExtensions, true)) {
     echo json_encode(['success' => false, 'message' => '허용되지 않는 파일 확장자입니다.']);
     exit;
 }
@@ -51,16 +52,34 @@ if ($imgCheck === false) {
     exit;
 }
 
+// [보안 2026-04-17] H-2: finfo 기반 서버측 MIME 재검증 (magic bytes 기반)
+if (function_exists('finfo_open')) {
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $detectedMime = $finfo ? finfo_file($finfo, $file['tmp_name']) : false;
+    if ($finfo) finfo_close($finfo);
+    if (!$detectedMime || !in_array($detectedMime, $allowed_types, true)) {
+        error_log('upload_product_image: finfo MIME mismatch detected=' . var_export($detectedMime, true));
+        echo json_encode(['success' => false, 'message' => '파일 내용이 이미지 형식과 일치하지 않습니다.']);
+        exit;
+    }
+}
+
+// [보안 2026-04-17] H-2: getimagesize의 MIME 결과도 화이트리스트 검증 (3차)
+if (empty($imgCheck['mime']) || !in_array($imgCheck['mime'], $allowed_types, true)) {
+    echo json_encode(['success' => false, 'message' => '이미지 MIME 타입을 확인할 수 없습니다.']);
+    exit;
+}
+
 // 파일 크기 제한 (상향: 25MB)
 if ($file['size'] > 25 * 1024 * 1024) {
     echo json_encode(['success' => false, 'message' => '파일 크기는 25MB 이하여야 합니다.']);
     exit;
 }
 
-// 업로드 디렉토리 설정
+// 업로드 디렉토리 설정 [보안 2026-04-17] mkdir 0777 → 0755
 $upload_dir = dirname(dirname(__DIR__)) . '/uploads/products/';
 if (!is_dir($upload_dir)) {
-    if (!mkdir($upload_dir, 0777, true)) {
+    if (!mkdir($upload_dir, 0755, true)) {
         echo json_encode(['success' => false, 'message' => '업로드 디렉토리를 생성할 수 없습니다.']);
         exit;
     }
