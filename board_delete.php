@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'db.php';
+require_once 'includes/csrf.php';
 require_once 'board/board_template.php';
 
 // 게시판 타입과 ID 확인
@@ -24,7 +25,10 @@ if (!$post) {
 
 // POST 처리 (삭제)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
-    if ($board->checkPassword($id, $_POST['password'])) {
+    // [보안] CSRF 토큰 검증
+    if (!verifyCsrfToken(false)) {
+        $error = '잘못된 요청입니다. 페이지를 새로고침 후 다시 시도해주세요.';
+    } elseif ($board->checkPassword($id, $_POST['password'])) {
         // 첨부파일이 있으면 삭제
         if ($post['attachment']) {
             $filePath = 'uploads/' . $boardType . '/' . $post['attachment'];
@@ -296,6 +300,7 @@ include 'head.php';
             
             <!-- 삭제 폼 -->
             <form method="post" class="delete-form">
+                <?php echo csrfField(); ?>
                 <div class="form-group">
                     <label for="password">비밀번호</label>
                     <input type="password" id="password" name="password" placeholder="게시글 작성시 입력한 비밀번호" required autofocus>

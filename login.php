@@ -63,7 +63,17 @@ if(isset($_SESSION['member_id'])) {
 $error = '';
 $redirect = $_GET['redirect'] ?? 'index.php';
 // [보안] 오픈 리다이렉트 방지 - 내부 경로만 허용
-if (preg_match('/^https?:\/\//i', $redirect) || preg_match('/^\/\//i', $redirect)) {
+// 이중 인코딩 우회 방지: rawurldecode 반복으로 완전 디코딩 후 검증
+$decoded = $redirect;
+for ($i = 0; $i < 3 && strpos($decoded, '%') !== false; $i++) {
+    $decoded = rawurldecode($decoded);
+}
+// 외부 URL, 프로토콜 상대 URL, 백슬래시(\\evil.com 우회), 제어문자 차단
+if (preg_match('#^https?://#i', $decoded)
+    || preg_match('#^//#', $decoded)
+    || preg_match('#^[\\\\]#', $decoded)
+    || preg_match('#[\r\n\0]#', $decoded)
+    || !preg_match('#^[A-Za-z0-9_./?=&\-]+$#', $decoded)) {
     $redirect = 'index.php';
 }
 
@@ -179,8 +189,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                         error_log("Login log error: " . $e->getMessage());
                     }
                     
-                    // 리다이렉트
-                    header('Location: ' . urldecode($redirect));
+                    // 리다이렉트 - urldecode 제거 (이중 인코딩 우회 방지)
+                    header('Location: ' . $redirect);
                     exit;
                 } else {
                     $error = '정지된 계정입니다. 관리자에게 문의하세요.';
