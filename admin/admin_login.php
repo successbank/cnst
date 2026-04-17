@@ -91,6 +91,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['admin_id'] = $admin['username'];
                 $_SESSION['user_role'] = 'admin';
                 $_SESSION['admin_login_time'] = time();
+                // [보안 2026-04-17 M-5] Absolute 타임아웃 기준 - 이후 활동에도 갱신되지 않음
+                $_SESSION['admin_session_started'] = time();
 
                 header('Location: admin_index.php');
                 exit;

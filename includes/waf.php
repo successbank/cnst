@@ -43,6 +43,87 @@ class SimpleWAF {
         self::checkUserAgent();
         self::checkQueryString();
         self::checkRequestHeaders();
+        self::checkRequestBody();
+    }
+
+    /**
+     * [보안 2026-04-17 감사 H-6] POST 본문 검사
+     * - form-urlencoded: $_POST 배열 재귀 스캔
+     * - application/json: 원본 본문 최대 1MB까지 스캔
+     * - multipart/form-data (파일 업로드)는 대상 아님 (콘텐츠 스캔 아닌 업로드 검증은 별도 레이어)
+     *
+     * false-positive 최소화를 위해 게시글 본문에 자연스럽게 등장할 수 있는
+     * `<script>`, `javascript:`, `on*=` 같은 XSS 일반 패턴은 포함하지 않음.
+     * XSS는 출력 시 이스케이프(htmlspecialchars)로 방어하고 WAF는 최후 방어.
+     */
+    private static function checkRequestBody(): void {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            return;
+        }
+
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+        // 파일 업로드는 본문 스캔 대상이 아님 (별도 업로드 검증 레이어에서 처리)
+        if (stripos($contentType, 'multipart/form-data') !== false) {
+            return;
+        }
+
+        // form-urlencoded: 파싱된 $_POST 재귀 검사
+        if (!empty($_POST)) {
+            self::scanArrayValues($_POST);
+        }
+
+        // application/json: 원본 본문 스캔 (1MB 제한 - 대용량 페이로드로 인한 메모리/CPU 부하 방지)
+        if (stripos($contentType, 'application/json') !== false) {
+            $raw = @file_get_contents('php://input', false, null, 0, 1048576);
+            if (is_string($raw) && $raw !== '') {
+                self::scanBodyString($raw, 'json');
+            }
+        }
+    }
+
+    /**
+     * $_POST 같은 배열을 재귀적으로 순회하며 문자열 값 검사
+     */
+    private static function scanArrayValues(array $arr, string $prefix = ''): void {
+        foreach ($arr as $k => $v) {
+            $path = $prefix === '' ? (string)$k : $prefix . '.' . $k;
+            if (is_array($v)) {
+                self::scanArrayValues($v, $path);
+            } elseif (is_string($v)) {
+                self::scanBodyString($v, $path);
+            }
+        }
+    }
+
+    /**
+     * 본문 문자열에 대한 엄격한 SQLi/쉘 실행 패턴 검사
+     * 차단 패턴만 명시 — 일반 텍스트에 드물게 등장하는 것만 포함
+     */
+    private static function scanBodyString(string $s, string $location): void {
+        // null byte
+        if (strpos($s, "\0") !== false) {
+            self::block('Null byte in POST body field: ' . substr($location, 0, 80));
+            return;
+        }
+
+        $patterns = [
+            '/\bUNION\s+(ALL\s+)?SELECT\b/i',           // UNION 기반 SQLi
+            '/\bBENCHMARK\s*\(/i',                      // MySQL 시간 기반
+            '/\bSLEEP\s*\(\s*\d+\s*\)/i',               // 블라인드 시간 기반
+            '/\bLOAD_FILE\s*\(/i',                      // 파일 읽기 SQLi
+            '/\bINTO\s+(OUT|DUMP)FILE\b/i',             // 파일 쓰기 SQLi
+            '/\bWAITFOR\s+DELAY\b/i',                   // MSSQL 시간 기반
+            '/\bxp_cmdshell\b/i',                       // MSSQL 셸 실행
+            '/(\'|")\s*(OR|AND)\s+\d+\s*[=<>]\s*\d+/i', // '1'='1 계열 동등 비교
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $s)) {
+                self::block('Suspicious POST body at ' . substr($location, 0, 80));
+                return;
+            }
+        }
     }
 
     /**

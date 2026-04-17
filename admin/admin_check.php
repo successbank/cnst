@@ -18,14 +18,27 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit;
 }
 
-// M2: 세션 타임아웃 (30분)
-$session_timeout = 1800;
-if (isset($_SESSION['admin_login_time']) && (time() - $_SESSION['admin_login_time']) > $session_timeout) {
+// M2: 세션 Idle 타임아웃 (30분) - 활동 없이 30분 경과 시 만료
+$session_idle_timeout = 1800;
+if (isset($_SESSION['admin_login_time']) && (time() - $_SESSION['admin_login_time']) > $session_idle_timeout) {
     session_destroy();
     header('Location: admin_login.php?msg=timeout');
     exit;
 }
-// 활동 시 시간 갱신
+
+// [보안 2026-04-17 감사 M-5] 세션 Absolute 타임아웃 (8시간)
+// 활동 여부와 무관하게 로그인 후 8시간 경과 시 강제 재인증
+// - 장시간 방치된 세션 토큰 탈취 시 피해 시간 제한
+// - 기존 세션에 admin_session_started가 없으면 admin_login_time을 사용해 fallback
+$session_absolute_timeout = 8 * 3600;
+$sessionStartedAt = $_SESSION['admin_session_started'] ?? $_SESSION['admin_login_time'] ?? time();
+if ((time() - $sessionStartedAt) > $session_absolute_timeout) {
+    session_destroy();
+    header('Location: admin_login.php?msg=timeout');
+    exit;
+}
+
+// 활동 시 시간 갱신 (idle 용 - absolute는 갱신하지 않음)
 $_SESSION['admin_login_time'] = time();
 
 // [보안] 관리자 IP 제한 (빈 배열이면 비활성화)
