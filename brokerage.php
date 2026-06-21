@@ -73,6 +73,11 @@ $extraFilters = [];
 if ($item_type) {
     $extraFilters['item_type'] = $item_type;
 }
+// 관리자가 아니면 본인이 작성한 매물만 표시 (admin은 전체 열람)
+if (BoardPermissionHelper::getCurrentRole() !== 'admin') {
+    $extraFilters['member_id'] = $_SESSION['member_id'] ?? 0;
+    $extraFilters['writer']    = $_SESSION['member_name'] ?? '';
+}
 $result = $board->getList($page, 10, $search, $category, $extraFilters);
 $posts = $result['list'];
 $pagination = $result['pagination'];

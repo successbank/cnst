@@ -52,15 +52,20 @@ if ($boardType === 'sales_request') {
         exit;
     }
 }
-// 중개판매 - 승인된 건만 공개
+// 중개판매 - 관리자는 전체, 그 외에는 본인이 작성한 승인 매물만 열람
 elseif ($boardType === 'brokerage') {
-    if (isAdmin()) {
-        $canView = true;
-    } elseif ($post['status'] === 'approved') {
+    if (BoardPermissionHelper::getCurrentRole() === 'admin') {
         $canView = true;
     } else {
-        header('Location: brokerage.php');
-        exit;
+        $memberName = $_SESSION['member_name'] ?? '';
+        $isOwner = (!empty($post['member_id']) && $post['member_id'] == ($_SESSION['member_id'] ?? 0))
+                || (!empty($post['writer']) && $memberName !== '' && $post['writer'] === $memberName);
+        if ($isOwner && $post['status'] === 'approved') {
+            $canView = true;
+        } else {
+            header('Location: brokerage.php');
+            exit;
+        }
     }
 }
 // 중계판매 게시판의 경우 - 본인과 관리자만 볼 수 있음
