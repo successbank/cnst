@@ -17,7 +17,7 @@ $currentFile = 'admin_board_permissions.php';
 include 'admin_head.php';
 
 $boardTypes = [
-    'consignment' => '중계판매',
+    'brokerage' => '중계판매',
     'quote' => '견적문의'
 ];
 $roles = [

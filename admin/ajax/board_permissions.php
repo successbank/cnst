@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // 허용 board_type / role_code / action_code 검증
-            $validBoards = ['consignment', 'quote'];
+            $validBoards = ['consignment', 'quote', 'brokerage'];
             $validRoles = ['guest', 'normal', 'silver', 'gold', 'vip', 'admin'];
             $validActions = ['list', 'read', 'write', 'comment'];
 
