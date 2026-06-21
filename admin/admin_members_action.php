@@ -23,16 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $action = $_POST['action'] ?? '';
 
-/**
- * CSRF 토큰 검증
- */
-function verifyCsrfToken() {
-    $token = $_POST['csrf_token'] ?? '';
-    if (empty($token) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
-        return false;
-    }
-    return true;
-}
+// CSRF 검증은 admin_check.php가 모든 POST에 대해 전역(includes/csrf.php verifyCsrfToken)으로 수행한다.
+// 과거 이 파일에 로컬 verifyCsrfToken()를 재정의해 "Cannot redeclare" fatal(HTTP 500)이 발생했으므로 제거함.
+// 핸들러 내부의 verifyCsrfToken() 호출은 includes/csrf.php의 공용 함수로 해석된다.
 
 /**
  * 비교할 회원 필드 목록

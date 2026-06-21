@@ -3,11 +3,7 @@
 session_start();
 require_once '../db.php';
 require_once 'admin_check.php';
-
-// CSRF 토큰 생성 (없으면)
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+// CSRF 토큰은 admin_check.php → includes/csrf.php가 생성/관리한다. 폼에는 csrfField()로 출력.
 
 $pageTitle = '회원 추가';
 
@@ -175,7 +171,7 @@ if (isset($_SESSION['error_message'])) {
 <div class="form-container">
     <form method="POST" action="admin_members_action.php" id="add-member-form">
         <input type="hidden" name="action" value="add_member">
-        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+        <?php echo csrfField(); ?>
 
         <div class="form-row">
             <div class="form-group">
