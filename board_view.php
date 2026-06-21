@@ -57,13 +57,14 @@ elseif ($boardType === 'brokerage') {
     if (BoardPermissionHelper::getCurrentRole() === 'admin') {
         $canView = true;
     } else {
-        $memberName = $_SESSION['member_name'] ?? '';
-        $isOwner = (!empty($post['member_id']) && $post['member_id'] == ($_SESSION['member_id'] ?? 0))
-                || (!empty($post['writer']) && $memberName !== '' && $post['writer'] === $memberName);
+        $isOwner = (!empty($post['member_id']) && $post['member_id'] == ($_SESSION['member_id'] ?? 0));
         if ($isOwner && $post['status'] === 'approved') {
             $canView = true;
         } else {
-            header('Location: brokerage.php');
+            // 본인 글이 아니면 안내 후 목록으로
+            header('Content-Type: text/html; charset=utf-8');
+            echo "<script>alert('자신이 쓴 글만 볼 수 있습니다.');location.replace('brokerage.php');</script>";
+            echo "<noscript><meta http-equiv='refresh' content='0;url=brokerage.php'></noscript>";
             exit;
         }
     }

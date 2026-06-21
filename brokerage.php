@@ -8,7 +8,7 @@ require_once 'includes/BoardPermissionHelper.php';
 BoardPermissionHelper::requireAccess('brokerage', 'list');
 
 $currentPage = 'brokerage';
-$pageTitle = '중개판매';
+$pageTitle = '판매의뢰';
 $additionalCSS = ['css/board-style.css'];
 include 'head.php';
 
@@ -73,10 +73,9 @@ $extraFilters = [];
 if ($item_type) {
     $extraFilters['item_type'] = $item_type;
 }
-// 관리자가 아니면 본인이 작성한 매물만 표시 (admin은 전체 열람)
+// 관리자가 아니면: 기존(작성자 미연결) 매물 + 본인이 작성한 매물만 표시 (admin은 전체 열람)
 if (BoardPermissionHelper::getCurrentRole() !== 'admin') {
     $extraFilters['member_id'] = $_SESSION['member_id'] ?? 0;
-    $extraFilters['writer']    = $_SESSION['member_name'] ?? '';
 }
 $result = $board->getList($page, 10, $search, $category, $extraFilters);
 $posts = $result['list'];
@@ -235,8 +234,8 @@ function maskTitle($title) {
 </style>
 
 <div class="page-header">
-    <h2>중개판매</h2>
-    <p>업체들로부터 의뢰받은 자재들의 중개판매 정보를 제공합니다.</p>
+    <h2>판매의뢰</h2>
+    <p>업체들로부터 의뢰받은 자재들의 판매의뢰 정보를 제공합니다.</p>
 </div>
 
 <section class="board-section">
@@ -299,7 +298,7 @@ function maskTitle($title) {
                 <?php if (empty($posts)): ?>
                 <tr>
                     <td colspan="8" class="empty-state">
-                        등록된 중개판매 정보가 없습니다.
+                        등록된 판매의뢰 정보가 없습니다.
                     </td>
                 </tr>
                 <?php else: ?>

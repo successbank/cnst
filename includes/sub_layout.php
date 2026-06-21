@@ -270,8 +270,7 @@ function customerSidebar($current = '') {
             <a href="notice.php" class="<?php echo $current == 'notice' ? 'active' : ''; ?>">공지사항</a>
             <a href="news.php" class="<?php echo $current == 'news' ? 'active' : ''; ?>">철강뉴스</a>
             <a href="quote.php" class="<?php echo $current == 'quote' ? 'active' : ''; ?>">견적문의</a>
-            <a href="brokerage.php" class="<?php echo $current == 'brokerage' ? 'active' : ''; ?>">중개판매</a>
-            <a href="sales_request.php" class="<?php echo $current == 'sales_request' ? 'active' : ''; ?>">판매의뢰</a>
+            <a href="brokerage.php" class="<?php echo $current == 'brokerage' ? 'active' : ''; ?>">판매의뢰</a>
             <a href="location.php" class="<?php echo $current == 'location' ? 'active' : ''; ?>">오시는길</a>
         </nav>
     </aside>
@@ -286,7 +285,6 @@ function productSidebar($current = '') {
         <nav class="sidebar-menu">
             <a href="sales.php" class="<?php echo $current == 'sales' ? 'active' : ''; ?>">판매제품</a>
             <a href="products.php" class="<?php echo $current == 'products' ? 'active' : ''; ?>">제품소개</a>
-            <a href="brokerage.php" class="<?php echo $current == 'brokerage' ? 'active' : ''; ?>">중개판매</a>
             <a href="quote.php" class="<?php echo $current == 'quote' ? 'active' : ''; ?>">견적문의</a>
         </nav>
     </aside>

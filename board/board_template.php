@@ -73,11 +73,10 @@ class BoardTemplate {
         // brokerage: 승인된 매물만 표시
         if ($this->boardType === 'brokerage') {
             $where[] = "status = 'approved'";
-            // 비관리자: 본인 작성분만 (호출측에서 member_id/writer 전달, 관리자는 미전달=전체)
+            // 비관리자: 작성자 미연결(기존) 매물은 공개 + 본인 작성분만 (관리자는 미전달=전체)
             if (isset($extraFilters['member_id'])) {
-                $where[] = "(member_id = :filter_member_id OR writer = :filter_writer)";
+                $where[] = "(member_id IS NULL OR member_id = :filter_member_id)";
                 $params[':filter_member_id'] = $extraFilters['member_id'];
-                $params[':filter_writer'] = $extraFilters['writer'] ?? '';
             }
         }
 
