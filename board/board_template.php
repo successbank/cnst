@@ -292,53 +292,13 @@ class BoardTemplate {
     
     // 카카오톡 알림 발송
     private function sendKakaoNotification($boardId, $data) {
-        // 관리자에게 알림 발송 (견적문의, 위탁판매만)
+        // 작성 시 회원+사업자 알림 (견적문의, 판매의뢰만). 수신자 결정 로직은 KakaoNotificationService에 중앙화.
         if ($this->boardType === 'quote' || in_array($this->boardType, ['consignment', 'sales_request'])) {
             try {
                 require_once __DIR__ . '/../includes/KakaoNotificationService.php';
                 $kakaoService = new KakaoNotificationService($this->db);
-                
-                // 관리자 정보 조회
-                $adminStmt = $this->db->prepare("SELECT phone FROM members WHERE is_admin = 1 AND phone IS NOT NULL LIMIT 1");
-                $adminStmt->execute();
-                $admin = $adminStmt->fetch();
-                
-                if ($admin && $admin['phone']) {
-                    $adminPhone = $admin['phone'];
-                    $adminName = '관리자';
-                    
-                    if ($this->boardType === 'quote') {
-                        // 견적문의 알림
-                        $templateData = [
-                            'title' => $data['title'],
-                            'writer' => $data['writer'],
-                            'company' => $data['company'] ?? ''
-                        ];
-                        $kakaoService->sendNotification('quote', $boardId, $adminPhone, $adminName, 'QUOTE_NEW', $templateData);
-                        
-                        // 작성자에게도 알림 발송 (접수 확인)
-                        if (!empty($data['phone'])) {
-                            $kakaoService->sendNotification('quote', $boardId, $data['phone'], $data['writer'], 'QUOTE_RECEIVED', [
-                                'title' => $data['title']
-                            ]);
-                        }
-                    } elseif (in_array($this->boardType, ['consignment', 'sales_request'])) {
-                        // 위탁판매 알림
-                        $templateData = [
-                            'title' => $data['title'],
-                            'company_name' => $data['company_name'] ?? '',
-                            'category' => $data['category'] ?? ''
-                        ];
-                        $kakaoService->sendNotification('consignment', $boardId, $adminPhone, $adminName, 'CONSIGN_NEW', $templateData);
-                        
-                        // 작성자에게도 알림 발송 (등록 확인)
-                        if (!empty($data['contact_phone'])) {
-                            $kakaoService->sendNotification('consignment', $boardId, $data['contact_phone'], $data['contact_person'] ?? $data['writer'], 'CONSIGN_RECEIVED', [
-                                'title' => $data['title']
-                            ]);
-                        }
-                    }
-                }
+                $notifyType = ($this->boardType === 'quote') ? 'quote' : 'consignment';
+                $kakaoService->notifyBoardCreated($notifyType, $boardId, $data);
             } catch (Exception $e) {
                 // 알림 발송 실패시 로그만 남기고 게시글 등록은 계속 진행
                 error_log("카카오톡 알림 발송 실패: " . $e->getMessage());

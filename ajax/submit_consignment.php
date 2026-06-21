@@ -102,33 +102,21 @@ try {
     
     $insertId = $pdo->lastInsertId();
     
-    // 카카오톡 알림 발송 (필요시)
+    // 카카오톡 알림 발송 (회원+사업자) - 중앙 헬퍼 사용
     try {
         require_once '../includes/KakaoNotificationService.php';
         $kakaoService = new KakaoNotificationService($pdo);
-        
-        // 관리자에게 알림
-        $adminStmt = $pdo->prepare("SELECT phone FROM members WHERE is_admin = 1 AND phone IS NOT NULL LIMIT 1");
-        $adminStmt->execute();
-        $admin = $adminStmt->fetch();
-        
-        if ($admin && $admin['phone']) {
-            $templateData = [
-                'title' => $title,
-                'company_name' => $company_name,
-                'category' => $category
-            ];
-            $kakaoService->sendNotification('consignment', $insertId, $admin['phone'], '관리자', 'CONSIGN_NEW', $templateData);
-        }
-        
-        // 작성자에게 등록 확인 알림
-        if ($contact_phone) {
-            $kakaoService->sendNotification('consignment', $insertId, $contact_phone, $contact_person, 'CONSIGN_RECEIVED', [
-                'title' => $title
-            ]);
-        }
+        $kakaoService->notifyBoardCreated('consignment', $insertId, [
+            'member_id'      => $member_id ?? null,
+            'title'          => $title,
+            'company_name'   => $company_name,
+            'category'       => $category,
+            'contact_person' => $contact_person,
+            'contact_phone'  => $contact_phone,
+            'writer'         => $user_id ?? ($contact_person ?? '')
+        ]);
     } catch (Exception $e) {
-        // 알림 실패는 무시
+        // 알림 실패는 무시 (등록은 계속)
     }
     
     echo json_encode([

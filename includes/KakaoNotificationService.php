@@ -7,7 +7,68 @@ class KakaoNotificationService {
     public function __construct($pdo) {
         $this->pdo = $pdo;
     }
-    
+
+    /**
+     * 사업자(채널) 알림 수신번호: 설정값(KAKAO_ADMIN_PHONE) 우선 → is_admin 회원 폰 fallback
+     */
+    private function getAdminPhone() {
+        if (defined('KAKAO_ADMIN_PHONE') && trim(KAKAO_ADMIN_PHONE) !== '') {
+            return KAKAO_ADMIN_PHONE;
+        }
+        try {
+            $st = $this->pdo->prepare("SELECT phone FROM members WHERE is_admin = 1 AND phone IS NOT NULL AND phone <> '' LIMIT 1");
+            $st->execute();
+            return $st->fetchColumn() ?: null;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * 게시글 작성 시 알림 발송 (회원 + 사업자) - 판매의뢰/견적 공통 진입점
+     * @param string $boardType 'quote' | 'consignment'  (sales_request는 consignment로 매핑해 전달)
+     * @param int    $boardId
+     * @param array  $row 작성 데이터(member_id, phone/contact_phone, writer, company/company_name, category, contact_person)
+     */
+    public function notifyBoardCreated($boardType, $boardId, $row) {
+        try {
+            $adminPhone = $this->getAdminPhone();
+
+            // 회원 수신번호: 가입 등록번호(members.phone) 우선 → 작성폼 연락처 fallback
+            $memberPhone = null;
+            if (!empty($row['member_id'])) {
+                $st = $this->pdo->prepare("SELECT phone FROM members WHERE id = ?");
+                $st->execute([$row['member_id']]);
+                $memberPhone = $st->fetchColumn() ?: null;
+            }
+
+            if ($boardType === 'quote') {
+                $memberPhone = $memberPhone ?: ($row['phone'] ?? '');
+                $memberName = $row['writer'] ?? '';
+                $data = [
+                    'title'   => $row['title'] ?? '',
+                    'writer'  => $row['writer'] ?? '',
+                    'company' => $row['company'] ?? ''
+                ];
+                if ($adminPhone)  $this->sendNotification('quote', $boardId, $adminPhone, '관리자', 'QUOTE_NEW', $data);
+                if ($memberPhone) $this->sendNotification('quote', $boardId, $memberPhone, $memberName, 'QUOTE_RECEIVED', $data);
+            } else { // consignment / sales_request
+                $memberPhone = $memberPhone ?: ($row['contact_phone'] ?? '');
+                $memberName = $row['contact_person'] ?? ($row['writer'] ?? '');
+                $data = [
+                    'title'        => $row['title'] ?? '',
+                    'company_name' => $row['company_name'] ?? '',
+                    'category'     => $row['category'] ?? '',
+                    'contact_person' => $memberName
+                ];
+                if ($adminPhone)  $this->sendNotification('consignment', $boardId, $adminPhone, '관리자', 'CONSIGN_NEW', $data);
+                if ($memberPhone) $this->sendNotification('consignment', $boardId, $memberPhone, $memberName, 'CONSIGN_RECEIVED', $data);
+            }
+        } catch (Exception $e) {
+            error_log("notifyBoardCreated 실패: " . $e->getMessage());
+        }
+    }
+
     /**
      * 카카오톡 알림 발송
      */

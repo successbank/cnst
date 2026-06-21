@@ -38,6 +38,7 @@ if (!defined('KAKAO_API_KEY')) {
     define('KAKAO_NOTIFICATION_ENABLED', ($kakaoSettings['kakao_notification_enabled'] ?? '0') === '1');
     define('KAKAO_TEST_MODE', ($kakaoSettings['kakao_test_mode'] ?? '1') === '1');
     define('KAKAO_TEST_PHONE', $kakaoSettings['kakao_test_phone'] ?? '');
+    define('KAKAO_ADMIN_PHONE', $kakaoSettings['kakao_admin_phone'] ?? '');
     define('KAKAO_DAILY_LIMIT', (int)($kakaoSettings['kakao_daily_limit'] ?? 1000));
     define('KAKAO_RETRY_COUNT', (int)($kakaoSettings['kakao_retry_count'] ?? 3));
 }

@@ -159,6 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'kakao_api_secret' => trim($_POST['api_secret'] ?? ''),
             'kakao_sender_key' => trim($_POST['sender_key'] ?? ''),
             'kakao_channel_id' => trim($_POST['channel_id'] ?? ''),
+            'kakao_admin_phone' => trim($_POST['admin_phone'] ?? ''),
             'kakao_notification_enabled' => ($_POST['enabled'] ?? '0') === '1' ? '1' : '0',
             'kakao_test_mode' => ($_POST['test_mode'] ?? '0') === '1' ? '1' : '0',
             'kakao_test_phone' => trim($_POST['test_phone'] ?? ''),
@@ -232,6 +233,12 @@ $templates = $stmt->fetchAll();
                     <label>카카오톡 채널 ID</label>
                     <input type="text" name="channel_id" value="<?php echo KAKAO_CHANNEL_ID; ?>">
                     <div class="help-text">@ 포함하여 입력 (예: @chungnamsteel)</div>
+                </div>
+
+                <div class="form-group">
+                    <label>사업자 알림 수신번호 (채널)</label>
+                    <input type="text" name="admin_phone" value="<?php echo defined('KAKAO_ADMIN_PHONE') ? htmlspecialchars(KAKAO_ADMIN_PHONE) : ''; ?>" placeholder="010-0000-0000">
+                    <div class="help-text">판매의뢰·견적 작성 시 사업자(채널)가 받을 휴대폰 번호. 비우면 관리자 회원(is_admin) 번호로 발송됩니다.</div>
                 </div>
             </div>
             
