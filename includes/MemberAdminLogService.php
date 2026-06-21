@@ -85,10 +85,10 @@ class MemberAdminLogService {
             $stmt = $this->pdo->prepare("
                 SELECT
                     l.*,
-                    m.name AS admin_name,
-                    m.user_id AS admin_user_id
+                    a.username AS admin_name,
+                    a.username AS admin_user_id
                 FROM member_admin_logs l
-                LEFT JOIN members m ON l.admin_id = m.id
+                LEFT JOIN admin_users a ON l.admin_id = a.id
                 WHERE l.target_member_id = ?
                 ORDER BY l.created_at DESC
                 LIMIT {$limit}
@@ -137,7 +137,7 @@ class MemberAdminLogService {
 
             if (!empty($filters['search'])) {
                 $search = '%' . $filters['search'] . '%';
-                $where[] = "(l.description LIKE ? OR tm.name LIKE ? OR tm.user_id LIKE ? OR am.name LIKE ?)";
+                $where[] = "(l.description LIKE ? OR tm.name LIKE ? OR tm.user_id LIKE ? OR am.username LIKE ?)";
                 $params = array_merge($params, [$search, $search, $search, $search]);
             }
 
@@ -147,7 +147,7 @@ class MemberAdminLogService {
             $countSql = "
                 SELECT COUNT(*) FROM member_admin_logs l
                 LEFT JOIN members tm ON l.target_member_id = tm.id
-                LEFT JOIN members am ON l.admin_id = am.id
+                LEFT JOIN admin_users am ON l.admin_id = am.id
                 $whereClause
             ";
             $stmt = $this->pdo->prepare($countSql);
@@ -160,11 +160,11 @@ class MemberAdminLogService {
                     l.*,
                     tm.name AS target_name,
                     tm.user_id AS target_user_id,
-                    am.name AS admin_name,
-                    am.user_id AS admin_user_id
+                    am.username AS admin_name,
+                    am.username AS admin_user_id
                 FROM member_admin_logs l
                 LEFT JOIN members tm ON l.target_member_id = tm.id
-                LEFT JOIN members am ON l.admin_id = am.id
+                LEFT JOIN admin_users am ON l.admin_id = am.id
                 $whereClause
                 ORDER BY l.created_at DESC
                 LIMIT $perPage OFFSET $offset

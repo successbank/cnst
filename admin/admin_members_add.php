@@ -4,6 +4,11 @@ session_start();
 require_once '../db.php';
 require_once 'admin_check.php';
 
+// CSRF 토큰 생성 (없으면)
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $pageTitle = '회원 추가';
 
 // 추가 스타일 정의
@@ -170,7 +175,8 @@ if (isset($_SESSION['error_message'])) {
 <div class="form-container">
     <form method="POST" action="admin_members_action.php" id="add-member-form">
         <input type="hidden" name="action" value="add_member">
-        
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+
         <div class="form-row">
             <div class="form-group">
                 <label>아이디 <span class="required">*</span></label>
@@ -296,14 +302,6 @@ if (isset($_SESSION['error_message'])) {
                     <label for="is_active">계정 활성화</label>
                 </div>
                 <div class="help-text">체크 해제 시 로그인이 제한됩니다.</div>
-            </div>
-            
-            <div class="form-group">
-                <div class="checkbox-group">
-                    <input type="checkbox" name="is_admin" id="is_admin" value="1">
-                    <label for="is_admin">관리자 권한 부여</label>
-                </div>
-                <div class="help-text">관리자 페이지 접근 권한을 부여합니다.</div>
             </div>
         </div>
         

@@ -7,8 +7,13 @@ require_once '../includes/MemberAdminLogService.php';
 // 로그 서비스 초기화
 $logService = new MemberAdminLogService($pdo);
 
-// 관리자 ID 가져오기
-$admin_id = $_SESSION['admin_id'] ?? 0;
+// 관리자 ID 가져오기 ($_SESSION['admin_id']에는 username이 저장됨 → admin_users.id 조회)
+$admin_id = 0;
+if (!empty($_SESSION['admin_id'])) {
+    $stmtAdmin = $pdo->prepare("SELECT id FROM admin_users WHERE username = ?");
+    $stmtAdmin->execute([$_SESSION['admin_id']]);
+    $admin_id = (int)($stmtAdmin->fetchColumn() ?: 0);
+}
 
 // POST 요청만 처리
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -504,6 +509,13 @@ if ($action === 'add_memo') {
 // 회원 추가 처리
 // =========================================
 if ($action === 'add_member') {
+    // CSRF 토큰 검증
+    if (!verifyCsrfToken()) {
+        $_SESSION['error_message'] = '보안 토큰이 유효하지 않습니다. 페이지를 새로고침해주세요.';
+        header('Location: admin_members_add.php');
+        exit;
+    }
+
     $user_id = trim($_POST['user_id'] ?? '');
     $password = $_POST['password'] ?? '';
     $name = trim($_POST['name'] ?? '');
@@ -518,7 +530,8 @@ if ($action === 'add_member') {
     $position = trim($_POST['position'] ?? '');
     $memo = trim($_POST['memo'] ?? '');
     $is_active = isset($_POST['is_active']) ? 1 : 0;
-    $is_admin = isset($_POST['is_admin']) ? 1 : 0;
+    // 관리자 계정은 admin_users 체계로 별도 관리하므로 회원추가에서는 항상 일반회원으로 생성
+    $is_admin = 0;
     $member_grade = trim($_POST['member_grade'] ?? 'normal');
 
     // 회원 등급 유효성 검사
