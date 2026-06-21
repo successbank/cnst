@@ -349,6 +349,21 @@ try {
 
 $totalAll = array_sum($statusCounts);
 
+// 카테고리 라벨 (brokerage.php와 동일 기준)
+$steel_categories = [
+    '철근' => '철근(특판)', 'H형강' => 'H형강(H빔)', '철강' => '철강(강판)', '메탈라스' => '메탈라스(망철판)',
+    '경량H형강' => '경량H형강', 'I형강' => 'I형강(빔)', 'ㄱ형강' => 'ㄱ형강(앵글)', 'ㄷ형강' => 'ㄷ형강(찬넬)',
+    '환봉' => '환봉(원형강)', '평철' => '평철', 'C형강' => 'C형강', '테크플레이트' => '테크플레이트',
+    '사각파이프' => '사각파이프(각관)', '원형파이프' => '원형파이프(강관)', '레일' => '레일',
+    '강널말뚝' => '강널말뚝(쉬트파일)', '스테인레스' => '스테인레스(STS)', '기타' => '기타'
+];
+$lumber_categories = [
+    '합판' => '합판(Plywood)', '각재' => '각재(Squared Timber)', '원목' => '원목(Raw Lumber)', 'MDF' => 'MDF',
+    '집성목' => '집성목(Laminated)', '파티클보드' => '파티클보드(PB)', '데크재' => '데크재(Deck)',
+    '구조재' => '구조재(Structural)', '방부목' => '방부목(Treated)', '기타목재' => '기타 목재'
+];
+$all_categories = array_merge($steel_categories, $lumber_categories);
+
 try {
     if(!$pdo) {
         throw new Exception("데이터베이스 연결 실패");
@@ -358,10 +373,11 @@ try {
     $limit = 10;
     $offset = ($page - 1) * $limit;
 
-    // 검색 조건
+    // 검색 조건 (기본 상태 = 승인, brokerage.php 기준. '전체'는 status=all)
     $search = $_GET['search'] ?? '';
-    $status = $_GET['status'] ?? '';
+    $status = $_GET['status'] ?? 'approved';
     $item_type = $_GET['item_type'] ?? '';
+    $category = $_GET['category'] ?? '';
 
     $where = "WHERE 1=1";
     $params = [];
@@ -375,7 +391,7 @@ try {
         $params[] = $searchParam;
     }
 
-    if($status) {
+    if($status && $status !== 'all') {
         $where .= " AND status = ?";
         $params[] = $status;
     }
@@ -385,6 +401,11 @@ try {
         $params[] = $item_type;
     }
 
+    if($category) {
+        $where .= " AND category = ?";
+        $params[] = $category;
+    }
+
     // 전체 개수 쿼리
     $countQuery = "SELECT COUNT(*) FROM board_consignment $where";
     $stmt = $pdo->prepare($countQuery);
@@ -392,7 +413,7 @@ try {
     $total = $stmt->fetchColumn();
 
     // 목록 조회 쿼리
-    $listQuery = "SELECT * FROM board_consignment $where ORDER BY id DESC LIMIT $limit OFFSET $offset";
+    $listQuery = "SELECT * FROM board_consignment $where ORDER BY created_at DESC, id DESC LIMIT $limit OFFSET $offset";
 
     $stmt = $pdo->prepare($listQuery);
     $stmt->execute($params);
@@ -438,29 +459,36 @@ try {
         </div>
 
         <!-- 상태 탭 -->
+        <?php
+        // 상태 탭 링크: 현재 필터(item_type/search/category 등) 보존하며 status만 변경
+        $tabParams = $_GET;
+        unset($tabParams['status'], $tabParams['page']);
+        $tabQ = http_build_query($tabParams);
+        $tabPrefix = $tabQ ? '?' . $tabQ . '&status=' : '?status=';
+        ?>
         <div class="status-tabs">
-            <a href="?<?php echo $item_type ? 'item_type='.urlencode($item_type).'&' : ''; ?><?php echo $search ? 'search='.urlencode($search).'&' : ''; ?>status="
-               class="status-tab <?php echo $status == '' ? 'active' : ''; ?>">
+            <a href="<?php echo $tabPrefix; ?>all"
+               class="status-tab <?php echo $status === 'all' ? 'active' : ''; ?>">
                 전체 <span class="tab-count"><?php echo $totalAll; ?></span>
             </a>
-            <a href="?<?php echo $item_type ? 'item_type='.urlencode($item_type).'&' : ''; ?><?php echo $search ? 'search='.urlencode($search).'&' : ''; ?>status=pending"
-               class="status-tab <?php echo $status == 'pending' ? 'active' : ''; ?>">
+            <a href="<?php echo $tabPrefix; ?>pending"
+               class="status-tab <?php echo $status === 'pending' ? 'active' : ''; ?>">
                 대기중 <span class="tab-count"><?php echo $statusCounts['pending'] ?? 0; ?></span>
             </a>
-            <a href="?<?php echo $item_type ? 'item_type='.urlencode($item_type).'&' : ''; ?><?php echo $search ? 'search='.urlencode($search).'&' : ''; ?>status=approved"
-               class="status-tab <?php echo $status == 'approved' ? 'active' : ''; ?>">
+            <a href="<?php echo $tabPrefix; ?>approved"
+               class="status-tab <?php echo $status === 'approved' ? 'active' : ''; ?>">
                 승인 <span class="tab-count"><?php echo $statusCounts['approved'] ?? 0; ?></span>
             </a>
-            <a href="?<?php echo $item_type ? 'item_type='.urlencode($item_type).'&' : ''; ?><?php echo $search ? 'search='.urlencode($search).'&' : ''; ?>status=rejected"
-               class="status-tab <?php echo $status == 'rejected' ? 'active' : ''; ?>">
+            <a href="<?php echo $tabPrefix; ?>rejected"
+               class="status-tab <?php echo $status === 'rejected' ? 'active' : ''; ?>">
                 거절 <span class="tab-count"><?php echo $statusCounts['rejected'] ?? 0; ?></span>
             </a>
-            <a href="?<?php echo $item_type ? 'item_type='.urlencode($item_type).'&' : ''; ?><?php echo $search ? 'search='.urlencode($search).'&' : ''; ?>status=sold"
-               class="status-tab <?php echo $status == 'sold' ? 'active' : ''; ?>">
+            <a href="<?php echo $tabPrefix; ?>sold"
+               class="status-tab <?php echo $status === 'sold' ? 'active' : ''; ?>">
                 판매완료 <span class="tab-count"><?php echo $statusCounts['sold'] ?? 0; ?></span>
             </a>
-            <a href="?<?php echo $item_type ? 'item_type='.urlencode($item_type).'&' : ''; ?><?php echo $search ? 'search='.urlencode($search).'&' : ''; ?>status=inactive"
-               class="status-tab <?php echo $status == 'inactive' ? 'active' : ''; ?>">
+            <a href="<?php echo $tabPrefix; ?>inactive"
+               class="status-tab <?php echo $status === 'inactive' ? 'active' : ''; ?>">
                 비활성 <span class="tab-count"><?php echo $statusCounts['inactive'] ?? 0; ?></span>
             </a>
         </div>
@@ -477,8 +505,21 @@ try {
                     <option value="steel" <?php echo ($item_type ?? '') === 'steel' ? 'selected' : ''; ?>>철강류</option>
                     <option value="lumber" <?php echo ($item_type ?? '') === 'lumber' ? 'selected' : ''; ?>>목재류</option>
                 </select>
+                <select name="category">
+                    <option value="">전체 카테고리</option>
+                    <optgroup label="철강류">
+                        <?php foreach($steel_categories as $code => $label): ?>
+                        <option value="<?php echo htmlspecialchars($code); ?>" <?php echo $category === $code ? 'selected' : ''; ?>><?php echo htmlspecialchars($label); ?></option>
+                        <?php endforeach; ?>
+                    </optgroup>
+                    <optgroup label="목재류">
+                        <?php foreach($lumber_categories as $code => $label): ?>
+                        <option value="<?php echo htmlspecialchars($code); ?>" <?php echo $category === $code ? 'selected' : ''; ?>><?php echo htmlspecialchars($label); ?></option>
+                        <?php endforeach; ?>
+                    </optgroup>
+                </select>
                 <button type="submit">검색</button>
-                <?php if(isset($_GET['search']) || isset($_GET['status']) || isset($_GET['item_type'])): ?>
+                <?php if(isset($_GET['search']) || isset($_GET['status']) || isset($_GET['item_type']) || isset($_GET['category'])): ?>
                     <a href="admin_consignment.php" style="padding: 10px 20px; background: #666; color: white; text-decoration: none; border-radius: 8px; font-size: 14px;">초기화</a>
                 <?php endif; ?>
             </form>
@@ -552,7 +593,7 @@ try {
                                         <?php echo $consignment['item_type'] === 'steel' ? '철강류' : '목재류'; ?>
                                     </span>
                                 </td>
-                                <td><?php echo htmlspecialchars($consignment['category'] ?? '-'); ?></td>
+                                <td><?php echo htmlspecialchars($all_categories[$consignment['category']] ?? ($consignment['category'] ?? '-')); ?></td>
                                 <td><?php echo htmlspecialchars($consignment['company_name'] ?? '-'); ?></td>
                                 <td><?php echo htmlspecialchars($consignment['writer']); ?></td>
                                 <td><?php echo date('Y-m-d', strtotime($consignment['created_at'])); ?></td>
