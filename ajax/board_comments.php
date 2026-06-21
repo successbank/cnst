@@ -13,7 +13,7 @@ function jsonResp($success, $message = '', $data = []) {
     exit;
 }
 
-$validBoards = ['consignment', 'quote'];
+$validBoards = ['consignment', 'quote', 'brokerage'];
 
 // GET: 댓글 목록 조회
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

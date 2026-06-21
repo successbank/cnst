@@ -16,6 +16,14 @@ if (!in_array($type, $allowedTypes)) {
     exit('Access denied');
 }
 
+// 게시판 읽기 권한 확인 (디렉토리명 == board_type, 공개 게시판 notice/news는 guest read=1)
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/includes/BoardPermissionHelper.php';
+if (!BoardPermissionHelper::canAccess($type, 'read')) {
+    header('HTTP/1.0 403 Forbidden');
+    exit('Access denied');
+}
+
 $filepath = __DIR__ . '/uploads/' . $type . '/' . $filename;
 
 // 파일 존재 확인

@@ -76,8 +76,11 @@ try {
         $stmt->execute([$id]);
         $post = $stmt->fetch();
         
-        // 권한 확인 - writer로 체크
-        if (!$post || ($post['writer'] != $_SESSION['name'] && !isAdmin())) {
+        // 권한 확인 - member_id 우선, 레거시 행은 writer(회원명)로 보조 체크
+        $memberName = $_SESSION['member_name'] ?? '';
+        $isOwner = (!empty($post['member_id']) && $post['member_id'] == $member_id)
+                || (!empty($post['writer']) && $memberName !== '' && $post['writer'] === $memberName);
+        if (!$post || (!$isOwner && !isAdmin())) {
             echo json_encode(['success' => false, 'message' => '조회 권한이 없습니다.']);
             exit;
         }
