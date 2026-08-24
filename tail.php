@@ -1,26 +1,44 @@
         </main>
-        
+
+        <?php
+        // 관리자 > 사이트 관리(admin_site.php)에서 저장한 회사정보/사이트 설명을 footer에 반영.
+        // 설정값이 없거나 빈 값이면 기존 기본 문구로 대체(?: 사용).
+        $footerSetting = function ($key, $default) {
+            $value = function_exists('getSetting') ? getSetting($key, $default) : $default;
+            return (trim((string)$value) !== '') ? $value : $default;
+        };
+        $footerCompanyName    = $footerSetting('company_name', '주식회사 충남스틸');
+        $footerDescription    = $footerSetting('company_intro', '충남스틸은 1995년 설립 이래 인천광역시를 중심으로 우수한 품질의 철강 제품을 공급하고 있습니다.');
+        $footerCeo            = $footerSetting('company_ceo', '김영건');
+        $footerBizNumber      = $footerSetting('company_business_number', '137-81-79472');
+        $footerOnlineSalesNo  = $footerSetting('company_online_sales_number', '서구2007-139호');
+        $footerTel            = $footerSetting('company_tel', '032-564-1616');
+        $footerFax            = $footerSetting('company_fax', '032-564-0090');
+        $footerEmail          = $footerSetting('company_email', 'cn1616@naver.com');
+        $footerAddress        = $footerSetting('company_address', '22605 인천 서구 봉수대로 1626 충남스틸 (금곡동)');
+        ?>
         <footer>
             <div class="footer-content">
                 <div class="footer-grid">
                     <div class="footer-section footer-company">
-                        <h3>주식회사 충남스틸</h3>
-                        <p>충남스틸은 1995년 설립 이래 인천광역시를 중심으로 우수한 품질의 철강 제품을 공급하고 있습니다.</p>
+                        <h3><?php echo htmlspecialchars($footerCompanyName); ?></h3>
+                        <p><?php echo htmlspecialchars($footerDescription); ?></p>
                         <div class="company-info">
-                            <p><strong>대표:</strong> 김영건</p>
-                            <p><strong>사업자등록번호:</strong> 137-81-79472</p>
-                            <p><strong>통신판매업:</strong> 서구2007-139호</p>
+                            <p><strong>대표:</strong> <?php echo htmlspecialchars($footerCeo); ?></p>
+                            <p><strong>사업자등록번호:</strong> <?php echo htmlspecialchars($footerBizNumber); ?></p>
+                            <p><strong>통신판매업:</strong> <?php echo htmlspecialchars($footerOnlineSalesNo); ?></p>
+                            <p><strong>주소:</strong> <?php echo htmlspecialchars($footerAddress); ?></p>
                         </div>
                     </div>
                     <div class="footer-section">
                         <h3>고객센터</h3>
                         <ul>
                             <li class="footer-label">대표전화</li>
-                            <li class="footer-value">032-564-1616</li>
+                            <li class="footer-value"><?php echo htmlspecialchars($footerTel); ?></li>
                             <li class="footer-label">팩스</li>
-                            <li class="footer-value">032-564-0090</li>
+                            <li class="footer-value"><?php echo htmlspecialchars($footerFax); ?></li>
                             <li class="footer-label">이메일</li>
-                            <li class="footer-value">cn1616@naver.com</li>
+                            <li class="footer-value"><?php echo htmlspecialchars($footerEmail); ?></li>
                         </ul>
                     </div>
                     <div class="footer-section">
@@ -56,8 +74,8 @@
                         <span class="separator">|</span>
                         <a href="email-policy.php">이메일무단수집거부</a>
                     </div>
-                    <p>© <?php echo date('Y'); ?> 충남스틸. All Rights Reserved.</p>
-                    <p>주소: 22605 인천 서구 봉수대로 1626 충남스틸 (금곡동)</p>
+                    <p>© <?php echo date('Y'); ?> <?php echo htmlspecialchars($footerCompanyName); ?>. All Rights Reserved.</p>
+                    <p>주소: <?php echo htmlspecialchars($footerAddress); ?></p>
                 </div>
             </div>
         </footer>

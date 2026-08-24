@@ -100,6 +100,27 @@ if (!function_exists('escape')) {
     }
 }
 
+// 이름 마스킹 함수 (홀수번째 글자 유지, 짝수번째 글자를 *로: 정한진→정*진, 프라임레일→프*임*일)
+if (!function_exists('maskName')) {
+    function maskName($name) {
+        if ($name === null || $name === '') {
+            return '';
+        }
+        $chars = preg_split('//u', $name, -1, PREG_SPLIT_NO_EMPTY);
+        $len = count($chars);
+        if ($len <= 1) {
+            return $name;
+        }
+        foreach ($chars as $i => $ch) {
+            // 0-based 홀수 인덱스(=2,4번째 글자)를 마스킹
+            if ($i % 2 === 1) {
+                $chars[$i] = '*';
+            }
+        }
+        return implode('', $chars);
+    }
+}
+
 // 페이징 처리 함수
 if (!function_exists('getPagination')) {
     function getPagination($totalCount, $currentPage, $perPage = 10) {

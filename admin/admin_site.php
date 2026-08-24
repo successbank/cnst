@@ -151,6 +151,9 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // 회사 정보 저장
                 $settings = [
                     'company_name' => $_POST['company_name'] ?? '',
+                    'company_ceo' => $_POST['company_ceo'] ?? '',
+                    'company_business_number' => $_POST['company_business_number'] ?? '',
+                    'company_online_sales_number' => $_POST['company_online_sales_number'] ?? '',
                     'company_address' => $_POST['company_address'] ?? '',
                     'company_tel' => $_POST['company_tel'] ?? '',
                     'company_fax' => $_POST['company_fax'] ?? '',
@@ -169,6 +172,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $settings = [
                     'site_title' => $_POST['site_title'] ?? '',
                     'site_description' => $_POST['site_description'] ?? '',
+                    'company_intro' => $_POST['company_intro'] ?? '',
                     'site_keywords' => $_POST['site_keywords'] ?? ''
                 ];
                 
@@ -284,8 +288,24 @@ try {
             <div class="form-group">
                 <label for="company_name">회사명</label>
                 <input type="text" id="company_name" name="company_name" value="<?php echo htmlspecialchars($companySettings['company_name'] ?? '충남스틸'); ?>" required>
+                <small>홈페이지 하단(footer) 회사명 및 저작권 표기에 사용됩니다.</small>
             </div>
-            
+
+            <div class="form-group">
+                <label for="company_ceo">대표자명</label>
+                <input type="text" id="company_ceo" name="company_ceo" value="<?php echo htmlspecialchars($companySettings['company_ceo'] ?? '김영건'); ?>">
+            </div>
+
+            <div class="form-group">
+                <label for="company_business_number">사업자등록번호</label>
+                <input type="text" id="company_business_number" name="company_business_number" value="<?php echo htmlspecialchars($companySettings['company_business_number'] ?? '137-81-79472'); ?>">
+            </div>
+
+            <div class="form-group">
+                <label for="company_online_sales_number">통신판매업 신고번호</label>
+                <input type="text" id="company_online_sales_number" name="company_online_sales_number" value="<?php echo htmlspecialchars($companySettings['company_online_sales_number'] ?? '서구2007-139호'); ?>">
+            </div>
+
             <div class="form-group">
                 <label for="company_address">주소</label>
                 <input type="text" id="company_address" name="company_address" 
@@ -330,7 +350,13 @@ try {
                 <textarea id="site_description" name="site_description" required><?php echo htmlspecialchars($seoSettings['site_description'] ?? '충남스틸은 철강 제품의 판매 및 가공을 전문으로 하는 철강 유통업체입니다. 고품질의 철강 제품과 신속한 납품으로 고객 만족을 추구합니다.'); ?></textarea>
                 <small>검색 결과에 표시되는 설명입니다.</small>
             </div>
-            
+
+            <div class="form-group">
+                <label for="company_intro">홈페이지 하단(footer) 회사 소개 문구</label>
+                <textarea id="company_intro" name="company_intro"><?php echo htmlspecialchars($seoSettings['company_intro'] ?? '충남스틸은 1995년 설립 이래 인천광역시를 중심으로 우수한 품질의 철강 제품을 공급하고 있습니다.'); ?></textarea>
+                <small>홈페이지 첫 화면 하단(footer) 회사 소개 영역에 표시됩니다. (검색용 사이트 설명과 별개)</small>
+            </div>
+
             <div class="form-group">
                 <label for="site_keywords">키워드</label>
                 <input type="text" id="site_keywords" name="site_keywords" 

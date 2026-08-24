@@ -370,13 +370,15 @@ $pagination = $result['pagination'];
                     <th width="12%">작성자</th>
                     <th width="12%">작성일</th>
                     <th width="8%">조회</th>
+                    <?php if (isAdmin()): ?>
                     <th width="12%">답변상태</th>
+                    <?php endif; ?>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($posts)): ?>
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 60px 20px; color: #999;">
+                    <td colspan="<?php echo isAdmin() ? 6 : 5; ?>" style="text-align: center; padding: 60px 20px; color: #999;">
                         등록된 문의가 없습니다.
                     </td>
                 </tr>
@@ -405,9 +407,10 @@ $pagination = $result['pagination'];
                             </span>
                             <?php endif; ?>
                         </td>
-                        <td><?php echo escape($post['writer']); ?></td>
+                        <td><?php echo escape(maskName($post['writer'])); ?></td>
                         <td><?php echo formatDate($post['created_at']); ?></td>
                         <td><?php echo $post['view_count']; ?></td>
+                        <?php if (isAdmin()): ?>
                         <td>
                             <?php if ($post['is_answered']): ?>
                                 <span class="status-answered">답변완료</span>
@@ -415,6 +418,7 @@ $pagination = $result['pagination'];
                                 <span class="status-waiting">대기중</span>
                             <?php endif; ?>
                         </td>
+                        <?php endif; ?>
                     </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
