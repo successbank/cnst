@@ -281,13 +281,122 @@ class BoardTemplate {
         
         $result = $stmt->execute();
         
-        // 성공적으로 등록된 경우 카카오톡 알림 발송
+        // 성공적으로 등록된 경우 카카오톡 알림 + 이메일 알림 발송
         if ($result) {
             $insertId = $this->db->lastInsertId();
             $this->sendKakaoNotification($insertId, $data);
+            $this->sendEmailNotification($insertId, $data);
         }
-        
+
         return $result;
+    }
+
+    // 문의/등록 수신 이메일로 알림 발송 (견적문의/위탁판매/판매의뢰)
+    // - 관리자 [사이트관리 > 문의 설정]의 contact_email(쉼표/줄바꿈 다중) 주소로 발송
+    // - 첨부파일 포함, 실패해도 게시글 등록에는 영향 없음
+    private function sendEmailNotification($boardId, $data) {
+        // 이메일 알림 대상 게시판 및 표시명 (카카오 알림과 동일 범위)
+        $labels = [
+            'quote'         => '견적문의',
+            'consignment'   => '위탁판매',
+            'sales_request' => '판매의뢰',
+        ];
+        if (!isset($labels[$this->boardType])) {
+            return;
+        }
+        $label = $labels[$this->boardType];
+
+        try {
+            require_once __DIR__ . '/../includes/settings.php';
+            require_once __DIR__ . '/../includes/EmailService.php';
+
+            // 문의 수신 이메일 (쉼표 구분 다중 수신자). EmailService가 분해/검증 처리.
+            $recipients = trim(getSetting('contact_email', ''));
+            if ($recipients === '') {
+                error_log('[BoardEmail] contact_email 미설정 - 알림 미발송 (' . $this->boardType . ' #' . $boardId . ')');
+                return;
+            }
+
+            // 첨부파일 절대경로 수집 (uploads/{게시판}/ 하위)
+            $attachments = [];
+            if (!empty($data['attachment'])) {
+                $files = json_decode($data['attachment'], true);
+                if (is_array($files)) {
+                    foreach ($files as $fname) {
+                        $path = __DIR__ . '/../uploads/' . $this->boardType . '/' . basename($fname);
+                        if (is_file($path)) {
+                            $attachments[] = ['path' => $path, 'name' => $fname];
+                        }
+                    }
+                }
+            }
+
+            $esc = function ($v) {
+                return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+            };
+
+            // 게시판별 표시 필드 (라벨 => 값). 값이 빈 항목은 본문에서 자동 생략.
+            if ($this->boardType === 'quote') {
+                $rows = [
+                    '작성자' => $data['writer']  ?? '',
+                    '회사명' => $data['company'] ?? '',
+                    '이메일' => $data['email']   ?? '',
+                    '연락처' => $data['phone']   ?? '',
+                ];
+            } else {
+                // 위탁판매 / 판매의뢰 공통 필드
+                $rows = [
+                    '작성자'   => $data['writer']         ?? '',
+                    '회사명'   => $data['company_name']   ?? '',
+                    '담당자'   => $data['contact_person'] ?? '',
+                    '연락처'   => $data['contact_phone']  ?? '',
+                    '이메일'   => $data['contact_email']  ?? '',
+                    '품목종류' => $data['item_type']      ?? '',
+                    '카테고리' => $data['category']       ?? '',
+                    '재고수량' => $data['stock_quantity'] ?? '',
+                    '가격정보' => $data['price_info']     ?? '',
+                    '위치'     => $data['location']       ?? '',
+                ];
+            }
+
+            $title   = $data['title']   ?? '(제목 없음)';
+            $content = $data['content'] ?? '';
+            $subject = '[충남스틸] 새 ' . $label . ': ' . $title;
+            $viewUrl = 'https://cnst.co.kr/board_view.php?type=' . $this->boardType . '&id=' . (int)$boardId;
+
+            $body  = '<div style="font-family:sans-serif;font-size:14px;color:#333;line-height:1.7">';
+            $body .= '<h2 style="color:#1A237E">새 ' . $esc($label) . '(이)가 접수되었습니다</h2>';
+            $body .= '<table cellpadding="6" style="border-collapse:collapse;border:1px solid #eee">';
+            $body .= '<tr><td style="font-weight:bold;background:#f5f5f5;width:100px">제목</td><td>' . $esc($title) . '</td></tr>';
+            foreach ($rows as $k => $v) {
+                if ($v === '' || $v === null) {
+                    continue;
+                }
+                $body .= '<tr><td style="font-weight:bold;background:#f5f5f5">' . $esc($k) . '</td><td>' . $esc($v) . '</td></tr>';
+            }
+            $body .= '</table>';
+            $body .= '<h3 style="color:#1A237E;margin-top:20px">내용</h3>';
+            $body .= '<div style="white-space:pre-wrap;border:1px solid #eee;padding:12px;border-radius:6px">' . nl2br($esc($content)) . '</div>';
+            if (!empty($attachments)) {
+                $body .= '<p style="margin-top:16px">📎 첨부파일 ' . count($attachments) . '개가 이 메일에 포함되어 있습니다.</p>';
+            }
+            $body .= '<p style="margin-top:20px"><a href="' . $viewUrl . '" style="background:#1A237E;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">관리자에서 보기</a></p>';
+            $body .= '</div>';
+
+            $emailService = new EmailService($this->db);
+            if (!empty($attachments)) {
+                $result = $emailService->sendWithAttachments($recipients, $subject, $body, $attachments);
+            } else {
+                $result = $emailService->send($recipients, $subject, $body);
+            }
+
+            if (empty($result['success'])) {
+                error_log('[BoardEmail] 발송 실패 (' . $this->boardType . ' #' . $boardId . '): ' . ($result['message'] ?? '알 수 없음'));
+            }
+        } catch (Exception $e) {
+            // 이메일 실패가 게시글 등록을 막지 않도록 로그만 남김
+            error_log('[BoardEmail] 예외 (' . $this->boardType . ' #' . $boardId . '): ' . $e->getMessage());
+        }
     }
     
     // 카카오톡 알림 발송

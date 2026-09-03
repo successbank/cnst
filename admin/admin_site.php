@@ -184,14 +184,30 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'contact':
-                // 문의 설정 저장
+                // 문의 설정 저장 (수신 이메일 다중 지원: 쉼표/줄바꿈 구분)
+                require_once '../includes/EmailService.php';
+
+                // 줄바꿈을 쉼표로 통일한 뒤 개별 검증
+                $rawEmails = str_replace(["\r\n", "\r", "\n"], ',', $_POST['contact_email'] ?? '');
+                $check = EmailService::validateEmails($rawEmails);
+
+                if (empty($check['valid'])) {
+                    $error = "문의 수신 이메일을 1개 이상 올바르게 입력해주세요.";
+                    break;
+                }
+                if (!empty($check['invalid'])) {
+                    $error = "잘못된 이메일 형식이 있습니다: " . implode(', ', $check['invalid']);
+                    break;
+                }
+
+                // 정규화하여 쉼표+공백 구분으로 저장 (EmailService.send가 그대로 분해)
                 $settings = [
-                    'contact_email' => $_POST['contact_email'] ?? '',
+                    'contact_email' => implode(', ', $check['valid']),
                     'contact_phone' => $_POST['contact_phone'] ?? ''
                 ];
-                
+
                 if(saveSettings($settings, 'contact')) {
-                    $success_msg = "문의 설정이 저장되었습니다.";
+                    $success_msg = count($check['valid']) . "개의 수신 이메일을 포함한 문의 설정이 저장되었습니다.";
                 } else {
                     $error = "저장 중 오류가 발생했습니다.";
                 }
@@ -376,10 +392,10 @@ try {
             <input type="hidden" name="setting_type" value="contact">
             
             <div class="form-group">
-                <label for="contact_email">문의 수신 이메일</label>
-                <input type="email" id="contact_email" name="contact_email" 
-                       value="<?php echo htmlspecialchars($contactSettings['contact_email'] ?? 'sales@chungnamsteel.com'); ?>" required>
-                <small>문의사항이 전달될 이메일 주소입니다.</small>
+                <label for="contact_email">문의 수신 이메일 (다중 가능)</label>
+                <textarea id="contact_email" name="contact_email" rows="3" required
+                          placeholder="여러 개는 쉼표(,) 또는 줄바꿈으로 구분&#10;예) sales@chungnamsteel.com, manager@chungnamsteel.com"><?php echo htmlspecialchars($contactSettings['contact_email'] ?? 'sales@chungnamsteel.com'); ?></textarea>
+                <small>견적문의가 접수되면 이 주소(들)로 문의 내용과 첨부파일이 발송됩니다. 여러 개는 쉼표 또는 줄바꿈으로 구분하세요.</small>
             </div>
             
             <div class="form-group">

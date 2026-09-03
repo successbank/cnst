@@ -550,6 +550,230 @@ class EmailService {
     }
 
     /**
+     * 여러 첨부파일을 하나의 메일로 발송 (다중 수신자 지원)
+     * @param string|array $recipients 수신자 (쉼표 구분 문자열 또는 배열)
+     * @param string $subject 제목
+     * @param string $body HTML 본문
+     * @param array $attachments [['path' => 절대경로, 'name' => 표시파일명], ...]
+     * @return array ['success' => bool, 'message' => string, 'log_ids' => array]
+     */
+    public function sendWithAttachments($recipients, $subject, $body, array $attachments) {
+        // 존재하고 크기 제한(개별 20MB) 이내인 첨부만 사용
+        $maxSize = 20 * 1024 * 1024;
+        $validAttachments = [];
+        foreach ($attachments as $att) {
+            $path = $att['path'] ?? '';
+            if ($path === '' || !file_exists($path)) {
+                continue;
+            }
+            if (filesize($path) > $maxSize) {
+                error_log("[EmailService] 첨부파일 20MB 초과로 제외: {$path}");
+                continue;
+            }
+            $validAttachments[] = ['path' => $path, 'name' => $att['name'] ?? basename($path)];
+        }
+
+        // 첨부가 하나도 없으면 일반 발송으로 폴백
+        if (empty($validAttachments)) {
+            return $this->send($recipients, $subject, $body);
+        }
+
+        // 수신자를 배열로 변환 + 검증
+        if (is_string($recipients)) {
+            $recipients = array_map('trim', explode(',', $recipients));
+        }
+        $recipients = array_filter($recipients, function($email) {
+            return !empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL);
+        });
+
+        if (empty($recipients)) {
+            return ['success' => false, 'message' => '유효한 수신자 이메일이 없습니다.', 'log_ids' => []];
+        }
+
+        $names = implode(', ', array_map(function($a) { return $a['name']; }, $validAttachments));
+        $results = ['success' => true, 'message' => '', 'log_ids' => [], 'sent_count' => 0, 'failed_count' => 0];
+
+        foreach ($recipients as $recipient) {
+            $logId = $this->logEmail($recipient, $subject, $body . "\n[첨부파일: {$names}]");
+            $results['log_ids'][] = $logId;
+
+            $sendResult = $this->sendViaSMTPWithAttachments($recipient, $subject, $body, $validAttachments);
+
+            if ($sendResult['success']) {
+                $this->updateLogStatus($logId, 'sent');
+                $results['sent_count']++;
+            } else {
+                $this->updateLogStatus($logId, 'failed', $sendResult['error']);
+                $results['failed_count']++;
+            }
+        }
+
+        if ($results['failed_count'] > 0) {
+            $results['success'] = $results['sent_count'] > 0;
+            $results['message'] = "{$results['sent_count']}개 발송 성공, {$results['failed_count']}개 실패";
+        } else {
+            $results['message'] = "{$results['sent_count']}개 이메일 발송 완료 (첨부 " . count($validAttachments) . "개 포함)";
+        }
+
+        return $results;
+    }
+
+    /**
+     * SMTP를 통한 다중 첨부 이메일 발송
+     */
+    private function sendViaSMTPWithAttachments($to, $subject, $body, array $attachments) {
+        $socket = null;
+
+        try {
+            $context = stream_context_create([
+                'ssl' => [
+                    'verify_peer' => true,
+                    'verify_peer_name' => true,
+                    'allow_self_signed' => false,
+                    'cafile' => '/etc/ssl/certs/ca-certificates.crt'
+                ]
+            ]);
+
+            if ($this->smtpSecure === 'ssl') {
+                $host = 'ssl://' . $this->smtpHost;
+                $socket = @stream_socket_client("$host:{$this->smtpPort}", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
+            } else {
+                $socket = @stream_socket_client("{$this->smtpHost}:{$this->smtpPort}", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
+            }
+
+            if (!$socket) {
+                throw new Exception("SMTP 연결 실패: $errstr ($errno)");
+            }
+
+            $this->getResponse($socket);
+            $this->sendCommand($socket, "EHLO localhost", 250);
+
+            if ($this->smtpSecure === 'starttls') {
+                $this->sendCommand($socket, "STARTTLS", 220);
+                stream_context_set_option($socket, 'ssl', 'verify_peer', true);
+                stream_context_set_option($socket, 'ssl', 'verify_peer_name', true);
+                stream_context_set_option($socket, 'ssl', 'allow_self_signed', false);
+                stream_context_set_option($socket, 'ssl', 'cafile', '/etc/ssl/certs/ca-certificates.crt');
+                $crypto = stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT);
+                if (!$crypto) {
+                    throw new Exception("TLS 암호화 시작 실패");
+                }
+                $this->sendCommand($socket, "EHLO localhost", 250);
+            }
+
+            if ($this->smtpAuth && !empty($this->smtpPass)) {
+                $this->sendCommand($socket, "AUTH LOGIN", 334);
+                $this->sendCommand($socket, base64_encode($this->smtpUser), 334);
+                $this->sendCommand($socket, base64_encode($this->smtpPass), 235);
+            }
+
+            $safeFrom = filter_var($this->fromEmail, FILTER_SANITIZE_EMAIL);
+            $this->sendCommand($socket, "MAIL FROM:<{$safeFrom}>", 250);
+
+            $safeTo = filter_var($to, FILTER_SANITIZE_EMAIL);
+            $this->sendCommand($socket, "RCPT TO:<$safeTo>", 250);
+
+            $this->sendCommand($socket, "DATA", 354);
+
+            $message = $this->buildMultipartMessageMulti($to, $subject, $body, $attachments);
+            $message = str_replace("\r\n.", "\r\n..", $message);
+
+            fwrite($socket, $message . "\r\n.\r\n");
+            $response = $this->getResponse($socket);
+
+            if (strpos($response, '250') !== 0) {
+                throw new Exception("메시지 전송 실패: $response");
+            }
+
+            $this->sendCommand($socket, "QUIT", 221);
+            fclose($socket);
+
+            return ['success' => true, 'error' => null];
+
+        } catch (Exception $e) {
+            if ($socket) {
+                @fclose($socket);
+            }
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * 다중 첨부 MIME Multipart 메시지 구성
+     */
+    private function buildMultipartMessageMulti($to, $subject, $body, array $attachments) {
+        $boundary = "----=_Part_" . md5(uniqid((string)time(), true));
+
+        $to = filter_var($to, FILTER_SANITIZE_EMAIL);
+        $safeFrom = filter_var($this->fromEmail, FILTER_SANITIZE_EMAIL);
+
+        $headers = "Date: " . date('r') . "\r\n";
+        $headers .= "From: " . $this->encodeHeader($this->fromName) . " <{$safeFrom}>\r\n";
+        $headers .= "To: <$to>\r\n";
+        $headers .= "Subject: " . $this->encodeHeader($subject) . "\r\n";
+        $headers .= "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: multipart/mixed; boundary=\"{$boundary}\"\r\n";
+        $headers .= "X-Mailer: ChungnamSteel-Mailer/1.0\r\n";
+
+        // 본문 파트
+        $message = $headers . "\r\n";
+        $message .= "--{$boundary}\r\n";
+        $message .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $message .= "Content-Transfer-Encoding: base64\r\n\r\n";
+        $message .= chunk_split(base64_encode($body)) . "\r\n";
+
+        // 첨부 파트 (여러 개)
+        foreach ($attachments as $att) {
+            $fileContent = @file_get_contents($att['path']);
+            if ($fileContent === false) {
+                continue;
+            }
+            $name = $att['name'];
+            $mimeType = $this->detectMimeType($att['path'], $name);
+
+            $message .= "--{$boundary}\r\n";
+            $message .= "Content-Type: {$mimeType}; name=\"" . $this->encodeHeader($name) . "\"\r\n";
+            $message .= "Content-Transfer-Encoding: base64\r\n";
+            $message .= "Content-Disposition: attachment; filename=\"" . $this->encodeHeader($name) . "\"\r\n\r\n";
+            $message .= chunk_split(base64_encode($fileContent)) . "\r\n";
+        }
+
+        $message .= "--{$boundary}--";
+
+        return $message;
+    }
+
+    /**
+     * 파일 MIME 타입 결정 (확장자 우선, finfo 폴백)
+     */
+    private function detectMimeType($path, $name) {
+        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        $map = [
+            'jpg'  => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'gif' => 'image/gif',
+            'pdf'  => 'application/pdf',
+            'doc'  => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls'  => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'txt'  => 'text/plain',
+        ];
+        if (isset($map[$ext])) {
+            return $map[$ext];
+        }
+        if (function_exists('finfo_open')) {
+            $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo) {
+                $detected = @finfo_file($finfo, $path);
+                @finfo_close($finfo);
+                if ($detected) {
+                    return $detected;
+                }
+            }
+        }
+        return 'application/octet-stream';
+    }
+
+    /**
      * 이메일 주소 유효성 검증
      */
     public static function isValidEmail($email) {
