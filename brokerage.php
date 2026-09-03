@@ -235,7 +235,8 @@ function maskTitle($title) {
 
 <div class="page-header">
     <h2>판매의뢰</h2>
-    <p>업체들로부터 의뢰받은 자재들의 판매의뢰 정보를 제공합니다.</p>
+    <p>업체들로부터 판매의뢰를 받습니다.</p>
+    <p>회원전용이며, 회원가입 후 이용 가능합니다.</p>
 </div>
 
 <section class="board-section">
