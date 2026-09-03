@@ -57,6 +57,8 @@ class BoardTemplate {
     
     // 게시글 목록 조회
     public function getList($page = 1, $perPage = 10, $search = '', $category = '', $extraFilters = []) {
+        // page는 1 이상으로 보정 (0/음수/문자 입력 시 OFFSET 음수로 인한 SQL 1064 오류 방지)
+        $page = max(1, (int)$page);
         $offset = ($page - 1) * $perPage;
         $where = [];
         $params = [];
@@ -393,8 +395,8 @@ class BoardTemplate {
             if (empty($result['success'])) {
                 error_log('[BoardEmail] 발송 실패 (' . $this->boardType . ' #' . $boardId . '): ' . ($result['message'] ?? '알 수 없음'));
             }
-        } catch (Exception $e) {
-            // 이메일 실패가 게시글 등록을 막지 않도록 로그만 남김
+        } catch (\Throwable $e) {
+            // 이메일 실패(Exception/Error 무엇이든)가 게시글 등록을 막지 않도록 로그만 남김
             error_log('[BoardEmail] 예외 (' . $this->boardType . ' #' . $boardId . '): ' . $e->getMessage());
         }
     }

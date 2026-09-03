@@ -73,3 +73,6 @@ prd*.md
 # Test screenshots
 tests/screenshots/
 tests/*.png
+
+# 사용자 업로드 첨부파일은 소스가 아니므로 추적 제외 (디스크에만 보관, 30일 자동정리)
+uploads/

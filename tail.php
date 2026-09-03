@@ -119,10 +119,11 @@
     // Mobile menu functionality
     function toggleMobileMenu() {
         const nav = document.getElementById('mainNav');
+        if (!nav) return;
         nav.classList.toggle('active');
-        
+
         const menuBtn = document.querySelector('.mobile-menu-btn');
-        menuBtn.classList.toggle('active');
+        if (menuBtn) menuBtn.classList.toggle('active');
     }
 
     // Close mobile menu when clicking outside
@@ -382,21 +383,26 @@
         const chatWindow = document.getElementById('chat-window');
         const chatMinimize = document.getElementById('chat-minimize');
         const chatForm = document.getElementById('chat-form');
-        
+
         // 채팅 버튼 클릭 시 창 열기
-        chatButton.addEventListener('click', function() {
-            chatWindow.classList.add('active');
-            chatButton.style.display = 'none';
-        });
-        
+        // 채팅 버튼 HTML이 주석 처리/미렌더링일 수 있으므로 요소별 null 가드 (없으면 조용히 건너뜀)
+        if (chatButton && chatWindow) {
+            chatButton.addEventListener('click', function() {
+                chatWindow.classList.add('active');
+                chatButton.style.display = 'none';
+            });
+        }
+
         // 최소화 버튼 클릭 시 창 닫기
-        chatMinimize.addEventListener('click', function() {
-            chatWindow.classList.remove('active');
-            chatButton.style.display = 'flex';
-        });
-        
+        if (chatMinimize && chatWindow) {
+            chatMinimize.addEventListener('click', function() {
+                chatWindow.classList.remove('active');
+                if (chatButton) chatButton.style.display = 'flex';
+            });
+        }
+
         // 폼 제출 처리
-        chatForm.addEventListener('submit', function(e) {
+        if (chatForm) chatForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
             // 폼 데이터 수집
@@ -419,8 +425,8 @@
             chatForm.reset();
             
             // 채팅 창 닫기
-            chatWindow.classList.remove('active');
-            chatButton.style.display = 'flex';
+            if (chatWindow) chatWindow.classList.remove('active');
+            if (chatButton) chatButton.style.display = 'flex';
         });
     });
     </script>

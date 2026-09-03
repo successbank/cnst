@@ -22,6 +22,21 @@ if (in_array($boardType, ['consignment', 'quote', 'sales_request'])) {
 // 게시판 객체 생성
 $board = new BoardTemplate($pdo, $boardType);
 
+// 회원 연락처/이메일 (폼 prefill용) - getMemberInfo()에는 phone이 없어 members에서 직접 조회
+$memberContact = ['email' => '', 'phone' => ''];
+if (isLoggedIn()) {
+    try {
+        $mcStmt = $pdo->prepare("SELECT email, phone FROM members WHERE id = ? LIMIT 1");
+        $mcStmt->execute([$_SESSION['member_id']]);
+        if ($mcRow = $mcStmt->fetch(PDO::FETCH_ASSOC)) {
+            $memberContact['email'] = trim((string)($mcRow['email'] ?? ''));
+            $memberContact['phone'] = trim((string)($mcRow['phone'] ?? ''));
+        }
+    } catch (Exception $e) {
+        // prefill 조회 실패는 무시 (필수 입력으로 처리됨)
+    }
+}
+
 // POST 처리
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 출력 버퍼링 시작
@@ -72,6 +87,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!isset($error) && !checkRateLimit('quote_submit', 3, 60)) {
             $error = '너무 많은 요청이 감지되었습니다. 잠시 후 다시 시도해주세요.';
         }
+        // 연락처/이메일 필수
+        if (!isset($error) && (trim($_POST['email'] ?? '') === '' || trim($_POST['phone'] ?? '') === '')) {
+            $error = '이메일과 연락처는 필수 입력 항목입니다.';
+        }
     }
 
     // 위탁판매/판매의뢰 게시판: SQL 인젝션 검증 + Rate Limiting
@@ -94,6 +113,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!isset($error) && !checkRateLimit('consignment_submit', 3, 60)) {
             $error = '너무 많은 요청이 감지되었습니다. 잠시 후 다시 시도해주세요.';
         }
+        // 담당자 연락처/이메일 필수
+        if (!isset($error) && (trim($_POST['contact_email'] ?? '') === '' || trim($_POST['contact_phone'] ?? '') === '')) {
+            $error = '담당자 이메일과 연락처는 필수 입력 항목입니다.';
+        }
     }
 
     $data = [
@@ -109,26 +132,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($board->allowsUpload() && !empty($_FILES['attachment']['name'][0])) {
         $uploadDir = 'uploads/' . $boardType . '/';
         $uploadedFiles = [];
-        
+        $uploadErrors = [];
+
+        // PHP 업로드 error코드 → 사용자 메시지 (조용한 스킵 방지)
+        $uploadErrorMessages = [
+            UPLOAD_ERR_INI_SIZE   => '서버 허용 용량을 초과했습니다. (파일당 최대 10MB)',
+            UPLOAD_ERR_FORM_SIZE  => '폼에서 허용한 용량을 초과했습니다.',
+            UPLOAD_ERR_PARTIAL    => '파일이 일부만 업로드되었습니다. 다시 시도해주세요.',
+            UPLOAD_ERR_NO_TMP_DIR => '서버 임시 폴더가 없어 업로드에 실패했습니다. 관리자에게 문의하세요.',
+            UPLOAD_ERR_CANT_WRITE => '서버 저장에 실패했습니다. 관리자에게 문의하세요.',
+            UPLOAD_ERR_EXTENSION  => '서버 설정에 의해 업로드가 차단되었습니다.',
+        ];
+
         // 파일 배열 재구성
         $fileCount = count($_FILES['attachment']['name']);
         for ($i = 0; $i < $fileCount; $i++) {
-            if ($_FILES['attachment']['error'][$i] === UPLOAD_ERR_OK) {
-                $file = [
-                    'name' => $_FILES['attachment']['name'][$i],
-                    'type' => $_FILES['attachment']['type'][$i],
-                    'tmp_name' => $_FILES['attachment']['tmp_name'][$i],
-                    'error' => $_FILES['attachment']['error'][$i],
-                    'size' => $_FILES['attachment']['size'][$i]
-                ];
-                
-                $uploadedFile = uploadFile($file, $uploadDir);
-                if ($uploadedFile) {
-                    $uploadedFiles[] = $uploadedFile;
-                }
+            $errCode  = $_FILES['attachment']['error'][$i];
+            $origName = $_FILES['attachment']['name'][$i];
+
+            // 선택되지 않은 슬롯은 건너뜀
+            if ($errCode === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+
+            // OK 이외 에러코드는 조용히 넘기지 않고 사용자에게 통지
+            if ($errCode !== UPLOAD_ERR_OK) {
+                $msg = $uploadErrorMessages[$errCode] ?? '알 수 없는 업로드 오류가 발생했습니다.';
+                $uploadErrors[] = htmlspecialchars($origName, ENT_QUOTES, 'UTF-8') . ': ' . $msg;
+                error_log('[UPLOAD] error code ' . $errCode . ' for file "' . $origName . '" board=' . $boardType);
+                continue;
+            }
+
+            $file = [
+                'name' => $_FILES['attachment']['name'][$i],
+                'type' => $_FILES['attachment']['type'][$i],
+                'tmp_name' => $_FILES['attachment']['tmp_name'][$i],
+                'error' => $_FILES['attachment']['error'][$i],
+                'size' => $_FILES['attachment']['size'][$i]
+            ];
+
+            $uploadedFile = uploadFile($file, $uploadDir);
+            if ($uploadedFile) {
+                $uploadedFiles[] = $uploadedFile;
+            } else {
+                // uploadFile 내부 검증 실패(확장자/MIME/크기/이동실패)도 통지
+                $uploadErrors[] = htmlspecialchars($origName, ENT_QUOTES, 'UTF-8') . ': 허용되지 않는 형식이거나 저장에 실패했습니다.';
             }
         }
-        
+
+        // 업로드 실패가 있으면 게시글 저장을 막고(아래 181줄 writePost 조건) 사용자에게 알림
+        if (!empty($uploadErrors)) {
+            $error = '첨부파일 업로드 실패: ' . implode(' / ', $uploadErrors);
+        }
+
         if (!empty($uploadedFiles)) {
             // 파일명들을 JSON으로 저장
             $data['attachment'] = json_encode($uploadedFiles);
@@ -282,6 +338,73 @@ include 'head.php';
     background: #0F1F7A;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(20, 40, 160, 0.3);
+}
+
+.write-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 업로드 진행 오버레이 */
+.upload-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+}
+.upload-overlay.active { display: flex; }
+.upload-progress-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 32px;
+    width: min(90vw, 380px);
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+.upload-progress-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1A237E;
+    margin-bottom: 16px;
+}
+.upload-progress-track {
+    width: 100%;
+    height: 14px;
+    background: #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.upload-progress-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #1A237E, #3949AB);
+    border-radius: 8px;
+    transition: width 0.2s ease;
+}
+.upload-progress-fill.indeterminate {
+    width: 40% !important;
+    transition: none;
+    animation: upload-indet 1.1s ease-in-out infinite;
+}
+@keyframes upload-indet {
+    0%   { margin-left: -40%; }
+    100% { margin-left: 100%; }
+}
+.upload-progress-text {
+    margin-top: 12px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1A237E;
+}
+.upload-progress-hint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #888;
 }
 
 .cancel-btn {
@@ -648,15 +771,16 @@ include 'head.php';
                 </div>
                 
                 <div class="form-group">
-                    <label for="phone">연락처</label>
-                    <input type="tel" id="phone" name="phone" placeholder="010-0000-0000">
+                    <label for="phone">연락처 <span class="required">*</span></label>
+                    <input type="tel" id="phone" name="phone" required placeholder="010-0000-0000"
+                           value="<?php echo htmlspecialchars($memberContact['phone']); ?>">
                 </div>
             </div>
             
             <div class="form-group">
-                <label for="email">이메일</label>
-                <input type="email" id="email" name="email" placeholder="example@email.com"
-                       value="<?php echo isLoggedIn() ? htmlspecialchars(getMemberInfo()['email']) : ''; ?>">
+                <label for="email">이메일 <span class="required">*</span></label>
+                <input type="email" id="email" name="email" required placeholder="example@email.com"
+                       value="<?php echo htmlspecialchars($memberContact['email']); ?>">
             </div>
             <?php endif; ?>
             
@@ -753,16 +877,16 @@ include 'head.php';
                 </div>
 
                 <div class="form-group">
-                    <label for="contact_phone">담당자 연락처</label>
-                    <input type="tel" id="contact_phone" name="contact_phone" placeholder="010-0000-0000"
-                           value="<?php echo ($boardType === 'sales_request' && isLoggedIn()) ? escape(getMemberInfo()['phone'] ?? '') : ''; ?>">
+                    <label for="contact_phone">담당자 연락처 <span class="required">*</span></label>
+                    <input type="tel" id="contact_phone" name="contact_phone" required placeholder="010-0000-0000"
+                           value="<?php echo htmlspecialchars($memberContact['phone']); ?>">
                 </div>
             </div>
 
             <div class="form-group">
-                <label for="contact_email">담당자 이메일</label>
-                <input type="email" id="contact_email" name="contact_email" placeholder="example@email.com"
-                       value="<?php echo ($boardType === 'sales_request' && isLoggedIn()) ? escape(getMemberInfo()['email'] ?? '') : ''; ?>">
+                <label for="contact_email">담당자 이메일 <span class="required">*</span></label>
+                <input type="email" id="contact_email" name="contact_email" required placeholder="example@email.com"
+                       value="<?php echo htmlspecialchars($memberContact['email']); ?>">
             </div>
             <?php endif; ?>
             
@@ -806,6 +930,18 @@ include 'head.php';
             <div class="form-buttons">
                 <button type="submit" class="write-btn">작성하기</button>
                 <a href="<?php echo $boardType === 'sales_request' ? 'sales_request' : $boardType; ?>.php" class="cancel-btn">취소</a>
+            </div>
+
+            <!-- 업로드 진행 오버레이 (첨부파일 전송 중 표시) -->
+            <div id="upload-overlay" class="upload-overlay" role="status" aria-live="polite" aria-hidden="true">
+                <div class="upload-progress-box">
+                    <div class="upload-progress-title">파일 업로드 중...</div>
+                    <div class="upload-progress-track">
+                        <div id="upload-progress-fill" class="upload-progress-fill"></div>
+                    </div>
+                    <div id="upload-progress-text" class="upload-progress-text">0%</div>
+                    <div class="upload-progress-hint">잠시만 기다려 주세요. 창을 닫지 마세요.</div>
+                </div>
             </div>
         </form>
         
@@ -1151,30 +1287,98 @@ function handleFormSubmit(event) {
         });
         
         console.log('Submitting form with FormData');
-        
+
+        // 중복 제출 방지
+        if (window.__isUploading) return false;
+        window.__isUploading = true;
+
         // 폼 제출
         const form = event.target;
+        const submitBtn = form.querySelector('.write-btn');
+        const overlay = document.getElementById('upload-overlay');
+        const fill = document.getElementById('upload-progress-fill');
+        const text = document.getElementById('upload-progress-text');
+
+        function setProgress(pct, label) {
+            if (fill) {
+                fill.classList.remove('indeterminate');
+                fill.style.width = pct + '%';
+            }
+            if (text) text.textContent = (label !== undefined) ? label : (pct + '%');
+        }
+        function setIndeterminate(label) {
+            if (fill) fill.classList.add('indeterminate');
+            if (text) text.textContent = label || '업로드 중...';
+        }
+        function restoreUI() {
+            window.__isUploading = false;
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '작성하기'; }
+            if (overlay) { overlay.classList.remove('active'); overlay.setAttribute('aria-hidden', 'true'); }
+        }
+
+        // UI: 오버레이 표시 + 버튼 비활성화
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '업로드 중...'; }
+        if (overlay) { overlay.classList.add('active'); overlay.setAttribute('aria-hidden', 'false'); }
+        setProgress(0);
+
         const xhr = new XMLHttpRequest();
-        
-        xhr.onload = function() {
-            if (xhr.status === 200) {
-                // 성공 시 리디렉션 처리
-                if (xhr.responseURL && xhr.responseURL !== window.location.href) {
-                    window.location.href = xhr.responseURL;
-                } else {
-                    // 응답 내용을 현재 페이지에 표시
-                    document.open();
-                    document.write(xhr.responseText);
-                    document.close();
-                }
+
+        // 업로드 진행률 표시
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                setProgress(Math.round((e.loaded / e.total) * 100));
+            } else {
+                setIndeterminate('업로드 중...');
             }
         };
-        
-        xhr.onerror = function() {
-            alert('업로드 중 오류가 발생했습니다.');
+        // 전송 완료 → 서버 처리 대기
+        xhr.upload.onload = function() {
+            setProgress(100, '처리 중...');
         };
-        
+
+        xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 400) {
+                // 성공 시 서버는 다른 페이지(quote.php 등)로 302 리다이렉트 → 경로가 바뀜.
+                // 검증 실패 시 같은 경로(board_write.php)로 200 폼 재렌더 → 경로 동일.
+                // pathname 기준으로 구분(쿼리/해시 무시)해야 오판이 없다.
+                var finalUrl = xhr.responseURL || '';
+                var samePage = true;
+                try {
+                    samePage = (new URL(finalUrl, window.location.href).pathname === window.location.pathname);
+                } catch (e) { samePage = true; }
+
+                if (finalUrl && !samePage) {
+                    // 성공: 리다이렉트된 페이지로 이동 (오버레이는 페이지 전환으로 자연 소멸)
+                    window.location.href = finalUrl;
+                } else {
+                    // 검증 실패 재렌더: document.write로 페이지를 갈아엎으면 첨부/미리보기가 사라지므로
+                    // UI만 복원하고 오류 메시지만 표시 → 사용자가 첨부 유지한 채 수정·재제출 가능
+                    restoreUI();
+                    var msg = '';
+                    try {
+                        var m = xhr.responseText.match(/<div class="alert error">([^<]+)<\/div>/);
+                        if (m) { msg = m[1].trim(); }
+                    } catch (e) {}
+                    alert(msg || '작성에 실패했습니다. 입력값을 확인한 뒤 다시 시도해주세요.');
+                }
+            } else {
+                restoreUI();
+                alert('업로드에 실패했습니다. (오류 ' + xhr.status + ') 잠시 후 다시 시도해주세요.');
+            }
+        };
+
+        xhr.onerror = function() {
+            restoreUI();
+            alert('업로드 중 네트워크 오류가 발생했습니다.');
+        };
+        xhr.ontimeout = function() {
+            restoreUI();
+            alert('업로드 시간이 초과되었습니다. 다시 시도해주세요.');
+        };
+        xhr.onabort = function() { restoreUI(); };
+
         xhr.open('POST', form.action || window.location.href);
+        xhr.timeout = 180000; // 3분
         xhr.send(formData);
         
         return false;
