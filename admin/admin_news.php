@@ -479,7 +479,8 @@ if($action === 'list') {
             </div>
             
             <div class="content-box">
-                <form method="POST" action="" enctype="multipart/form-data">
+                <form method="POST" action="" enctype="multipart/form-data" id="newsForm">
+                    <?php echo csrfField(); ?>
                     <?php if($action === 'edit' && $news): ?>
                         <input type="hidden" name="id" value="<?php echo $news['id']; ?>">
                     <?php endif; ?>
@@ -769,6 +770,62 @@ $(document).ready(function() {
             }
         });
     }
+});
+
+// [아래한글 붙여넣기 대응] 제출 전 base64 이미지를 서버 업로드로 변환
+// base64 본문이 post_max_size(20M)를 넘으면 $_POST가 통째로 비워져
+// CSRF 오류로 위장되므로, 제출 전에 이미지를 파일로 올려 본문을 줄인다
+$(document).ready(function() {
+    const form = document.getElementById('newsForm');
+    if (!form) return;
+
+    let converting = false;
+    form.addEventListener('submit', function(e) {
+        if (converting) return; // 변환 완료 후 재제출
+        const html = $('#content').summernote('code');
+        if (html.indexOf('data:image') === -1) return; // base64 없으면 그대로 제출
+
+        e.preventDefault();
+        converting = true;
+        const submitBtn = form.querySelector('.submit-btn');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '이미지 변환 중...'; }
+
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const imgs = Array.from(doc.querySelectorAll('img[src^="data:image"]'));
+
+        const uploads = imgs.map(function(img) {
+            return fetch(img.src)
+                .then(res => res.blob())
+                .then(function(blob) {
+                    const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+                    const fd = new FormData();
+                    fd.append('image', blob, 'pasted.' + ext);
+                    return fetch('ajax/upload_image.php', { method: 'POST', body: fd })
+                        .then(res => res.json())
+                        .then(function(data) {
+                            if (data.success) {
+                                img.src = data.url;
+                                img.style.maxWidth = '100%';
+                                img.style.height = 'auto';
+                            } else {
+                                throw new Error(data.message || '이미지 업로드 실패');
+                            }
+                        });
+                });
+        });
+
+        Promise.all(uploads)
+            .then(function() {
+                $('#content').summernote('code', doc.body.innerHTML);
+                form.submit();
+            })
+            .catch(function(err) {
+                converting = false;
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '등록'; }
+                alert('붙여넣은 이미지 처리 중 오류가 발생했습니다: ' + err.message
+                    + '\n(이미지 1장당 5MB 이하만 가능합니다)');
+            });
+    });
 });
 
 // 이미지 업로드 함수 (Summernote 콜백용)
