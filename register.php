@@ -37,10 +37,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
         // CSRF 실패 시 건너뛰기
     } elseif(strlen($user_id) < 4) {
         $error = '아이디는 4자 이상이어야 합니다.';
-    } elseif(strlen($password) < 8 || strlen($password) > 64) {
-        $error = '비밀번호는 8자 이상이어야 합니다.';
-    } elseif(!preg_match('/[A-Za-z]/', $password) || !preg_match('/[0-9]/', $password)) {
-        $error = '비밀번호는 영문자와 숫자를 모두 포함해야 합니다.';
+    } elseif(strlen($password) < 4 || strlen($password) > 64) {
+        $error = '비밀번호는 4자 이상이어야 합니다.';
     } elseif($password !== $password_confirm) {
         $error = '비밀번호가 일치하지 않습니다.';
     } elseif(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -184,6 +182,90 @@ include 'head.php';
     background: #555;
 }
 
+/* 아이디 중복체크·비밀번호 확인 실시간 메시지 */
+.id-check-message,
+.field-check-message {
+    margin-top: 6px;
+    font-size: 13px;
+    min-height: 18px;
+}
+
+.id-check-message.available,
+.field-check-message.available {
+    color: #1a7f37;
+}
+
+.id-check-message.unavailable,
+.field-check-message.unavailable {
+    color: #d32f2f;
+}
+
+.id-check-message.checking,
+.field-check-message.checking {
+    color: #888;
+}
+
+/* 우편번호 검색 레이어(모달) 팝업 */
+.postcode-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.postcode-modal-overlay.active {
+    display: flex;
+}
+
+.postcode-modal {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+
+.postcode-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #eee;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.postcode-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: #666;
+    padding: 0 4px;
+}
+
+.postcode-modal-close:hover {
+    color: #111;
+}
+
+.postcode-modal-body {
+    width: 100%;
+    height: 460px;
+}
+
+.postcode-modal-body > div,
+.postcode-modal-body iframe {
+    width: 100% !important;
+    height: 100% !important;
+}
+
 .alert {
     padding: 12px 16px;
     border-radius: 8px;
@@ -269,17 +351,20 @@ include 'head.php';
                            pattern="[a-zA-Z0-9]+"
                            title="영문자와 숫자만 사용 가능합니다"
                            value="<?php echo htmlspecialchars($_POST['user_id'] ?? ''); ?>">
+                    <div class="id-check-message" id="idCheckMessage"></div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="password">비밀번호 <span>*</span></label>
-                        <input type="password" id="password" name="password" required minlength="8" maxlength="64" placeholder="영문+숫자 8자 이상">
+                        <input type="password" id="password" name="password" required minlength="4" maxlength="64" placeholder="영문 또는 숫자 4자 이상">
+                        <div class="field-check-message" id="pwLengthMessage"></div>
                     </div>
 
                     <div class="form-group">
                         <label for="password_confirm">비밀번호 확인 <span>*</span></label>
-                        <input type="password" id="password_confirm" name="password_confirm" required minlength="8" maxlength="64">
+                        <input type="password" id="password_confirm" name="password_confirm" required minlength="4" maxlength="64">
+                        <div class="field-check-message" id="pwMatchMessage"></div>
                     </div>
                 </div>
                 
@@ -403,6 +488,17 @@ include 'head.php';
     </div>
 </section>
 
+<!-- 우편번호 검색 레이어(모달) 팝업 -->
+<div class="postcode-modal-overlay" id="postcodeModal">
+    <div class="postcode-modal">
+        <div class="postcode-modal-header">
+            <span>우편번호 검색</span>
+            <button type="button" class="postcode-modal-close" onclick="closePostcodeModal()" aria-label="닫기">&times;</button>
+        </div>
+        <div class="postcode-modal-body" id="postcodeModalBody"></div>
+    </div>
+</div>
+
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script>
 // DOM이 완전히 로드된 후 실행
@@ -465,34 +561,160 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 비밀번호 확인
+    // 비밀번호 · 비밀번호 확인 실시간 검증
+    const passwordInput = document.getElementById('password');
     const passwordConfirm = document.getElementById('password_confirm');
-    if (passwordConfirm) {
-        passwordConfirm.addEventListener('input', function() {
-            const password = document.getElementById('password');
-            if (password) {
-                const passwordValue = password.value;
-                const confirm = this.value;
-                
-                if(passwordValue !== confirm) {
-                    this.setCustomValidity('비밀번호가 일치하지 않습니다.');
-                } else {
-                    this.setCustomValidity('');
+    const pwLengthMessage = document.getElementById('pwLengthMessage');
+    const pwMatchMessage = document.getElementById('pwMatchMessage');
+
+    function setFieldMessage(el, text, state) {
+        if (!el) return;
+        el.textContent = text;
+        el.className = 'field-check-message' + (state ? ' ' + state : '');
+    }
+
+    function validatePasswords() {
+        if (!passwordInput || !passwordConfirm) return;
+        const pw = passwordInput.value;
+        const confirm = passwordConfirm.value;
+
+        // 비밀번호 길이 실시간 안내
+        if (pw.length === 0) {
+            setFieldMessage(pwLengthMessage, '', '');
+        } else if (pw.length < 4) {
+            setFieldMessage(pwLengthMessage, '비밀번호는 4자 이상이어야 합니다.', 'unavailable');
+        } else {
+            setFieldMessage(pwLengthMessage, '사용 가능한 비밀번호입니다.', 'available');
+        }
+
+        // 비밀번호 일치 실시간 안내
+        if (confirm.length === 0) {
+            setFieldMessage(pwMatchMessage, '', '');
+            passwordConfirm.setCustomValidity('');
+        } else if (pw !== confirm) {
+            setFieldMessage(pwMatchMessage, '비밀번호가 일치하지 않습니다.', 'unavailable');
+            passwordConfirm.setCustomValidity('비밀번호가 일치하지 않습니다.');
+        } else {
+            setFieldMessage(pwMatchMessage, '비밀번호가 일치합니다.', 'available');
+            passwordConfirm.setCustomValidity('');
+        }
+    }
+
+    if (passwordInput && passwordConfirm) {
+        passwordInput.addEventListener('input', validatePasswords);
+        passwordConfirm.addEventListener('input', validatePasswords);
+    }
+    // 아이디 실시간 중복체크
+    const userIdInput = document.getElementById('user_id');
+    const idCheckMessage = document.getElementById('idCheckMessage');
+    let idCheckTimer = null;
+    let idCheckState = ''; // '' | 'available' | 'unavailable'
+
+    function setIdCheckMessage(text, state) {
+        idCheckMessage.textContent = text;
+        idCheckMessage.className = 'id-check-message' + (state ? ' ' + state : '');
+    }
+
+    if (userIdInput && idCheckMessage) {
+        userIdInput.addEventListener('input', function() {
+            clearTimeout(idCheckTimer);
+            const value = this.value.trim();
+            idCheckState = '';
+
+            if (value.length === 0) {
+                setIdCheckMessage('', '');
+                return;
+            }
+            if (value.length < 4) {
+                setIdCheckMessage('아이디는 4자 이상이어야 합니다.', 'unavailable');
+                return;
+            }
+            if (!/^[a-zA-Z0-9]+$/.test(value)) {
+                setIdCheckMessage('아이디는 영문자와 숫자만 사용 가능합니다.', 'unavailable');
+                return;
+            }
+
+            setIdCheckMessage('확인 중...', 'checking');
+            idCheckTimer = setTimeout(function() {
+                const params = new URLSearchParams();
+                params.append('user_id', value);
+                const csrfInput = document.querySelector('input[name="csrf_token"]');
+                if (csrfInput) {
+                    params.append('csrf_token', csrfInput.value);
                 }
+                fetch('ajax/check_userid.php', { method: 'POST', body: params })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        // 응답 도착 전 입력이 바뀐 경우 무시
+                        if (userIdInput.value.trim() !== value) return;
+                        idCheckState = data.available ? 'available' : 'unavailable';
+                        setIdCheckMessage(data.message, idCheckState);
+                    })
+                    .catch(function() {
+                        setIdCheckMessage('확인 중 오류가 발생했습니다.', 'checking');
+                    });
+            }, 400);
+        });
+
+        // 중복 아이디 상태에서 제출 차단
+        if (userIdInput.form) {
+            userIdInput.form.addEventListener('submit', function(e) {
+                if (idCheckState === 'unavailable') {
+                    e.preventDefault();
+                    alert('사용할 수 없는 아이디입니다. 다른 아이디를 입력해주세요.');
+                    userIdInput.focus();
+                }
+            });
+        }
+    }
+
+    // 우편번호 모달: 배경(오버레이) 클릭 또는 ESC 키로 닫기
+    const postcodeModal = document.getElementById('postcodeModal');
+    if (postcodeModal) {
+        postcodeModal.addEventListener('click', function(e) {
+            if (e.target === postcodeModal) {
+                closePostcodeModal();
             }
         });
     }
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closePostcodeModal();
+        }
+    });
 }); // DOMContentLoaded 끝
 
-// findZipcode 함수는 전역 스코프에 있어야 함
+// findZipcode / closePostcodeModal 함수는 전역 스코프에 있어야 함
 function findZipcode() {
+    var modal = document.getElementById('postcodeModal');
+    var body = document.getElementById('postcodeModalBody');
+    if (!modal || !body) { return; }
+
+    // 이전에 남은 내용 정리 후 모달 표시(embed 전 컨테이너가 보여야 크기 계산이 정확함)
+    body.innerHTML = '';
+    modal.classList.add('active');
+
     new daum.Postcode({
         oncomplete: function(data) {
             document.getElementById('zipcode').value = data.zonecode;
             document.getElementById('address').value = data.roadAddress;
+            closePostcodeModal();
             document.getElementById('address_detail').focus();
-        }
-    }).open();
+        },
+        onresize: function(size) {
+            body.style.height = size.height + 'px';
+        },
+        width: '100%',
+        height: '100%'
+    }).embed(body);
+}
+
+function closePostcodeModal() {
+    var modal = document.getElementById('postcodeModal');
+    if (!modal) { return; }
+    modal.classList.remove('active');
+    var body = document.getElementById('postcodeModalBody');
+    if (body) { body.innerHTML = ''; }
 }
 </script>
 
