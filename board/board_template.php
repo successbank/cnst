@@ -364,7 +364,7 @@ class BoardTemplate {
             $title   = $data['title']   ?? '(제목 없음)';
             $content = $data['content'] ?? '';
             $subject = '[충남스틸] 새 ' . $label . ': ' . $title;
-            $viewUrl = 'https://cnst.co.kr/board_view.php?type=' . $this->boardType . '&id=' . (int)$boardId;
+            $viewUrl = 'https://cnst.co.kr/admin/admin_login.php';
 
             $body  = '<div style="font-family:sans-serif;font-size:14px;color:#333;line-height:1.7">';
             $body .= '<h2 style="color:#1A237E">새 ' . $esc($label) . '(이)가 접수되었습니다</h2>';
