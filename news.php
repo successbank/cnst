@@ -18,6 +18,15 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
 $result = $board->getList($page, 10, $search);
 $posts = $result['list'];
 $pagination = $result['pagination'];
+
+// 컬럼 노출 권한 (관리자 패널 세션 기준)
+// - 작성자: 관리자 로그인 시에만 표시 (일반사용자/회원 비노출)
+// - 조회:   최고관리자(admin 계정)에게만 표시
+$isAdminSession = isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
+$isSuperAdmin   = $isAdminSession && (($_SESSION['admin_id'] ?? '') === 'admin');
+$showWriter = $isAdminSession;
+$showViews  = $isSuperAdmin;
+$colCount   = 3 + ($showWriter ? 1 : 0) + ($showViews ? 1 : 0);
 ?>
 
 <div class="page-header">
@@ -43,25 +52,25 @@ $pagination = $result['pagination'];
         <table class="board-table">
             <thead>
                 <tr>
-                    <th width="8%">번호</th>
-                    <th width="50%">제목</th>
-                    <th width="15%">작성자</th>
-                    <th width="17%">작성일</th>
-                    <th width="10%">조회</th>
+                    <th width="8%" class="col-no">번호</th>
+                    <th class="col-title">제목</th>
+                    <?php if ($showWriter): ?><th width="15%" class="col-writer">작성자</th><?php endif; ?>
+                    <th width="17%" class="col-date">작성일</th>
+                    <?php if ($showViews): ?><th width="10%" class="col-views">조회</th><?php endif; ?>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($posts)): ?>
                 <tr>
-                    <td colspan="5" class="empty-state">
+                    <td colspan="<?php echo $colCount; ?>" class="empty-state">
                         등록된 뉴스가 없습니다.
                     </td>
                 </tr>
                 <?php else: ?>
                     <?php foreach ($posts as $post): ?>
                     <tr>
-                        <td><?php echo $post['id']; ?></td>
-                        <td style="text-align: left;">
+                        <td class="col-no"><?php echo $post['id']; ?></td>
+                        <td class="col-title" style="text-align: left;">
                             <a href="board_view.php?type=news&id=<?php echo $post['id']; ?>">
                                 <?php echo escape($post['title']); ?>
                                 <?php if ($post['attachment']): ?>
@@ -75,9 +84,9 @@ $pagination = $result['pagination'];
                                 <?php endif; ?>
                             </a>
                         </td>
-                        <td><?php echo escape($post['writer']); ?></td>
-                        <td><?php echo formatDate($post['created_at']); ?></td>
-                        <td><?php echo $post['view_count']; ?></td>
+                        <?php if ($showWriter): ?><td class="col-writer"><?php echo escape($post['writer']); ?></td><?php endif; ?>
+                        <td class="col-date"><?php echo formatDate($post['created_at']); ?></td>
+                        <?php if ($showViews): ?><td class="col-views"><?php echo $post['view_count']; ?></td><?php endif; ?>
                     </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -202,18 +211,16 @@ $pagination = $result['pagination'];
         font-size: 13px;
     }
     
-    /* 모바일에서 작성자, 작성일 컬럼 숨김 */
-    .board-table th:nth-child(3),
-    .board-table td:nth-child(3),
-    .board-table th:nth-child(4),
-    .board-table td:nth-child(4) {
+    /* 모바일에서 작성자, 작성일 컬럼 숨김 (컬럼이 조건부라 클래스 기준으로 지정) */
+    .board-table .col-writer,
+    .board-table .col-date {
         display: none;
     }
     
     /* 컬럼 너비 재조정 */
-    .board-table th:nth-child(1) { width: 15%; }  /* 번호 */
-    .board-table th:nth-child(2) { width: 70%; }  /* 제목 */
-    .board-table th:nth-child(5) { width: 15%; }  /* 조회 */
+    .board-table th.col-no    { width: 15%; }  /* 번호 */
+    .board-table th.col-title { width: auto; } /* 제목 */
+    .board-table th.col-views { width: 15%; }  /* 조회 */
 }
 </style>
 
