@@ -212,6 +212,27 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = "저장 중 오류가 발생했습니다.";
                 }
                 break;
+
+            case 'product_detail':
+                // 제품 상세페이지 모드 저장 (calc=기존 자동계산 / quote=신규 견적요청)
+                $mode = $_POST['product_detail_mode'] ?? 'calc';
+
+                // 화이트리스트 검증: 허용되지 않은 값은 기존 방식(calc)으로 강제
+                if(!in_array($mode, ['calc', 'quote'], true)) {
+                    $mode = 'calc';
+                }
+
+                saveSettings(['product_detail_mode' => $mode], 'product');
+
+                // saveSetting 이 예외를 삼키므로 저장 후 재조회로 실제 반영 여부를 확인한다
+                if(getSetting('product_detail_mode') === $mode) {
+                    $success_msg = ($mode === 'quote')
+                        ? "제품 상세페이지가 '견적요청 방식'으로 변경되었습니다."
+                        : "제품 상세페이지가 '자동계산 방식'으로 변경되었습니다.";
+                } else {
+                    $error = "저장 중 오류가 발생했습니다.";
+                }
+                break;
         }
     } catch(Exception $e) {
         $error = "저장 중 오류가 발생했습니다.";
@@ -222,6 +243,14 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
 $companySettings = getSettingsByGroup('company');
 $seoSettings = getSettingsByGroup('seo');
 $contactSettings = getSettingsByGroup('contact');
+$productSettings = getSettingsByGroup('product');
+
+// 제품 상세페이지 모드 (빈 문자열 대비 보정, 기본값 calc)
+$currentMode = $productSettings['product_detail_mode'] ?? 'calc';
+$currentMode = $currentMode ?: 'calc';
+if(!in_array($currentMode, ['calc', 'quote'], true)) {
+    $currentMode = 'calc';
+}
 
 // 통계 데이터 조회 (예시)
 try {
@@ -405,6 +434,31 @@ try {
                 <small>고객이 연락할 수 있는 대표 번호입니다.</small>
             </div>
             
+            <button type="submit" class="submit-btn">저장</button>
+        </form>
+    </div>
+
+    <!-- 제품 상세페이지 모드 -->
+    <div class="settings-card">
+        <h2 class="settings-title">제품 상세페이지 모드</h2>
+        <form method="POST" action="">
+            <?php echo csrfField(); ?>
+            <input type="hidden" name="setting_type" value="product_detail">
+
+            <div class="form-group">
+                <label for="product_detail_mode_calc" style="cursor:pointer;padding:14px;border:2px solid <?php echo $currentMode === 'calc' ? '#1A237E' : '#E5E5E7'; ?>;border-radius:8px;margin-bottom:12px;">
+                    <input type="radio" id="product_detail_mode_calc" name="product_detail_mode" value="calc"<?php echo $currentMode === 'calc' ? ' checked' : ''; ?>>
+                    자동계산 방식 (기존)
+                    <small>중량·금액을 실시간 계산해 보여줍니다.</small>
+                </label>
+
+                <label for="product_detail_mode_quote" style="cursor:pointer;padding:14px;border:2px solid <?php echo $currentMode === 'quote' ? '#1A237E' : '#E5E5E7'; ?>;border-radius:8px;margin-bottom:0;">
+                    <input type="radio" id="product_detail_mode_quote" name="product_detail_mode" value="quote"<?php echo $currentMode === 'quote' ? ' checked' : ''; ?>>
+                    견적요청 방식 (신규)
+                    <small>원산지·재질·길이·단위를 선택해 장바구니에 담고 견적을 요청합니다.</small>
+                </label>
+            </div>
+
             <button type="submit" class="submit-btn">저장</button>
         </form>
     </div>

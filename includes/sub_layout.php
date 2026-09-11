@@ -246,13 +246,28 @@ function endSubPage() {
 
 // 마이페이지 사이드바
 function myPageSidebar($current = '') {
+    /*
+     * 제품 상세페이지 모드에 따라 장바구니 메뉴를 분기한다.
+     *  - calc  (기본값) : my_quote_cart.php / '제품견적서' (기존 그대로)
+     *  - quote          : quote_cart.php    / '견적 장바구니' (신규)
+     * 문서: dev_docs/PRD_product_quote_v2.md
+     */
+    $cartMode = 'calc';
+    if (function_exists('getSetting')) {
+        $cartModeValue = getSetting('product_detail_mode') ?: 'calc';
+        if (in_array($cartModeValue, ['calc', 'quote'], true)) {
+            $cartMode = $cartModeValue;
+        }
+    }
+    $cartLink  = ($cartMode === 'quote') ? '/quote_cart.php' : 'my_quote_cart.php';
+    $cartLabel = ($cartMode === 'quote') ? '견적 장바구니' : '제품견적서';
     ?>
     <aside class="sub-sidebar">
         <h3 class="sidebar-title">마이페이지</h3>
         <nav class="sidebar-menu">
             <a href="mypage.php" class="<?php echo $current == 'info' ? 'active' : ''; ?>">회원정보</a>
             <a href="edit_profile.php" class="<?php echo $current == 'edit' ? 'active' : ''; ?>">정보수정</a>
-            <a href="my_quote_cart.php" class="<?php echo $current == 'quote_cart' ? 'active' : ''; ?>">제품견적서</a>
+            <a href="<?php echo htmlspecialchars($cartLink, ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo $current == 'quote_cart' ? 'active' : ''; ?>"><?php echo htmlspecialchars($cartLabel, ENT_QUOTES, 'UTF-8'); ?></a>
             <a href="my_inquiries.php" class="<?php echo $current == 'inquiries' ? 'active' : ''; ?>">문의내역</a>
             <a href="sales_request.php" class="<?php echo $current == 'sales_request' ? 'active' : ''; ?>">판매의뢰 내역</a>
             <a href="logout.php">로그아웃</a>

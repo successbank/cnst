@@ -121,6 +121,15 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['member_grade'] = $member['member_grade'] ?? 'normal';
                     $_SESSION['is_admin'] = $member['is_admin'] ?? 0;
 
+                    // 비회원 장바구니 승계 ($_SESSION = [] 이후에 호출해야 한다)
+                    // 승계 실패가 로그인 자체를 막아서는 안 되므로 예외를 모두 흡수한다.
+                    try {
+                        require_once __DIR__ . '/includes/QuoteCart.php';
+                        QuoteCart::mergeGuestCart($pdo, $member['id']);
+                    } catch (\Throwable $e) {
+                        error_log('login.php 비회원 장바구니 승계 실패: ' . $e->getMessage());
+                    }
+
                     // Remember Me 기능 처리
                     $remember_me = isset($_POST['remember']) && $_POST['remember'] == 'on';
                     if($remember_me) {

@@ -17,6 +17,36 @@ if(file_exists('includes/settings.php')) {
 if (file_exists(__DIR__ . '/includes/visitor_tracker.php')) {
     require_once __DIR__ . '/includes/visitor_tracker.php';
 }
+
+/*
+ * 제품 상세페이지 모드에 따른 장바구니 링크 결정
+ *  - calc  (기본값) : 기존 my_quote_cart.php (sessionStorage 방식) - 기존 동작 100% 유지
+ *  - quote          : 신규 quote_cart.php (서버 DB 방식)
+ * getSetting() 은 행이 존재하면 빈 문자열도 그대로 반환하므로 ?: 로 기본값을 보정한다.
+ * 문서: dev_docs/PRD_product_quote_v2.md
+ */
+$headCartMode = 'calc';
+if (function_exists('getSetting')) {
+    $headCartModeValue = getSetting('product_detail_mode') ?: 'calc';
+    if (in_array($headCartModeValue, ['calc', 'quote'], true)) {
+        $headCartMode = $headCartModeValue;
+    }
+}
+$headCartUrl = ($headCartMode === 'quote') ? '/quote_cart.php' : 'my_quote_cart.php';
+
+// 신규 견적요청 방식일 때 장바구니 건수를 서버에서 미리 구해 둔다.
+// 페이지마다 AJAX 를 호출하면 nginx 의 /ajax/ 요청 제한(api zone)을 소진해
+// 정작 담기·제출이 503 으로 실패할 수 있으므로 여기서 직접 렌더한다.
+$headCartCount = 0;
+if ($headCartMode === 'quote') {
+    try {
+        require_once __DIR__ . '/includes/QuoteCart.php';
+        $headCartCount = QuoteCart::count($pdo);
+    } catch (\Throwable $e) {
+        error_log('head.php 장바구니 건수 조회 실패: ' . $e->getMessage());
+        $headCartCount = 0;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -101,7 +131,7 @@ if (file_exists(__DIR__ . '/includes/visitor_tracker.php')) {
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                             <path d="M7 18C5.9 18 5.01 18.9 5.01 20C5.01 21.1 5.9 22 7 22C8.1 22 9 21.1 9 20C9 18.9 8.1 18 7 18ZM1 2V4H3L6.6 11.59L5.25 14.04C5.09 14.32 5 14.65 5 15C5 16.1 5.9 17 7 17H19V15H7.42C7.28 15 7.17 14.89 7.17 14.75L7.2 14.63L8.1 13H15.55C16.3 13 16.96 12.59 17.3 11.97L20.88 5.48C20.96 5.34 21 5.17 21 5C21 4.45 20.55 4 20 4H5.21L4.27 2H1ZM17 18C15.9 18 15.01 18.9 15.01 20C15.01 21.1 15.9 22 17 22C18.1 22 19 21.1 19 20C19 18.9 18.1 18 17 18Z" fill="currentColor"/>
                         </svg>
-                        <span class="cart-count">0</span>
+                        <span class="cart-count"<?php if ($headCartCount <= 0) echo ' style="display:none;"'; ?>><?php echo (int)$headCartCount; ?></span>
                     </button>
                     <button class="icon-btn search-btn" id="search-icon-btn" title="검색">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -343,27 +373,55 @@ document.addEventListener('DOMContentLoaded', function() {
         overlay.addEventListener('click', toggleMobileMenu);
     }
     
+    // 제품 상세페이지 모드 (calc = 기존 자동계산, quote = 신규 견적요청)
+    const cartMode = <?php echo json_encode($headCartMode); ?>;
+    const cartUrl = <?php echo json_encode($headCartUrl); ?>;
+
     // Cart button click handler
     const cartBtn = document.querySelector('.cart-btn');
     if(cartBtn) {
         cartBtn.addEventListener('click', function() {
-            // 마이페이지의 제품견적서로 이동
-            window.location.href = 'my_quote_cart.php';
+            // 모드에 따라 장바구니 페이지로 이동
+            window.location.href = cartUrl;
         });
     }
-    
+
     // Update cart count on page load
     function updateCartCount() {
-        const quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
-        const cartCount = quoteCart.length; // 아이템(건) 단위로 카운트
-        
         const cartCountElement = document.querySelector('.cart-count');
-        if (cartCountElement) {
+        if (!cartCountElement) {
+            return;
+        }
+
+        function renderCartCount(cartCount) {
             cartCountElement.textContent = cartCount;
             cartCountElement.style.display = cartCount > 0 ? 'block' : 'none';
         }
+
+        if (cartMode === 'quote') {
+            // 신규 견적요청 방식: 건수는 head.php 가 서버에서 이미 렌더했다.
+            // 페이지 로드마다 AJAX 를 호출하면 /ajax/ 요청 제한을 소진하므로 여기서는 조회하지 않는다.
+            // 담기·삭제 직후에는 각 화면이 window.setCartCount(n) 으로 직접 갱신한다.
+            return;
+        }
+
+        // 기존 자동계산 방식: sessionStorage 기반 (동작 변경 없음)
+        const quoteCart = JSON.parse(sessionStorage.getItem('quoteCart') || '[]');
+        renderCartCount(quoteCart.length); // 아이템(건) 단위로 카운트
     }
-    
+
+    // 다른 페이지에서 담기/삭제 후 뱃지를 갱신할 수 있도록 노출
+    window.updateCartCount = updateCartCount;
+
+    // 담기/삭제 응답의 cart_count 로 뱃지를 즉시 갱신한다 (추가 요청 없음)
+    window.setCartCount = function(cartCount) {
+        const el = document.querySelector('.cart-count');
+        if (!el) { return; }
+        const n = parseInt(cartCount, 10) || 0;
+        el.textContent = n;
+        el.style.display = n > 0 ? 'block' : 'none';
+    };
+
     // Call updateCartCount on page load
     updateCartCount();
 });
