@@ -94,16 +94,14 @@ try {
         exit;
     }
 
-    // 허용 목록 결정 (부모 상속 규칙)
-    // 자식이 자체 목록을 가지고 있으면 자식 것을 우선한다. (경량H형강 light-h-beam 사례)
-    $allowedOrigins = cartAddJsonList($product['available_origins']);
-    if (empty($allowedOrigins)) {
-        $allowedOrigins = cartAddJsonList($product['parent_available_origins']);
-    }
-    $allowedMaterials = cartAddJsonList($product['available_materials']);
-    if (empty($allowedMaterials)) {
-        $allowedMaterials = cartAddJsonList($product['parent_available_materials']);
-    }
+    // 허용 목록은 화면(product_detail_v2.php)이 제시하는 목록과 정확히 같아야 한다.
+    // 그 목록은 기존 자동계산 화면(product_detail_calc.php)의 규칙을 그대로 따른다.
+    //   원산지: 해당 제품의 available_origins 만 사용 (부모 상속 없음)
+    //   재질  : 부모 제품이 있으면 부모의 available_materials 를 사용
+    $allowedOrigins   = cartAddJsonList($product['available_origins']);
+    $allowedMaterials = cartAddJsonList(
+        $product['parent_available_materials'] ?? $product['available_materials']
+    );
 
     // 원산지 검증 (목록이 비어 있으면 빈 값만 허용)
     $origin = isset($_POST['origin']) ? trim((string)$_POST['origin']) : '';
@@ -151,6 +149,13 @@ try {
     }
 
     $length_unit = QuoteCart::normalizeLengthUnit($_POST['length_unit'] ?? '');
+
+    // 판재류(선형이 아닌 제품)에는 길이 항목 자체가 없다.
+    // 직접 POST 로 길이를 보내도 저장하지 않는다.
+    $effectiveCalcType = $product['parent_calculation_type'] ?? ($product['calculation_type'] ?? '');
+    if ($effectiveCalcType !== 'linear') {
+        $length_value = null;
+    }
 
     // 수량 단위는 사용자가 고르는 값이 아니라 제품 속성이다.
     // 기존 자동계산 화면과 같은 규칙으로 서버에서 다시 판정하고 클라이언트 값은 쓰지 않는다.

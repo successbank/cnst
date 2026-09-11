@@ -53,8 +53,9 @@ if (!function_exists('productQuantityUnit')) {
                     'label'   => '단위',
                     'display' => 'TON/BD',
                     'value'   => 'TON',
-                    'decimal' => true,
-                    'help'    => '철근은 톤(TON) 단위로 입력해 주세요.',
+                    // 기존 화면도 min="1" 정수 입력이므로 소수를 허용하지 않는다.
+                    'decimal' => false,
+                    'help'    => '',
                 ];
             }
 
@@ -63,7 +64,7 @@ if (!function_exists('productQuantityUnit')) {
                 'display' => '본',
                 'value'   => '본',
                 'decimal' => false,
-                'help'    => '필요한 본수를 입력해 주세요.',
+                'help'    => '',
             ];
         }
 
@@ -73,7 +74,7 @@ if (!function_exists('productQuantityUnit')) {
             'display' => '장',
             'value'   => '장',
             'decimal' => false,
-            'help'    => '필요한 장수를 입력해 주세요.',
+            'help'    => '',
         ];
     }
 }

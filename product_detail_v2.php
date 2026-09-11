@@ -64,25 +64,15 @@ if (!$product) {
  * 견적요청 폼에 쓸 선택지 준비
  * ------------------------------------------------------------------ */
 
-// 원산지 목록: 자식 제품이 자체 목록을 가지면 그것을 쓰고, 비어 있으면 부모 목록을 상속한다.
-// (ajax/cart_add.php 의 서버측 검증과 같은 우선순위를 유지해야 담기가 거부되지 않는다)
-$qr_origins = json_decode($product['available_origins'] ?? '[]', true);
+// 원산지 목록 — 기존 화면(product_detail_calc.php:666)과 동일하게 해당 제품의 값만 쓴다.
+// 부모 상속을 하지 않는다. 기존 화면이 상속하지 않으므로 상속하면 선택지가 달라진다.
+$qr_origins = json_decode($product['available_origins'] ?? '[]', true) ?: [];
 if (!is_array($qr_origins)) {
     $qr_origins = [];
 }
-if (empty($qr_origins) && !empty($product['parent_available_origins'])) {
-    $qr_parent_origins = json_decode($product['parent_available_origins'], true);
-    if (is_array($qr_parent_origins)) {
-        $qr_origins = $qr_parent_origins;
-    }
-}
 
-// 재질 목록: 부모 제품이 있으면 부모 재질을 상속한다.
-// 단 경량H형강(light-h-beam) 자식 제품은 자체 재질을 우선 사용한다.
+// 재질 목록 — 기존 화면(product_detail_calc.php:46)과 동일하게 부모가 있으면 부모 재질을 쓴다.
 $qr_materials_json = $product['parent_available_materials'] ?? $product['available_materials'];
-if ($product['category_code'] === 'light-h-beam' && !empty($product['available_materials'])) {
-    $qr_materials_json = $product['available_materials'];
-}
 $qr_materials = json_decode($qr_materials_json ?? '[]', true);
 if (!is_array($qr_materials)) {
     $qr_materials = [];
@@ -101,46 +91,57 @@ $qr_length_free_input = false;  // true 면 숫자 입력으로 폴백
 $qr_standard_length = !empty($product['standard_length']) ? floatval($product['standard_length']) : 0;
 $qr_length_help = '';
 
-if ($product['category_code'] === 'rebar') {
-    // 철근: rebar_length_data 의 길이 목록 사용 (기존 계산기와 동일 기준)
-    $spec_name = str_replace('철근 ', '', $product['product_name']);
-    try {
-        $stmt = $pdo->prepare("
-            SELECT length
-            FROM rebar_length_data
-            WHERE spec_name = ? AND length BETWEEN 6 AND 12
-            ORDER BY length
-        ");
-        $stmt->execute([$spec_name]);
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $qr_lengths[] = floatval($row['length']);
+// 기존 화면(product_detail_calc.php:769)이 길이 드롭다운을 제공하는 카테고리 목록.
+// 이 목록 밖의 카테고리는 min/max 가 있어도 직접 입력으로 처리한다.
+$qr_length_dropdown_categories = [
+    'h-beam', 'light-h-beam', 'i-beam', 'angle', 'channel', 'flat-bar', 'round-bar',
+    'c-beam', 'rail', 'square-pipe', 'bs-pipe', 'ks-pipe', 'conduit', 'structural-pipe',
+    'steel-pipe-pile', 'deck-plate', 'sheet-pile', 'scaffold-pipe', 'pressure-pipe',
+];
+
+if ($qr_calculation_type === 'linear') {
+    if ($product['category_code'] === 'rebar') {
+        // 철근: rebar_length_data 의 길이 목록 (기존 화면과 동일)
+        $spec_name = str_replace('철근 ', '', $product['product_name']);
+        try {
+            $stmt = $pdo->prepare("
+                SELECT length
+                FROM rebar_length_data
+                WHERE spec_name = ? AND length BETWEEN 6 AND 12
+                ORDER BY length
+            ");
+            $stmt->execute([$spec_name]);
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                // 기존 화면은 DB 값을 그대로 option value 로 쓴다 (product_detail_calc.php:82).
+                // floatval 로 바꾸면 '6.0' 이 '6' 이 되어 값이 달라진다.
+                $qr_lengths[] = $row['length'];
+            }
+        } catch (PDOException $e) {
+            error_log('product_detail_v2 철근 길이 조회 실패: ' . $e->getMessage());
+            $qr_lengths = [];
         }
-    } catch (PDOException $e) {
-        error_log('product_detail_v2 철근 길이 조회 실패: ' . $e->getMessage());
-        $qr_lengths = [];
+        // 기존 화면은 이 문구를 고정 출력한다 (product_detail_calc.php:739)
+        $qr_length_help = '선택 가능 범위: 6.0m ~ 12.0m';
     }
-    if (!empty($qr_lengths)) {
-        $qr_length_help = '선택 가능 범위: '
-            . number_format(min($qr_lengths), 1) . 'm ~ '
-            . number_format(max($qr_lengths), 1) . 'm';
-    }
-}
 
-if (empty($qr_lengths)) {
-    $min_len = !empty($product['min_length']) ? floatval($product['min_length']) : 0;
-    $max_len = !empty($product['max_length']) ? floatval($product['max_length']) : 0;
+    if (empty($qr_lengths)
+        && ($product['category_code'] === 'unequal-angle'
+            || in_array($product['category_code'], $qr_length_dropdown_categories, true))) {
+        // 기존 화면과 동일하게 범위가 비어 있으면 6.0m ~ 12.0m 를 기본값으로 쓴다
+        $min_len = !empty($product['min_length']) ? floatval($product['min_length']) : 6.0;
+        $max_len = !empty($product['max_length']) ? floatval($product['max_length']) : 12.0;
 
-    if ($min_len > 0 && $max_len >= $min_len) {
-        // 최소~최대 길이를 0.1m 단위로 생성
-        for ($i = (int)round($min_len * 10); $i <= (int)round($max_len * 10); $i++) {
+        for ($i = intval($min_len * 10); $i <= intval($max_len * 10); $i++) {
             $qr_lengths[] = $i / 10;
         }
         $qr_length_help = '선택 가능 범위: ' . number_format($min_len, 1) . 'm ~ '
             . number_format($max_len, 1) . 'm (0.1m 단위)';
-    } else {
-        // 범위 정보가 없으면 직접 입력으로 폴백
+    }
+
+    if (empty($qr_lengths)) {
+        // 그 외 제품: 직접 입력 (기존 화면 product_detail_calc.php:799 와 동일)
         $qr_length_free_input = true;
-        $qr_length_help = '길이를 직접 입력하세요 (미터 단위)';
+        $qr_length_help = '길이를 입력하세요 (미터 단위)';
     }
 }
 
@@ -640,7 +641,7 @@ require_once __DIR__ . '/head.php';
                 <div class="calculator-section">
                     <div class="calculator-title">견적요청</div>
                     <div class="calculator-desc">
-                        원산지·재질·길이·수량을 선택해 장바구니에 담고 견적을 요청하세요.<br>
+                        <?php echo ($qr_calculation_type === 'linear') ? '원산지·재질·길이·수량을 선택해' : '원산지·재질·수량을 선택해'; ?> 장바구니에 담고 견적을 요청하세요.<br>
                         담당자가 확인 후 개별 견적으로 회신해 드립니다.
                     </div>
 
@@ -649,7 +650,7 @@ require_once __DIR__ . '/head.php';
                             <label for="qr-origin">원산지</label>
                             <select id="qr-origin" class="calc-control">
                                 <?php if (empty($qr_origins)): ?>
-                                    <option value="" selected>선택 안 함</option>
+                                    <option value="" selected>선택하세요</option>
                                 <?php else: ?>
                                     <?php foreach ($qr_origins as $index => $origin): ?>
                                     <option value="<?php echo htmlspecialchars($origin); ?>" <?php echo $index === 0 ? 'selected' : ''; ?>>
@@ -661,10 +662,10 @@ require_once __DIR__ . '/head.php';
                         </div>
 
                         <div class="calc-form-group">
-                            <label for="qr-material">재질</label>
+                            <label for="qr-material">재질 선택</label>
                             <select id="qr-material" class="calc-control">
                                 <?php if (empty($qr_materials)): ?>
-                                    <option value="" selected>선택 안 함</option>
+                                    <option value="" selected>선택하세요</option>
                                 <?php else: ?>
                                     <?php if ($qr_material_no_default): ?>
                                         <option value="" selected>선택하세요</option>
@@ -680,39 +681,30 @@ require_once __DIR__ . '/head.php';
                         </div>
                     </div>
 
+                    <?php if ($qr_calculation_type === 'linear'): ?>
+                    <?php /* 길이는 기존 화면과 동일하게 선형 제품에만 노출한다.
+                             판재류에는 길이 항목이 없다 (product_detail_calc.php:714). */ ?>
                     <div class="calc-form-row">
                         <div class="calc-form-group">
-                            <label for="qr-length">길이</label>
-                            <div class="calc-input-pair">
-                                <?php if ($qr_length_free_input): ?>
-                                    <input type="number" id="qr-length" class="calc-control"
-                                           min="0" step="0.01" value="" placeholder="길이를 입력하세요">
-                                <?php else: ?>
-                                    <select id="qr-length" class="calc-control">
-                                        <?php if ($qr_standard_length <= 0): ?>
-                                            <option value="" selected>선택하세요</option>
-                                        <?php endif; ?>
-                                        <?php foreach ($qr_lengths as $length_value): ?>
-                                            <option value="<?php echo htmlspecialchars(number_format($length_value, 1, '.', '')); ?>"
-                                                    <?php echo ($qr_standard_length > 0 && abs($length_value - $qr_standard_length) < 0.0001) ? 'selected' : ''; ?>>
-                                                <?php echo number_format($length_value, 1); ?>m
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                <?php endif; ?>
-                                <?php if ($qr_length_free_input): ?>
-                                    <select id="qr-length-unit" class="calc-control">
-                                        <option value="M" selected>M</option>
-                                        <option value="mm">mm</option>
-                                    </select>
-                                <?php else: ?>
-                                    <?php /* 드롭다운 선택지가 모두 미터 단위이므로 단위를 M 으로 고정한다.
-                                             단위를 바꿀 수 있게 두면 '6.0m' 를 고르고 mm 를 선택해
-                                             6mm 로 저장되는 모순이 생긴다. */ ?>
-                                    <input type="hidden" id="qr-length-unit" value="M">
-                                    <span class="calc-unit-fixed">M</span>
-                                <?php endif; ?>
-                            </div>
+                            <label for="qr-length">길이 (미터)</label>
+                            <?php if ($qr_length_free_input): ?>
+                                <input type="number" id="qr-length" class="calc-control"
+                                       min="0" step="0.01" value="0" placeholder="길이를 입력하세요">
+                            <?php else: ?>
+                                <select id="qr-length" class="calc-control">
+                                    <?php if ($qr_standard_length <= 0): ?>
+                                        <option value="0" selected>선택하세요</option>
+                                    <?php endif; ?>
+                                    <?php foreach ($qr_lengths as $length_value): ?>
+                                        <option value="<?php echo $length_value; ?>"
+                                                <?php echo ($qr_standard_length > 0 && $length_value == $qr_standard_length) ? 'selected' : ''; ?>>
+                                            <?php echo number_format($length_value, 1); ?>m
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            <?php endif; ?>
+                            <?php /* 기존 화면에는 길이 단위 선택이 없다. 항상 미터로 고정한다. */ ?>
+                            <input type="hidden" id="qr-length-unit" value="M">
                             <?php if ($qr_length_help !== ''): ?>
                             <div class="input-help"><?php echo htmlspecialchars($qr_length_help); ?></div>
                             <?php endif; ?>
@@ -720,18 +712,20 @@ require_once __DIR__ . '/head.php';
 
                         <div class="calc-form-group">
                             <label for="qr-quantity"><?php echo htmlspecialchars($qr_unit['label']); ?> (<?php echo htmlspecialchars($qr_unit['display']); ?>)</label>
-                            <div class="calc-input-pair">
-                                <input type="number" id="qr-quantity" class="calc-control"
-                                       min="<?php echo $qr_unit['decimal'] ? '0.001' : '1'; ?>"
-                                       step="<?php echo $qr_unit['decimal'] ? '0.001' : '1'; ?>" value="1">
-                                <?php /* 단위는 제품 속성이므로 사용자가 바꿀 수 없다. 기존 화면도 고정 라벨이었다.
-                                         서버(ajax/cart_add.php)도 같은 규칙으로 다시 판정하므로 위조되지 않는다. */ ?>
-                                <input type="hidden" id="qr-quantity-unit" value="<?php echo htmlspecialchars($qr_unit['value']); ?>">
-                                <span class="calc-unit-fixed"><?php echo htmlspecialchars($qr_unit['display']); ?></span>
-                            </div>
-                            <div class="input-help"><?php echo htmlspecialchars($qr_unit['help']); ?></div>
+                            <input type="number" id="qr-quantity" class="calc-control"
+                                   min="1" step="1" value="1">
+                            <?php /* 단위는 제품 속성이라 사용자가 바꿀 수 없다. 서버도 같은 규칙으로 다시 판정한다. */ ?>
+                            <input type="hidden" id="qr-quantity-unit" value="<?php echo htmlspecialchars($qr_unit['value']); ?>">
                         </div>
                     </div>
+                    <?php else: ?>
+                    <div class="calc-form-group">
+                        <label for="qr-quantity"><?php echo htmlspecialchars($qr_unit['label']); ?> (<?php echo htmlspecialchars($qr_unit['display']); ?>)</label>
+                        <input type="number" id="qr-quantity" class="calc-control"
+                               min="1" step="1" value="1">
+                        <input type="hidden" id="qr-quantity-unit" value="<?php echo htmlspecialchars($qr_unit['value']); ?>">
+                    </div>
+                    <?php endif; ?>
 
                     <div class="calc-form-group qr-note-group">
                         <label for="qr-note">요청사항 (선택)</label>
@@ -930,8 +924,12 @@ require_once __DIR__ . '/tail.php';
         params.append('product_id', productId);
         params.append('origin', fieldValue('qr-origin'));
         params.append('material', fieldValue('qr-material'));
-        params.append('length_value', fieldValue('qr-length'));
-        params.append('length_unit', fieldValue('qr-length-unit'));
+        // 판재류에는 길이 항목이 없고, 길이 드롭다운의 '선택하세요' 는 값이 '0' 이다.
+        // 두 경우 모두 길이 없음으로 보낸다.
+        var lengthRaw = fieldValue('qr-length');
+        var lengthValue = (lengthRaw === '' || parseFloat(lengthRaw) === 0) ? '' : lengthRaw;
+        params.append('length_value', lengthValue);
+        params.append('length_unit', lengthValue === '' ? '' : (fieldValue('qr-length-unit') || 'M'));
         params.append('quantity', String(quantity));
         params.append('quantity_unit', fieldValue('qr-quantity-unit'));
         params.append('note', fieldValue('qr-note'));
