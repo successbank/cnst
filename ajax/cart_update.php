@@ -62,10 +62,9 @@ try {
         $fields['quantity'] = $quantity;
     }
 
-    // 수량 단위
-    if (isset($_POST['quantity_unit'])) {
-        $fields['quantity_unit'] = QuoteCart::normalizeQuantityUnit($_POST['quantity_unit']);
-    }
+    // 수량 단위는 제품 속성이므로 수정 대상이 아니다.
+    // 담기 시점에 ajax/cart_add.php 가 제품 기준으로 판정해 저장한 값을 그대로 유지한다.
+    // (화면에도 단위 변경 UI 가 없다. 직접 POST 로 바꾸는 경로만 차단한다)
 
     // 길이 (빈 값이면 NULL, 값이 있으면 0 초과 10000 이하)
     if (isset($_POST['length_value'])) {

@@ -92,6 +92,7 @@ if (!is_array($qr_materials)) {
 $qr_material_no_default = in_array($product['category_code'], ['light-h-beam', 'i-beam'], true);
 
 // 계산 타입(수량 단위 기본값 판단용)
+// 계산 타입(길이 UI 분기 및 수량 단위 판정의 기준. 부모 제품이 있으면 부모 값을 상속한다)
 $qr_calculation_type = $product['parent_calculation_type'] ?? $product['calculation_type'];
 
 // 길이 목록
@@ -143,15 +144,10 @@ if (empty($qr_lengths)) {
     }
 }
 
-// 수량 단위 목록 및 기본값
-$qr_quantity_units = ['EA', '본', 'TON', 'kg', '장', 'SET', 'M'];
-if (($product['price_unit'] ?? '') === 'kg') {
-    $qr_default_quantity_unit = 'TON';
-} elseif ($qr_calculation_type === 'sheet') {
-    $qr_default_quantity_unit = '장';
-} else {
-    $qr_default_quantity_unit = 'EA';
-}
+// 수량 단위: 기존 자동계산 화면이 제품마다 보여주던 단위를 그대로 사용한다.
+// (판정 규칙은 includes/product_unit.php 에 원본 근거와 함께 정리되어 있다)
+require_once __DIR__ . '/includes/product_unit.php';
+$qr_unit = productQuantityUnit($product);
 
 $pageTitle = $product['product_name'] . ' | 충남스틸';
 $additionalCSS = [];
@@ -723,20 +719,17 @@ require_once __DIR__ . '/head.php';
                         </div>
 
                         <div class="calc-form-group">
-                            <label for="qr-quantity">수량</label>
+                            <label for="qr-quantity"><?php echo htmlspecialchars($qr_unit['label']); ?> (<?php echo htmlspecialchars($qr_unit['display']); ?>)</label>
                             <div class="calc-input-pair">
                                 <input type="number" id="qr-quantity" class="calc-control"
-                                       min="0.001" step="0.001" value="1">
-                                <select id="qr-quantity-unit" class="calc-control">
-                                    <?php foreach ($qr_quantity_units as $unit): ?>
-                                    <option value="<?php echo htmlspecialchars($unit); ?>"
-                                            <?php echo ($unit === $qr_default_quantity_unit) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($unit); ?>
-                                    </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                       min="<?php echo $qr_unit['decimal'] ? '0.001' : '1'; ?>"
+                                       step="<?php echo $qr_unit['decimal'] ? '0.001' : '1'; ?>" value="1">
+                                <?php /* 단위는 제품 속성이므로 사용자가 바꿀 수 없다. 기존 화면도 고정 라벨이었다.
+                                         서버(ajax/cart_add.php)도 같은 규칙으로 다시 판정하므로 위조되지 않는다. */ ?>
+                                <input type="hidden" id="qr-quantity-unit" value="<?php echo htmlspecialchars($qr_unit['value']); ?>">
+                                <span class="calc-unit-fixed"><?php echo htmlspecialchars($qr_unit['display']); ?></span>
                             </div>
-                            <div class="input-help">수량과 단위를 함께 선택하세요.</div>
+                            <div class="input-help"><?php echo htmlspecialchars($qr_unit['help']); ?></div>
                         </div>
                     </div>
 
@@ -905,6 +898,10 @@ require_once __DIR__ . '/tail.php';
             '</div>';
     }
 
+    // 이 제품의 수량 단위 (서버가 다시 판정하므로 화면 표시·검증 용도)
+    var QUANTITY_DISPLAY = <?php echo json_encode($qr_unit['display'], JSON_UNESCAPED_UNICODE); ?>;
+    var QUANTITY_DECIMAL = <?php echo $qr_unit['decimal'] ? 'true' : 'false'; ?>;
+
     function updateCartBadge(count) {
         if (count === undefined || count === null) {
             return;
@@ -920,7 +917,12 @@ require_once __DIR__ . '/tail.php';
     submitBtn.addEventListener('click', function () {
         var quantity = parseFloat(fieldValue('qr-quantity'));
         if (!(quantity > 0)) {
-            showError('수량을 1 이상(소수 가능)으로 입력해 주세요.');
+            showError('수량을 1 이상으로 입력해 주세요.');
+            return;
+        }
+        // 본/장 단위는 정수만 허용한다 (기존 자동계산 화면과 동일)
+        if (!QUANTITY_DECIMAL && quantity % 1 !== 0) {
+            showError('수량은 ' + QUANTITY_DISPLAY + ' 단위로 정수만 입력할 수 있습니다.');
             return;
         }
 

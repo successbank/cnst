@@ -17,6 +17,7 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once '../includes/csrf.php';
 require_once '../includes/input_validator.php';
 require_once '../includes/QuoteCart.php';
+require_once '../includes/product_unit.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -75,10 +76,12 @@ try {
     // 제품 재조회 (판매중인 제품만) + 부모 제품의 재질 목록 동시 조회
     $stmt = $pdo->prepare("
         SELECT p.id, p.product_name, p.specification, p.parent_product_id,
+               p.category_code, p.calculation_type,
                p.available_origins, p.available_materials,
                p.min_length, p.max_length, p.standard_length,
-               pp.available_origins  AS parent_available_origins,
-               pp.available_materials AS parent_available_materials
+               pp.available_origins   AS parent_available_origins,
+               pp.available_materials AS parent_available_materials,
+               pp.calculation_type    AS parent_calculation_type
         FROM products p
         LEFT JOIN products pp ON p.parent_product_id = pp.id
         WHERE p.id = ? AND p.is_active = 1
@@ -147,8 +150,21 @@ try {
         }
     }
 
-    $length_unit   = QuoteCart::normalizeLengthUnit($_POST['length_unit'] ?? '');
-    $quantity_unit = QuoteCart::normalizeQuantityUnit($_POST['quantity_unit'] ?? '');
+    $length_unit = QuoteCart::normalizeLengthUnit($_POST['length_unit'] ?? '');
+
+    // 수량 단위는 사용자가 고르는 값이 아니라 제품 속성이다.
+    // 기존 자동계산 화면과 같은 규칙으로 서버에서 다시 판정하고 클라이언트 값은 쓰지 않는다.
+    $unitInfo      = productQuantityUnit($product);
+    $quantity_unit = QuoteCart::normalizeQuantityUnit($unitInfo['value']);
+
+    // 본/장 단위는 정수만 허용한다 (기존 화면도 정수 입력이었다)
+    if (!$unitInfo['decimal'] && fmod($quantity, 1) !== 0.0) {
+        echo json_encode([
+            'success' => false,
+            'message' => '수량은 ' . $unitInfo['display'] . ' 단위로 정수만 입력할 수 있습니다.',
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
     // 제품이 길이 선택지를 미터 단위 목록으로 제공하는 경우에는 단위를 M 으로 고정한다.
     // 화면에서도 M 고정으로 렌더하지만, 직접 POST 로 mm 를 보내 '6m 선택 → 6mm 저장' 이
